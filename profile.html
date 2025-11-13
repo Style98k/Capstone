@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Profile - QuickGig</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<header class="site-header"><div class="container header-inner"><a href="index.html" class="brand">QuickGig</a></div></header>
+<main class="container">
+  <h1>Your Profile</h1>
+  <div id="profileArea" class="card"></div>
+</main>
+<footer class="site-footer"><div class="container">© 2025 QuickGig</div></footer>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const u = currentUser();
+  const out = document.getElementById('profileArea');
+  if(!u){ out.innerHTML = '<div class="msg">Not logged in. <a href="auth/login.html">Login</a></div>'; return; }
+  out.innerHTML = '<p><strong>Name:</strong> '+u.name+'</p><p><strong>Role:</strong> '+u.role+'</p><p><strong>Email:</strong> '+u.email+'</p><p><strong>School ID:</strong> '+(u.schoolId||'—')+'</p>';
+});
+</script>
+</body>
+</html>

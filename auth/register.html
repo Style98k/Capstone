@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Register - QuickGig</title>
+<link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+<header class="site-header"><div class="container header-inner"><a href="../index.html" class="brand">QuickGig</a></div></header>
+<main class="container auth-page">
+  <div class="card auth-card">
+    <h2>Create an account</h2>
+    <form id="regForm">
+      <label>Full name<input type="text" id="reg-name" required></label>
+      <label>Email<input type="email" id="reg-email" required></label>
+      <label>Password<input type="password" id="reg-password" required></label>
+      <label>School ID (for students)<input type="text" id="reg-schoolid"></label>
+      <label>Role
+        <select id="reg-role">
+          <option value="student">Student</option>
+          <option value="client">Client</option>
+          <option value="admin">Administrator</option>
+        </select>
+      </label>
+      <div class="form-row">
+        <button class="btn" type="submit">Register</button>
+        <a href="login.html" class="link">Already have an account?</a>
+      </div>
+      <div id="reg-msg" class="msg"></div>
+    </form>
+  </div>
+</main>
+<footer class="site-footer"><div class="container">© 2025 QuickGig</div></footer>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script>
+document.getElementById('regForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const user = {
+    name: document.getElementById('reg-name').value.trim(),
+    email: document.getElementById('reg-email').value.trim(),
+    password: document.getElementById('reg-password').value,
+    schoolId: document.getElementById('reg-schoolid').value.trim(),
+    role: document.getElementById('reg-role').value
+  };
+  const res = registerUser(user);
+  const msg = document.getElementById('reg-msg');
+  if(res.success){
+    msg.textContent = 'Account created. Redirecting to login...';
+    setTimeout(()=> window.location.href='login.html', 800);
+  } else {
+    msg.textContent = res.message;
+  }
+});
+</script>
+</body>
+</html>
