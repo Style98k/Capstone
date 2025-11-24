@@ -1,21 +1,18 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import db from "./config/db.js";
-
-
-dotenv.config();
+import userRoutes from "./routes/UserRoutes.js";
 
 const app = express();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Test route
-app.get("/", (req, res) => {
-  res.send("QuickGig Backend is Running");
-});
+// Routes
+app.use("/api/users", userRoutes);
 
-const port = process.env.PORT || 5001;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// Start Server
+app.listen(5001, () => {
+  console.log("Server running on port 5001");
 });
