@@ -4,17 +4,24 @@ import db from "./config/db.js";
 import userRoutes from "./routes/UserRoutes.js";
 import gigRoutes from "./routes/gigroutes.js";
 import applicationRoutes from "./routes/applicationroutes.js";
+import ratingRoutes from "./routes/ratingroutes.js";
+import transactionRoutes from "./routes/transactionroutes.js";
+import notificationRoutes from "./routes/notificationroutes.js";
+import messageRoutes from "./routes/messageroutes.js";
+
+
 
 const app = express();
 
-// Middleware
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/transactions", transactionRoutes);
 app.use("/api/gigs", gigRoutes);
 app.use(cors());
 app.use(express.json());
 app.use("/api/applications", applicationRoutes);
-
-// Routes
+app.use("/api/ratings", ratingRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/messages", messageRoutes);
 
 // Start Server
 app.listen(5001, () => {
