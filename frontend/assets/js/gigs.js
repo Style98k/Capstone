@@ -1,5 +1,3 @@
-// Gigs management using localStorage
-
 function getAllGigs(){ return readLS('quickgig.gigs') || []; }
 function saveGigs(g){ writeLS('quickgig.gigs', g); }
 

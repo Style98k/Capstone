@@ -1,4 +1,4 @@
-// Authentication and user management using localStorage
+
 
 function getUsers(){ return readLS('quickgig.users') || []; }
 function saveUsers(u){ writeLS('quickgig.users', u); }
@@ -17,7 +17,7 @@ function login(identifier, password){
   const u = users.find(x=> (x.email===identifier || x.schoolId===identifier) && x.password===password );
   if(!u) return {success:false, message:'Invalid credentials.'};
   writeLS('quickgig.currentUser', u);
-  // redirect based on role
+
   const redirect = u.role==='student' ? '/student/dashboard.html' : (u.role==='client' ? '/client/dashboard.html' : '/admin/dashboard.html');
   return {success:true, redirect};
 }
