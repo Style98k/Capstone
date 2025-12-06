@@ -1,1 +1,0 @@
-Dito pwede ilagay ang mga image

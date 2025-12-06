@@ -1,66 +1,14 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>QuickGig - Home</title>
-  <link rel="stylesheet" href="assets/css/styles.css">
-</head>
-<body>
-  <header class="site-header">
-    <div class="container header-inner">
-      <a href="index.html" class="brand">QuickGig</a>
-      <nav>
-        <a href="gigs/list.html">Gigs</a>
-        <a href="about.html">About</a>
-        <a href="auth/login.html" id="nav-login">Login</a>
-        <a href="auth/register.html" id="nav-register">Register</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="container">
-    <section class="hero">
-      <h1>Find short-term gigs for students</h1>
-      <p>Flexible, verified, and local opportunities.</p>
-      <div class="cta-row">
-        <a href="gigs/list.html" class="btn">Browse Gigs</a>
-        <a href="auth/register.html" class="btn btn-outline">Join as Student</a>
-      </div>
-    </section>
-
-    <section class="features">
-      <div class="card">
-        <h3>Verified Students</h3>
-        <p>Students register using school ID. Admin can verify accounts.</p>
-      </div>
-      <div class="card">
-        <h3>Secure Payments</h3>
-        <p>Simulated payment workflow for demonstrations.</p>
-      </div>
-      <div class="card">
-        <h3>Easy Matching</h3>
-        <p>Search and filter gigs by category, location and pay.</p>
-      </div>
-    </section>
-
-    <section>
-      <h2>Recent Gigs</h2>
-      <div id="recent-gigs" class="grid"></div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container">2025 QuickGig</div>
-  </footer>
-
-  <script src="assets/js/utils.js"></script>
-  <script src="assets/js/gigs.js"></script>
-  <script>
-    // render recent gigs
-    const recent = getAllGigs().slice(0,6);
-    const out = document.getElementById('recent-gigs');
-    out.innerHTML = recent.map(g => gigCardHTML(g)).join('');
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuickGig - Student Freelance Platform</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
+
