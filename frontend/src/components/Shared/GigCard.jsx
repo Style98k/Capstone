@@ -11,7 +11,7 @@ export default function GigCard({ gig, showActions = true }) {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2">
             {gig.title}
           </h3>
-          <span className="ml-2 px-2 py-1 text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded">
+          <span className="ml-2 px-2 py-1 text-xs font-medium bg-sky-50 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 rounded">
             {gig.category}
           </span>
         </div>
@@ -31,7 +31,7 @@ export default function GigCard({ gig, showActions = true }) {
           </div>
           <div className="flex items-center gap-1">
             <DollarSign className="w-4 h-4" />
-            <span className="font-semibold text-primary-600 dark:text-primary-400">
+            <span className="font-semibold text-sky-600 dark:text-sky-400">
               ₱{gig.pay.toLocaleString()}
             </span>
           </div>
@@ -41,7 +41,7 @@ export default function GigCard({ gig, showActions = true }) {
       {showActions && (
         <Link
           to={`/gigs/${gig.id}`}
-          className="flex items-center justify-center gap-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium text-sm transition-colors"
+          className="flex items-center justify-center gap-2 text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-medium text-sm transition-colors"
         >
           View Details
           <ArrowRight className="w-4 h-4" />
