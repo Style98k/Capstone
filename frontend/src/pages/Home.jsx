@@ -10,9 +10,9 @@ export default function Home() {
   const recentGigs = mockGigs.filter(g => g.status === 'open').slice(0, 6)
 
   return (
-    <div className="space-y-16">
+    <div className="w-full max-w-[2000px] mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
       {/* Hero Section */}
-      <section className="text-center py-20">
+      <section className="text-center py-20 w-full">
         <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
           Find Your Perfect Gig
         </h1>
@@ -58,25 +58,25 @@ export default function Home() {
       </section>
 
       {/* Quick Stats Banner */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-12 rounded-lg">
+      <section className="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-12 rounded-lg w-full">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           <div>
-            <div className="text-4xl font-bold mb-2">500+</div>
+            <div className="text-4xl font-bold mb-2">0</div>
             <div className="text-primary-100">Active Students</div>
           </div>
           <div>
-            <div className="text-4xl font-bold mb-2">200+</div>
+            <div className="text-4xl font-bold mb-2">0</div>
             <div className="text-primary-100">Verified Clients</div>
           </div>
           <div>
-            <div className="text-4xl font-bold mb-2">1,000+</div>
+            <div className="text-4xl font-bold mb-2">0</div>
             <div className="text-primary-100">Completed Gigs</div>
           </div>
         </div>
       </section>
 
       {/* What is QuickGig Section */}
-      <section className="bg-gray-50 dark:bg-gray-800 py-16 rounded-lg">
+      <section className="bg-gray-50 dark:bg-gray-800 py-16 rounded-lg w-full">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
             What is QuickGig?
@@ -91,7 +91,7 @@ export default function Home() {
       </section>
 
       {/* Popular Categories */}
-      <section>
+      <section className="w-full">
         <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
           Popular Categories
         </h2>
@@ -109,41 +109,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Quick Stats Banner */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-12 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-          <div>
-            <div className="text-4xl font-bold mb-2">500+</div>
-            <div className="text-primary-100">Active Students</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold mb-2">200+</div>
-            <div className="text-primary-100">Verified Clients</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold mb-2">1,000+</div>
-            <div className="text-primary-100">Completed Gigs</div>
-          </div>
-        </div>
-      </section>
-
-      {/* What is QuickGig Section */}
-      <section className="bg-gray-50 dark:bg-gray-800 py-16 rounded-lg">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-            What is QuickGig?
-          </h2>
-          <p className="text-lg text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-            QuickGig is a revolutionary platform designed to bridge the gap between students seeking flexible work opportunities and clients looking for reliable, affordable services. Whether you're a student looking to earn extra income around your class schedule, or a client needing help with various tasks, QuickGig makes it easy to connect and collaborate.
-          </p>
-          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-            Our platform ensures all students are verified through school ID verification, providing clients with peace of mind. With secure payment processing, transparent ratings, and an easy-to-use interface, QuickGig is the perfect solution for short-term freelance work.
-          </p>
-        </div>
-      </section>
-
       {/* Features */}
-      <section>
+      <section className="w-full">
         <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
           Why Choose QuickGig?
         </h2>
@@ -195,32 +162,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="bg-gray-50 dark:bg-gray-800 py-16 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-          <div>
-            <div className="text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">
-              500+
-            </div>
-            <div className="text-gray-600 dark:text-gray-400">Active Students</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">
-              200+
-            </div>
-            <div className="text-gray-600 dark:text-gray-400">Verified Clients</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">
-              1,000+
-            </div>
-            <div className="text-gray-600 dark:text-gray-400">Completed Gigs</div>
-          </div>
-        </div>
-      </section>
-
       {/* How It Works */}
-      <section className="bg-gray-50 dark:bg-gray-800 py-16 rounded-lg">
+      <section className="bg-gray-50 dark:bg-gray-800 py-16 rounded-lg w-full">
         <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
           How It Works
         </h2>
