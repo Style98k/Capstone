@@ -142,25 +142,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Popular Categories */}
-      <section>
-        <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
-          Popular Categories
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {['Tutoring', 'Household', 'Administrative', 'Delivery', 'Event Help', 'Tech Support', 'Data Entry', 'Photography'].map((category) => (
-            <Link
-              key={category}
-              to="/gigs"
-              className="card text-center hover:shadow-lg transition-all hover:scale-105 cursor-pointer"
-            >
-              <div className="text-2xl mb-2">📋</div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">{category}</h3>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       {/* Features */}
       <section>
         <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
