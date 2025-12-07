@@ -22,12 +22,9 @@ export default function Home() {
         <div className="flex gap-4 justify-center flex-wrap">
           {!user && (
             <>
-              <Link to="/register?role=student">
-                <Button size="lg">Join as Student</Button>
-              </Link>
-              <Link to="/register?role=client">
-                <Button variant="outline" size="lg">
-                  Join as Client
+              <Link to="/register">
+                <Button size="lg" className="bg-primary-600 hover:bg-primary-700">
+                  Get Started Free
                 </Button>
               </Link>
               <Link to="/gigs">
