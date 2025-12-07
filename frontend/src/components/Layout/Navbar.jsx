@@ -75,7 +75,7 @@ export default function Navbar() {
               <>
                 <Link
                   to="/gigs"
-                  className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  className="text-gray-700 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
                 >
                   Browse Gigs
                 </Link>
