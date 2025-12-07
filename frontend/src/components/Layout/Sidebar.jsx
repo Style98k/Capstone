@@ -8,7 +8,7 @@ export default function Sidebar({ items = [] }) {
   return (
     <div className="w-0">
       <div
-        className="hidden md:block fixed inset-y-0 left-0 z-30"
+        className="hidden md:block fixed top-16 bottom-0 left-0 z-30"
         onMouseEnter={() => setIsOpen(true)}
         onMouseLeave={() => setIsOpen(false)}
       >
@@ -22,7 +22,7 @@ export default function Sidebar({ items = [] }) {
             closed: { x: '-100%', opacity: 0.95 },
           }}
           transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}
-          className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-screen shadow-lg overflow-y-auto"
+          className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full shadow-lg overflow-y-auto"
         >
           <nav className="p-4 space-y-1">
             {items.map((item, index) => (
