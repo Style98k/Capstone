@@ -12,26 +12,26 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-sm w-full">
+    <nav className="bg-white/95 backdrop-blur border-b border-sky-100 shadow-sm w-full">
       <div className="w-full max-w-[2000px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="text-xl font-bold text-indigo-600">
+              <Link to="/" className="text-xl font-bold text-sky-600">
                 QuickGig
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <Link
                 to="/"
-                className="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                className="border-sky-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
               >
                 Home
               </Link>
               {user && (
                 <Link
                   to={`/${user.role}/dashboard`}
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="border-transparent text-gray-500 hover:border-sky-200 hover:text-sky-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
                 >
                   Dashboard
                 </Link>
@@ -44,13 +44,13 @@ export default function Navbar() {
                 <div>
                   <button
                     type="button"
-                    className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
                     id="user-menu-button"
                     aria-expanded="false"
                     aria-haspopup="true"
                   >
                     <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium">
+                    <div className="h-8 w-8 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-medium">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                   </button>
@@ -64,7 +64,7 @@ export default function Navbar() {
                 >
                   <Link
                     to={`/${user.role}/profile`}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-sky-600"
                     role="menuitem"
                     tabIndex="-1"
                     id="user-menu-item-0"
@@ -73,7 +73,7 @@ export default function Navbar() {
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-sky-600"
                     role="menuitem"
                     tabIndex="-1"
                     id="user-menu-item-2"
@@ -86,13 +86,13 @@ export default function Navbar() {
               <div className="flex items-center space-x-4">
                 <Link
                   to="/login"
-                  className="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium transition-colors"
+                  className="text-gray-700 hover:text-sky-600 px-3 py-2 text-sm font-medium transition-colors"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm transition-colors"
                 >
                   Sign Up
                 </Link>
@@ -103,7 +103,7 @@ export default function Navbar() {
             {/* Mobile menu button */}
             <button
               type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-sky-600 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-sky-500"
               aria-controls="mobile-menu"
               aria-expanded="false"
             >
@@ -150,14 +150,14 @@ export default function Navbar() {
         <div className="pt-2 pb-3 space-y-1">
           <Link
             to="/"
-            className="bg-indigo-50 border-indigo-500 text-indigo-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+            className="bg-sky-50 border-sky-500 text-sky-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
           >
             Home
           </Link>
           {user && (
             <Link
               to={`/${user.role}/dashboard`}
-              className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+              className="border-transparent text-gray-500 hover:border-sky-200 hover:text-sky-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors"
             >
               Dashboard
             </Link>
@@ -167,7 +167,7 @@ export default function Navbar() {
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="flex items-center px-4">
               <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium">
+                <div className="h-10 w-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-medium">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
               </div>
