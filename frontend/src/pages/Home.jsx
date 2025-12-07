@@ -127,7 +127,7 @@ export default function Home() {
                     Active Students
                   </span>
                 </div>
-                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">248+</div>
+                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">0</div>
               </div>
               <div className="transition-transform duration-300 hover:-translate-y-1">
                 <div className="flex items-center justify-center gap-2 mb-1">
@@ -136,7 +136,7 @@ export default function Home() {
                     Verified Clients
                   </span>
                 </div>
-                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">96+</div>
+                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">0</div>
               </div>
               <div className="transition-transform duration-300 hover:-translate-y-1">
                 <div className="flex items-center justify-center gap-2 mb-1">
@@ -145,7 +145,7 @@ export default function Home() {
                     Completed Gigs
                   </span>
                 </div>
-                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">430+</div>
+                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">0</div>
               </div>
             </div>
           </div>
