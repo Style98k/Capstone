@@ -115,9 +115,9 @@ export default function Home() {
           Why Choose QuickGig?
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="card text-center hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+          <div className="card text-center hover:shadow-lg transition-shadow group">
+            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors">
+              <Shield className="w-6 h-6 text-primary-600 dark:text-primary-400 group-hover:text-primary-700 dark:group-hover:text-primary-300 group-hover:drop-shadow-[0_0_10px_rgba(79,70,229,0.7)] transition-all duration-300" />
             </div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
               Verified Students
@@ -126,9 +126,9 @@ export default function Home() {
               All students are verified through school ID verification for your peace of mind
             </p>
           </div>
-          <div className="card text-center hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Briefcase className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+          <div className="card text-center hover:shadow-lg transition-shadow group">
+            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors">
+              <Briefcase className="w-6 h-6 text-primary-600 dark:text-primary-400 group-hover:text-primary-700 dark:group-hover:text-primary-300 group-hover:drop-shadow-[0_0_10px_rgba(79,70,229,0.7)] transition-all duration-300" />
             </div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
               Flexible Opportunities
@@ -137,9 +137,9 @@ export default function Home() {
               Find gigs that fit your schedule and skills, from part-time to full-time
             </p>
           </div>
-          <div className="card text-center hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Users className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+          <div className="card text-center hover:shadow-lg transition-shadow group">
+            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors">
+              <Users className="w-6 h-6 text-primary-600 dark:text-primary-400 group-hover:text-primary-700 dark:group-hover:text-primary-300 group-hover:drop-shadow-[0_0_10px_rgba(79,70,229,0.7)] transition-all duration-300" />
             </div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
               Easy Matching
@@ -148,9 +148,9 @@ export default function Home() {
               Smart filters help you find the perfect match quickly and efficiently
             </p>
           </div>
-          <div className="card text-center hover:shadow-lg transition-shadow">
-            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <TrendingUp className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+          <div className="card text-center hover:shadow-lg transition-shadow group">
+            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors">
+              <TrendingUp className="w-6 h-6 text-primary-600 dark:text-primary-400 group-hover:text-primary-700 dark:group-hover:text-primary-300 group-hover:drop-shadow-[0_0_10px_rgba(79,70,229,0.7)] transition-all duration-300" />
             </div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
               Secure Payments
