@@ -1,5 +1,6 @@
 // src/components/shared/Sidebar.jsx
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
+
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -10,6 +11,8 @@ function classNames(...classes) {
 export function Sidebar({ navigation = [] }) {
   const { user, logout } = useAuth();
   const location = useLocation();
+
+  const [isOpen, setIsOpen] = useState(false);
 
   // Handle logout with error handling
   const handleLogout = async () => {
@@ -24,8 +27,18 @@ export function Sidebar({ navigation = [] }) {
   const userInitial = user?.name?.charAt(0)?.toUpperCase() || 'U';
 
   return (
-    <div className="hidden md:flex md:flex-shrink-0">
-      <div className="flex flex-col w-64 border-r border-gray-200 bg-white">
+    <div
+      className="hidden md:block fixed inset-y-0 left-0 z-30"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <div className="absolute inset-y-0 left-0 w-2 cursor-pointer" />
+      <div
+        className={classNames(
+          'flex flex-col h-full w-64 border-r border-gray-200 bg-white shadow-lg transform transition-transform duration-300 ease-in-out',
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
         <div className="h-0 flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
           <div className="flex-shrink-0 flex items-center px-4">
             <Link to="/" className="text-xl font-bold text-indigo-600 hover:text-indigo-700">
@@ -36,7 +49,6 @@ export function Sidebar({ navigation = [] }) {
             {navigation.map((item) => {
               const current = location.pathname.startsWith(item.href);
               const Icon = item.icon;
-              
               return (
                 <Link
                   key={item.name}
