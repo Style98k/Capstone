@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useLocalAuth'
 import { mockGigs } from '../data/mockGigs'
 import GigCard from '../components/Shared/GigCard'
 import Button from '../components/UI/Button'
-import { Briefcase, Users, Shield, TrendingUp, Clock, DollarSign, CheckCircle, Star } from 'lucide-react'
+import { Briefcase, Users, Shield, TrendingUp, Clock, DollarSign, CheckCircle, Star, GraduationCap } from 'lucide-react'
 
 export default function Home() {
   const { user } = useAuth()
@@ -309,13 +309,15 @@ export default function Home() {
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link to="/register?role=student">
-              <Button size="lg" variant="outline" className="bg-white text-primary-600 hover:bg-gray-100">
-                Join as Student
+              <Button size="lg" variant="outline" className="bg-white text-primary-600 hover:bg-gray-100 flex items-center gap-2">
+                <GraduationCap className="w-5 h-5" />
+                <span>Join as Student</span>
               </Button>
             </Link>
             <Link to="/register?role=client">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                Join as Client
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 flex items-center gap-2">
+                <Briefcase className="w-5 h-5" />
+                <span>Join as Client</span>
               </Button>
             </Link>
           </div>
