@@ -6,6 +6,7 @@ import Card from '../components/UI/Card'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import Textarea from '../components/UI/Textarea'
+import GigCommentRating from '../components/Shared/GigCommentRating'
 import { MapPin, Clock, DollarSign, User } from 'lucide-react'
 import { useState } from 'react'
 
@@ -148,6 +149,9 @@ export default function GigDetails() {
           </div>
         </div>
       </Modal>
+
+      {/* Gig Reviews & Ratings Section */}
+      <GigCommentRating gigId={id} />
     </div>
   )
 }

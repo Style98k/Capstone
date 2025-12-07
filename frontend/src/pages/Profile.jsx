@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useLocalAuth'
 import Card from '../components/UI/Card'
 import Input from '../components/UI/Input'
 import Button from '../components/UI/Button'
+import CommentRating from '../components/Shared/CommentRating'
 
 export default function Profile() {
   const { user, updateUser } = useAuth()
@@ -116,6 +117,9 @@ export default function Profile() {
           )}
         </div>
       </Card>
+
+      {/* Ratings & Reviews Section */}
+      <CommentRating userId={user.id} userRole={user.role} />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { mockGigs } from '../../data/mockGigs'
 import { mockApplications } from '../../data/mockApplications'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
+import CommentRating from '../../components/Shared/CommentRating'
 import { Briefcase, Users, CheckCircle, DollarSign } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -153,6 +154,9 @@ export default function ClientDashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Ratings & Reviews Section */}
+      <CommentRating userId={user?.id} userRole={user?.role} />
     </div>
   )
 }
