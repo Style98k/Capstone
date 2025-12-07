@@ -4,7 +4,19 @@ import { Link } from 'react-router-dom';
 export default function Footer() {
   return (
     <footer className="bg-white/95 border-t border-sky-100">
-      <div className="max-w-7xl mx-auto py-12 px-4 overflow-hidden sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-10 px-4 overflow-hidden sm:px-6 lg:px-8 space-y-6">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">Q</span>
+            </div>
+            <span className="text-base font-semibold text-gray-900">QuickGig</span>
+          </div>
+          <p className="text-xs sm:text-sm text-gray-500 max-w-xl">
+            A simple way for students to earn from flexible gigs and for local clients to find trusted help.
+          </p>
+        </div>
+
         <nav
           className="-mx-5 -my-2 flex flex-wrap justify-center"
           aria-label="Footer"
