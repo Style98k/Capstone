@@ -120,7 +120,6 @@ export default function Register() {
               options={[
                 { value: 'student', label: 'Student' },
                 { value: 'client', label: 'Client' },
-                { value: 'admin', label: 'Administrator' },
               ]}
               required
             />
