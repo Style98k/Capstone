@@ -109,7 +109,7 @@ function Layout({ children, showSidebar = false, sidebarItems = [] }) {
         {/* Content area - leaves room for collapsed sidebar, centered in remaining space */}
         <main
           className={`flex-1 p-6 transition-all duration-300 ease-out ${showSidebar
-            ? 'md:ml-[100px]' // Just enough margin for collapsed sidebar + small buffer
+            ? 'md:ml-[60px]' // Margin for collapsed sidebar
             : ''
             }`}
         >
