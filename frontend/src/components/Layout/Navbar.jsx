@@ -1,8 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Bell, User, LogOut, Menu, X } from 'lucide-react'
+import { Bell, User, LogOut, Menu, X, LayoutDashboard, Briefcase, Search, LogIn, UserPlus, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import Button from '../UI/Button'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -29,11 +28,32 @@ export default function Navbar() {
     return '/'
   }
 
+  // Common nav link styles with hover animation
+  const navLinkStyles = `
+    group flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm
+    text-gray-600 dark:text-gray-300 
+    hover:text-sky-600 dark:hover:text-sky-400 
+    hover:bg-sky-50 dark:hover:bg-sky-900/20
+    transition-all duration-300 ease-out
+    hover:scale-105 hover:shadow-sm
+  `
+
+  // Icon button styles
+  const iconButtonStyles = `
+    group relative p-2.5 rounded-xl
+    text-gray-500 dark:text-gray-400
+    hover:text-sky-600 dark:hover:text-sky-400
+    hover:bg-gradient-to-br hover:from-sky-50 hover:to-indigo-50 
+    dark:hover:from-sky-900/30 dark:hover:to-indigo-900/30
+    transition-all duration-300 ease-out
+    hover:scale-110 hover:shadow-md hover:shadow-sky-100 dark:hover:shadow-sky-900/30
+  `
+
   return (
-    <nav className="bg-white/95 dark:bg-gray-900/90 backdrop-blur border-b border-sky-100 dark:border-slate-800 fixed top-0 left-0 right-0 z-50 h-16">
+    <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-sky-100/50 dark:border-slate-800/50 fixed top-0 left-0 right-0 z-50 h-16 shadow-sm shadow-sky-100/30 dark:shadow-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+          {/* Logo - Unchanged as requested */}
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">Q</span>
@@ -42,58 +62,95 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-2">
             {user ? (
               <>
-                <Link
-                  to={getDashboardPath()}
-                  className="text-gray-700 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
-                >
-                  Dashboard
+                {/* Dashboard Link */}
+                <Link to={getDashboardPath()} className={navLinkStyles}>
+                  <LayoutDashboard className="w-4 h-4 transition-transform duration-300 group-hover:rotate-6" />
+                  <span>Dashboard</span>
                 </Link>
+
+                {/* Browse Gigs Link */}
                 <Link
                   to={user.role === 'student' ? '/student/browse' : '/gigs'}
-                  className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  className={navLinkStyles}
                 >
-                  Browse Gigs
+                  <Search className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" />
+                  <span>Browse Gigs</span>
                 </Link>
-                <div className="relative">
-                  <button
-                    onClick={() => setNotificationsOpen(!notificationsOpen)}
-                    className="p-2 text-gray-700 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 relative"
-                  >
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                  </button>
-                </div>
-                <Link
-                  to="/profile"
-                  className="p-2 text-gray-700 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400"
+
+                {/* Notification Bell */}
+                <button
+                  onClick={() => setNotificationsOpen(!notificationsOpen)}
+                  className={iconButtonStyles}
                 >
-                  <User className="w-5 h-5" />
+                  <Bell className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12" />
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-gradient-to-r from-rose-500 to-pink-500 rounded-full ring-2 ring-white dark:ring-gray-900 animate-pulse"></span>
+                </button>
+
+                {/* Profile Link */}
+                <Link to="/profile" className={iconButtonStyles}>
+                  <User className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
                 </Link>
+
+                {/* Logout Button - Only on non-dashboard pages */}
                 {!isDashboardPage && (
-                  <Button variant="outline" size="sm" onClick={handleLogout}>
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </Button>
+                  <button
+                    onClick={handleLogout}
+                    className="group flex items-center gap-2 px-4 py-2 ml-2 rounded-xl font-medium text-sm
+                      text-rose-600 dark:text-rose-400
+                      bg-rose-50 dark:bg-rose-900/20
+                      hover:bg-gradient-to-r hover:from-rose-500 hover:to-pink-500 hover:text-white
+                      border border-rose-200 dark:border-rose-800/50
+                      hover:border-transparent hover:shadow-lg hover:shadow-rose-200 dark:hover:shadow-rose-900/30
+                      transition-all duration-300 ease-out hover:scale-105"
+                  >
+                    <LogOut className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
+                    <span>Logout</span>
+                  </button>
                 )}
               </>
             ) : (
               <>
+                {/* Browse Gigs - Public */}
+                <Link to="/gigs" className={navLinkStyles}>
+                  <Briefcase className="w-4 h-4 transition-transform duration-300 group-hover:rotate-6" />
+                  <span>Browse Gigs</span>
+                </Link>
+
+                {/* Login Button */}
                 <Link
-                  to="/gigs"
-                  className="text-gray-700 dark:text-gray-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
+                  to="/login"
+                  className="group flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
+                    text-sky-600 dark:text-sky-400
+                    bg-sky-50 dark:bg-sky-900/20
+                    border border-sky-200 dark:border-sky-800/50
+                    hover:bg-sky-100 dark:hover:bg-sky-900/40
+                    hover:border-sky-300 dark:hover:border-sky-700
+                    hover:shadow-md hover:shadow-sky-100 dark:hover:shadow-sky-900/20
+                    transition-all duration-300 ease-out hover:scale-105"
                 >
-                  Browse Gigs
+                  <LogIn className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                  <span>Login</span>
                 </Link>
-                <Link to="/login">
-                  <Button variant="outline" size="sm">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/register">
-                  <Button size="sm">Sign Up</Button>
+
+                {/* Sign Up Button */}
+                <Link
+                  to="/register"
+                  className="group flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
+                    text-white
+                    bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500
+                    hover:from-sky-600 hover:via-indigo-600 hover:to-purple-600
+                    shadow-md shadow-indigo-200 dark:shadow-indigo-900/30
+                    hover:shadow-lg hover:shadow-indigo-300 dark:hover:shadow-indigo-800/40
+                    transition-all duration-300 ease-out hover:scale-105
+                    relative overflow-hidden"
+                >
+                  <Sparkles className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
+                  <span>Sign Up</span>
+                  {/* Shine effect */}
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></span>
                 </Link>
               </>
             )}
@@ -101,39 +158,49 @@ export default function Navbar() {
 
           {/* Mobile menu button */}
           <button
-            className="md:hidden p-2 text-gray-700 dark:text-gray-300"
+            className="md:hidden p-2.5 rounded-xl text-gray-600 dark:text-gray-300 
+              hover:bg-sky-50 dark:hover:bg-sky-900/20 
+              hover:text-sky-600 dark:hover:text-sky-400
+              transition-all duration-300 hover:scale-105"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6 transition-transform duration-300" />
+            ) : (
+              <Menu className="w-6 h-6 transition-transform duration-300" />
+            )}
           </button>
         </div>
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex flex-col gap-4">
+          <div className="md:hidden py-4 px-2 border-t border-sky-100/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl animate-in slide-in-from-top-2 duration-300">
+            <div className="flex flex-col gap-2">
               {user ? (
                 <>
                   <Link
                     to={getDashboardPath()}
-                    className="text-gray-700 dark:text-gray-300 hover:text-primary-600"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:text-sky-600 dark:hover:text-sky-400 transition-all duration-300"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Dashboard
+                    <LayoutDashboard className="w-5 h-5" />
+                    <span className="font-medium">Dashboard</span>
                   </Link>
                   <Link
                     to="/gigs"
-                    className="text-gray-700 dark:text-gray-300 hover:text-primary-600"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:text-sky-600 dark:hover:text-sky-400 transition-all duration-300"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Browse Gigs
+                    <Search className="w-5 h-5" />
+                    <span className="font-medium">Browse Gigs</span>
                   </Link>
                   <Link
                     to="/profile"
-                    className="text-gray-700 dark:text-gray-300 hover:text-primary-600"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:text-sky-600 dark:hover:text-sky-400 transition-all duration-300"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Profile
+                    <User className="w-5 h-5" />
+                    <span className="font-medium">Profile</span>
                   </Link>
                   {!isDashboardPage && (
                     <button
@@ -141,27 +208,38 @@ export default function Navbar() {
                         handleLogout()
                         setMobileMenuOpen(false)
                       }}
-                      className="text-left text-gray-700 dark:text-gray-300 hover:text-red-600"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all duration-300"
                     >
-                      Logout
+                      <LogOut className="w-5 h-5" />
+                      <span className="font-medium">Logout</span>
                     </button>
                   )}
                 </>
               ) : (
                 <>
                   <Link
-                    to="/login"
-                    className="text-gray-700 dark:text-gray-300 hover:text-primary-600"
+                    to="/gigs"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:text-sky-600 dark:hover:text-sky-400 transition-all duration-300"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Login
+                    <Briefcase className="w-5 h-5" />
+                    <span className="font-medium">Browse Gigs</span>
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/20 transition-all duration-300"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <LogIn className="w-5 h-5" />
+                    <span className="font-medium">Login</span>
                   </Link>
                   <Link
                     to="/register"
-                    className="text-gray-700 dark:text-gray-300 hover:text-primary-600"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-gradient-to-r from-sky-500 to-indigo-500 shadow-md transition-all duration-300"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Sign Up
+                    <Sparkles className="w-5 h-5" />
+                    <span className="font-medium">Sign Up</span>
                   </Link>
                 </>
               )}
