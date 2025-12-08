@@ -3,8 +3,9 @@ import { useAuth } from '../../hooks/useLocalAuth'
 import { getGigs, getApplications, deleteGig, updateGig, initializeLocalStorage } from '../../utils/localStorage'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
-import { Edit, Pause, Play, Trash2, Eye } from 'lucide-react'
+import { Edit, Pause, Play, Trash2, Eye, Briefcase, MapPin, Clock, DollarSign, Users, Calendar } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 
 export default function ManageGigs() {
   const { user } = useAuth()
@@ -55,38 +56,69 @@ export default function ManageGigs() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Manage Gigs</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Edit, pause, or close your job postings
-          </p>
-        </div>
-        <Link to="/client/post-gig">
-          <Button>Post New Job</Button>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Manage Gigs
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Edit, pause, or close your job postings
+              </p>
+            </div>
+            <Link to="/client/post-gig">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-6 py-2.5 shadow-sm hover:shadow-md transition-all duration-200">
+                Post New Job
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
 
-      <div className="card">
-        <div className="mb-4">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="input"
-          >
-            <option value="">All Status</option>
-            <option value="open">Open</option>
-            <option value="paused">Paused</option>
-            <option value="closed">Closed</option>
-          </select>
-        </div>
-      </div>
+      {/* Filter Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-200 dark:border-gray-700"
+        >
+          <div className="flex items-center gap-3">
+            <Briefcase className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+            >
+              <option value="">All Status</option>
+              <option value="open">Open</option>
+              <option value="paused">Paused</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+        </motion.div>
 
-      <div className="space-y-4">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+        className="space-y-4"
+      >
         {myGigs.length > 0 ? (
           myGigs.map((gig) => (
-            <Card key={gig.id} hover>
+            <motion.div
+              key={gig.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200"
+            >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-2">
@@ -94,7 +126,7 @@ export default function ManageGigs() {
                       {gig.title}
                     </h3>
                     <span
-                      className={`px-3 py-1 text-xs font-medium rounded ${
+                      className={`px-3 py-1 text-xs font-medium rounded-full ${
                         gig.status === 'open'
                           ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                           : gig.status === 'paused'
@@ -120,34 +152,59 @@ export default function ManageGigs() {
 
                 <div className="flex flex-wrap gap-2">
                   <Link to={`/gigs/${gig.id}`}>
-                    <Button variant="outline" size="sm">
-                      <Eye className="w-4 h-4 mr-1" />
-                      View
-                    </Button>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all duration-200">
+                        <Eye className="w-4 h-4 mr-1" />
+                        View
+                      </Button>
+                    </motion.div>
                   </Link>
                   <Link to={`/client/applicants?gig=${gig.id}`}>
-                    <Button variant="outline" size="sm">
-                      Applicants
-                    </Button>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all duration-200">
+                        Applicants
+                      </Button>
+                    </motion.div>
                   </Link>
                   {gig.status === 'open' ? (
-                    <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)}>
-                      <Pause className="w-4 h-4 mr-1" />
-                      Pause
-                    </Button>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)} className="hover:bg-yellow-100 hover:text-yellow-700 hover:border-yellow-300 transition-all duration-200">
+                        <Pause className="w-4 h-4 mr-1" />
+                        Pause
+                      </Button>
+                    </motion.div>
                   ) : (
-                    <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)}>
-                      <Play className="w-4 h-4 mr-1" />
-                      Resume
-                    </Button>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)} className="hover:bg-green-100 hover:text-green-700 hover:border-green-300 transition-all duration-200">
+                        <Play className="w-4 h-4 mr-1" />
+                        Resume
+                      </Button>
+                    </motion.div>
                   )}
-                  <Button variant="danger" size="sm" onClick={() => handleDeleteGig(gig.id)}>
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Delete
-                  </Button>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button variant="danger" size="sm" onClick={() => handleDeleteGig(gig.id)} className="hover:bg-red-700 hover:shadow-md transition-all duration-200">
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </Button>
+                  </motion.div>
                 </div>
               </div>
-            </Card>
+            </motion.div>
           ))
         ) : (
           <Card>
@@ -159,8 +216,8 @@ export default function ManageGigs() {
             </div>
           </Card>
         )}
+      </motion.div>
       </div>
     </div>
   )
 }
-
