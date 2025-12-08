@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getGigs, getApplications, getGigsByOwner, initializeLocalStorage } from '../../utils/localStorage'
+import { getGigs, getApplications, deleteGig, updateGig, initializeLocalStorage } from '../../utils/localStorage'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import { Edit, Pause, Play, Trash2, Eye } from 'lucide-react'
@@ -9,16 +9,17 @@ import { Link } from 'react-router-dom'
 export default function ManageGigs() {
   const { user } = useAuth()
   const [statusFilter, setStatusFilter] = useState('')
+  const [refreshKey, setRefreshKey] = useState(0)
   
   // Get data from localStorage
   const gigs = useMemo(() => {
     initializeLocalStorage()
     return getGigs()
-  }, [])
+  }, [refreshKey])
   
   const applications = useMemo(() => {
     return getApplications()
-  }, [])
+  }, [refreshKey])
   
   const myGigs = gigs
     .filter(g => g.ownerId === user?.id)
@@ -27,6 +28,30 @@ export default function ManageGigs() {
 
   const getApplicationCount = (gigId) => {
     return applications.filter(app => app.gigId === gigId).length
+  }
+
+  const handleDeleteGig = (gigId) => {
+    if (window.confirm('Are you sure you want to delete this gig? This action cannot be undone.')) {
+      const result = deleteGig(gigId)
+      if (result.success) {
+        alert('Gig deleted successfully!')
+        setRefreshKey(prev => prev + 1) // Refresh the data
+      } else {
+        alert('Failed to delete gig. Please try again.')
+      }
+    }
+  }
+
+  const handleToggleGigStatus = (gigId, currentStatus) => {
+    const newStatus = currentStatus === 'open' ? 'paused' : 'open'
+    const result = updateGig(gigId, { status: newStatus })
+    
+    if (result.success) {
+      alert(`Gig ${newStatus === 'open' ? 'resumed' : 'paused'} successfully!`)
+      setRefreshKey(prev => prev + 1) // Refresh the data
+    } else {
+      alert('Failed to update gig status. Please try again.')
+    }
   }
 
   return (
@@ -106,17 +131,17 @@ export default function ManageGigs() {
                     </Button>
                   </Link>
                   {gig.status === 'open' ? (
-                    <Button variant="secondary" size="sm">
+                    <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)}>
                       <Pause className="w-4 h-4 mr-1" />
                       Pause
                     </Button>
                   ) : (
-                    <Button variant="secondary" size="sm">
+                    <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)}>
                       <Play className="w-4 h-4 mr-1" />
                       Resume
                     </Button>
                   )}
-                  <Button variant="danger" size="sm">
+                  <Button variant="danger" size="sm" onClick={() => handleDeleteGig(gig.id)}>
                     <Trash2 className="w-4 h-4 mr-1" />
                     Delete
                   </Button>
