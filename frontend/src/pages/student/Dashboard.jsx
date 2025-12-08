@@ -6,7 +6,7 @@ import { mockTransactions } from '../../data/mockTransactions'
 import StatCard from '../../components/Shared/StatCard'
 import GigCard from '../../components/Shared/GigCard'
 import NotificationItem from '../../components/Shared/NotificationItem'
-import { DollarSign, Briefcase, CheckCircle, Star, TrendingUp } from 'lucide-react'
+import { Coins, Briefcase, CheckCircle, Star, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export default function StudentDashboard() {
@@ -42,7 +42,7 @@ export default function StudentDashboard() {
         <StatCard
           title="Total Earnings"
           value={`₱${myEarnings.toLocaleString()}`}
-          icon={DollarSign}
+          icon={Coins}
           trend="up"
           trendValue="12%"
         />

@@ -9,7 +9,7 @@ import Button from '../../components/UI/Button'
 import UserCard from '../../components/Shared/UserCard'
 import Modal from '../../components/UI/Modal'
 import PaymentModal from '../../components/Shared/PaymentModal'
-import { Check, X, Star, DollarSign } from 'lucide-react'
+import { Check, X, Star, Coins } from 'lucide-react'
 
 export default function ViewApplicants() {
   const { user } = useAuth()
@@ -153,7 +153,7 @@ export default function ViewApplicants() {
                           onClick={() => handleMakePayment(app)}
                           className="flex items-center justify-center gap-2"
                         >
-                          <DollarSign className="w-4 h-4" />
+                          <Coins className="w-4 h-4" />
                           Pay Now
                         </Button>
                       )}

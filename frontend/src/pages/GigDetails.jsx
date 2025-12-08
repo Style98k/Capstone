@@ -7,7 +7,7 @@ import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import Textarea from '../components/UI/Textarea'
 import GigCommentRating from '../components/Shared/GigCommentRating'
-import { MapPin, Clock, DollarSign, User, FileText, Sparkles } from 'lucide-react'
+import { MapPin, Clock, Coins, User, FileText, Sparkles } from 'lucide-react'
 import { useState, useRef } from 'react'
 
 export default function GigDetails() {
@@ -65,7 +65,7 @@ export default function GigDetails() {
                 <span>{gig.duration}</span>
               </div>
               <div className="flex items-center gap-1">
-                <DollarSign className="w-4 h-4" />
+                <Coins className="w-4 h-4" />
                 <span className="font-semibold text-primary-600 dark:text-primary-400">
                   ₱{gig.pay.toLocaleString()}
                 </span>

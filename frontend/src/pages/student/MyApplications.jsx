@@ -4,7 +4,7 @@ import { mockApplications } from '../../data/mockApplications'
 import { mockGigs } from '../../data/mockGigs'
 import Card from '../../components/UI/Card'
 import Select from '../../components/UI/Select'
-import { Calendar, MapPin, DollarSign, Clock } from 'lucide-react'
+import { Calendar, MapPin, Coins, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export default function MyApplications() {
@@ -91,7 +91,7 @@ export default function MyApplications() {
                         <span>{gig.duration}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4" />
+                        <Coins className="w-4 h-4" />
                         <span className="font-semibold">₱{gig.pay.toLocaleString()}</span>
                       </div>
                       <div className="flex items-center gap-1">

@@ -4,7 +4,7 @@ import { mockApplications } from '../../data/mockApplications'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
 import CommentRating from '../../components/Shared/CommentRating'
-import { Briefcase, Users, CheckCircle, DollarSign } from 'lucide-react'
+import { Briefcase, Users, CheckCircle, Coins } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export default function ClientDashboard() {
@@ -63,7 +63,7 @@ export default function ClientDashboard() {
         <StatCard
           title="Completed Gigs"
           value={completedCount}
-          icon={DollarSign}
+          icon={Coins}
         />
       </div>
 

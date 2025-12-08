@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { MapPin, Clock, DollarSign, ArrowRight } from 'lucide-react'
+import { MapPin, Clock, Coins, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Card from '../UI/Card'
 
@@ -30,7 +30,7 @@ export default function GigCard({ gig, showActions = true }) {
             <span>{gig.duration}</span>
           </div>
           <div className="flex items-center gap-1">
-            <DollarSign className="w-4 h-4" />
+            <Coins className="w-4 h-4" />
             <span className="font-semibold text-sky-600 dark:text-sky-400">
               ₱{gig.pay.toLocaleString()}
             </span>

@@ -28,7 +28,6 @@ export default function PostGig() {
     location: '',
     duration: '',
     pay: '',
-    shortDesc: '',
     fullDesc: '',
     requirements: '',
   })
@@ -177,17 +176,19 @@ export default function PostGig() {
                   value={formData.location}
                   onChange={handleChange}
                   placeholder="Type the exact address, building, or area"
-                  className="transition-all duration-200 focus:ring-2 focus:ring-sky-500/60 focus:border-sky-500/70 hover:border-sky-400"
+                  className="transition-all duration-200 focus:ring-2 focus:ring-sky-500/60 focus:border-sky-500/70 hover:border-sky-400 h-10 mt-3"
                   required
                   rightElement={
-                    <button
-                      type="button"
-                      onClick={() => setShowMapPicker(true)}
-                      className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100 hover:border-sky-300 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-900"
-                    >
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>Browse map</span>
-                    </button>
+                    <div className="flex items-center h-full pt-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowMapPicker(true)}
+                        className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100 hover:border-sky-300 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-900"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>Browse map</span>
+                      </button>
+                    </div>
                   }
                 />
               )}
@@ -205,7 +206,7 @@ export default function PostGig() {
               value={formData.duration}
               onChange={handleChange}
               placeholder="e.g. 2 hours"
-              className="transition-all duration-200 focus:ring-2 focus:ring-sky-500/60 focus:border-sky-500/70 hover:border-sky-400"
+              className="transition-all duration-200 focus:ring-2 focus:ring-sky-500/60 focus:border-sky-500/70 hover:border-sky-400 h-10"
               required
             />
 
@@ -226,22 +227,6 @@ export default function PostGig() {
               required
             />
           </div>
-
-          <Input
-            label={
-              <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                <FileText className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                <span>Short Description</span>
-                <span className="text-red-500">*</span>
-              </span>
-            }
-            name="shortDesc"
-            value={formData.shortDesc}
-            onChange={handleChange}
-            placeholder="Brief summary (shown in listings)"
-            className="transition-all duration-200 focus:ring-2 focus:ring-sky-500/60 focus:border-sky-500/70 hover:border-sky-400"
-            required
-          />
 
           <Textarea
             label={

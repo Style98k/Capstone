@@ -4,7 +4,7 @@ import { mockApplications } from '../../data/mockApplications'
 import { mockTransactions } from '../../data/mockTransactions'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
-import { Users, Briefcase, FileText, DollarSign } from 'lucide-react'
+import { Users, Briefcase, FileText, Coins } from 'lucide-react'
 
 export default function AdminDashboard() {
   const totalUsers = mockUsers.length
@@ -48,7 +48,7 @@ export default function AdminDashboard() {
         <StatCard
           title="Total Earnings"
           value={`₱${totalEarnings.toLocaleString()}`}
-          icon={DollarSign}
+          icon={Coins}
         />
       </div>
 

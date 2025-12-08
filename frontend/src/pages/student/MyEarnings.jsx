@@ -3,7 +3,7 @@ import { mockTransactions } from '../../data/mockTransactions'
 import { mockGigs } from '../../data/mockGigs'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
-import { DollarSign, TrendingUp, Clock, CheckCircle } from 'lucide-react'
+import { Coins, TrendingUp, Clock, CheckCircle } from 'lucide-react'
 import {
   LineChart,
   Line,
@@ -58,7 +58,7 @@ export default function MyEarnings() {
         <StatCard
           title="Total Earnings"
           value={`₱${totalEarnings.toLocaleString()}`}
-          icon={DollarSign}
+          icon={Coins}
           trend="up"
           trendValue="15%"
         />

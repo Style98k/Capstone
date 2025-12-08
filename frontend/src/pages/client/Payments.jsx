@@ -7,7 +7,7 @@ import { mockUsers } from '../../data/mockUsers'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import PaymentModal from '../../components/Shared/PaymentModal'
-import { DollarSign, Clock, CheckCircle, CreditCard, Smartphone } from 'lucide-react'
+import { Coins, Clock, CheckCircle, CreditCard, Smartphone } from 'lucide-react'
 
 export default function Payments() {
   const { user } = useAuth()
@@ -114,7 +114,7 @@ export default function Payments() {
               </p>
             </div>
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <Coins className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </Card>
@@ -237,7 +237,7 @@ export default function Payments() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <DollarSign className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+            <Coins className="w-12 h-12 mx-auto mb-3 text-gray-400" />
             <p className="text-gray-500 dark:text-gray-400">
               No payment history yet
             </p>
