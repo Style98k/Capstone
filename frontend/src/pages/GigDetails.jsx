@@ -179,7 +179,23 @@ export default function GigDetails() {
             accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,image/*,.txt,.zip"
             onChange={(e) => {
               const files = Array.from(e.target.files || [])
-              setAttachments(files)
+              if (files.length === 0) return
+
+              setAttachments(prev => {
+                const existingKeys = new Set(
+                  prev.map(f => `${f.name}-${f.size}-${f.lastModified}`)
+                )
+                const toAdd = files.filter(
+                  f => !existingKeys.has(`${f.name}-${f.size}-${f.lastModified}`)
+                )
+                return [...prev, ...toAdd]
+              })
+
+              setIsManagingAttachments(false)
+              setAttachmentsToRemove([])
+
+              // reset input so selecting the same file again still triggers onChange
+              e.target.value = ''
             }}
           />
 
