@@ -3,16 +3,19 @@ import { useAuth } from '../../hooks/useLocalAuth'
 import { mockApplications } from '../../data/mockApplications'
 import { mockGigs } from '../../data/mockGigs'
 import { mockUsers } from '../../data/mockUsers'
+import { mockTransactions } from '../../data/mockTransactions'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import UserCard from '../../components/Shared/UserCard'
 import Modal from '../../components/UI/Modal'
-import { Check, X, Star } from 'lucide-react'
+import PaymentModal from '../../components/Shared/PaymentModal'
+import { Check, X, Star, DollarSign } from 'lucide-react'
 
 export default function ViewApplicants() {
   const { user } = useAuth()
   const [selectedGig, setSelectedGig] = useState('')
   const [ratingModal, setRatingModal] = useState(null)
+  const [paymentModal, setPaymentModal] = useState(null)
   
   const myGigs = mockGigs.filter(g => g.ownerId === user?.id)
   const selectedGigId = selectedGig || myGigs[0]?.id
@@ -22,6 +25,7 @@ export default function ViewApplicants() {
     .map(app => ({
       ...app,
       user: mockUsers.find(u => u.id === app.userId),
+      gig: mockGigs.find(g => g.id === app.gigId),
     }))
 
   const handleApprove = (appId) => {
@@ -32,6 +36,29 @@ export default function ViewApplicants() {
   const handleReject = (appId) => {
     // In real app, update application status
     console.log('Rejected:', appId)
+  }
+
+  const handleMakePayment = (app) => {
+    setPaymentModal({
+      amount: app.gig?.pay,
+      gigTitle: app.gig?.title,
+      studentName: app.user?.name,
+      gigId: app.gigId,
+      studentId: app.userId,
+    })
+  }
+
+  const handlePaymentSuccess = (paymentData) => {
+    // In real app, this would create a transaction record
+    console.log('Payment successful:', paymentData)
+    alert('Payment processed successfully!')
+    setPaymentModal(null)
+  }
+
+  const hasPaymentBeenMade = (gigId) => {
+    return mockTransactions.some(
+      t => t.gigId === gigId && t.fromUserId === user?.id && t.status === 'completed'
+    )
   }
 
   return (
@@ -120,14 +147,25 @@ export default function ViewApplicants() {
                     </>
                   )}
                   {app.status === 'completed' && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setRatingModal(app)}
-                      className="flex items-center justify-center gap-2"
-                    >
-                      <Star className="w-4 h-4" />
-                      Rate Student
-                    </Button>
+                    <>
+                      {!hasPaymentBeenMade(app.gigId) && (
+                        <Button
+                          onClick={() => handleMakePayment(app)}
+                          className="flex items-center justify-center gap-2"
+                        >
+                          <DollarSign className="w-4 h-4" />
+                          Pay Now
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        onClick={() => setRatingModal(app)}
+                        className="flex items-center justify-center gap-2"
+                      >
+                        <Star className="w-4 h-4" />
+                        Rate Student
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
@@ -156,6 +194,18 @@ export default function ViewApplicants() {
             onClose={() => setRatingModal(null)}
           />
         </Modal>
+      )}
+
+      {/* Payment Modal */}
+      {paymentModal && (
+        <PaymentModal
+          isOpen={!!paymentModal}
+          onClose={() => setPaymentModal(null)}
+          amount={paymentModal.amount}
+          gigTitle={paymentModal.gigTitle}
+          studentName={paymentModal.studentName}
+          onSuccess={handlePaymentSuccess}
+        />
       )}
     </div>
   )

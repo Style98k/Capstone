@@ -31,9 +31,9 @@ export const mockApplications = [
     gigId: 'gig_4',
     userId: 'user_3',
     proposal: 'I have a strong portfolio of web design projects. I can create a modern, responsive landing page for you.',
-    status: 'pending',
+    status: 'completed',
     appliedAt: '2024-01-19T11:00:00Z',
-    updatedAt: '2024-01-19T11:00:00Z',
+    updatedAt: '2024-01-22T14:00:00Z',
   },
 ]
 

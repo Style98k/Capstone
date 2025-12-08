@@ -24,6 +24,7 @@ import PostGig from '../pages/client/PostGig'
 import ClientManageGigs from '../pages/client/ManageGigs'
 import ViewApplicants from '../pages/client/ViewApplicants'
 import ClientMessages from '../pages/client/Messages'
+import Payments from '../pages/client/Payments'
 
 // Admin Pages
 import AdminDashboard from '../pages/admin/Dashboard'
@@ -113,6 +114,7 @@ export default function AppRouter() {
     { path: '/client/post-gig', label: 'Post Job', icon: null },
     { path: '/client/manage-gigs', label: 'Manage Gigs', icon: null },
     { path: '/client/applicants', label: 'View Applicants', icon: null },
+    { path: '/client/payments', label: 'Payments', icon: null },
     { path: '/client/messages', label: 'Messages', icon: null },
   ]
 
@@ -287,6 +289,16 @@ export default function AppRouter() {
           <ProtectedRoute requiredRole="client">
             <Layout showSidebar sidebarItems={clientSidebarItems}>
               <ClientMessages />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client/payments"
+        element={
+          <ProtectedRoute requiredRole="client">
+            <Layout showSidebar sidebarItems={clientSidebarItems}>
+              <Payments />
             </Layout>
           </ProtectedRoute>
         }
