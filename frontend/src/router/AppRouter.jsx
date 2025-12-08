@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useLocalAuth'
 import { mockUsers } from '../data/mockUsers'
 import Navbar from '../components/Layout/Navbar'
@@ -106,8 +106,16 @@ function Layout({ children, showSidebar = false, sidebarItems = [] }) {
       <Navbar />
       <div className="flex-1 flex pt-16">
         {showSidebar && <Sidebar items={sidebarItems} />}
-        <main className={`flex-1 p-6 max-w-7xl mx-auto w-full transition-all duration-300 ${showSidebar ? 'md:pl-72' : ''}`}>
-          {children}
+        {/* Content area - leaves room for collapsed sidebar, centered in remaining space */}
+        <main
+          className={`flex-1 p-6 transition-all duration-300 ease-out ${showSidebar
+            ? 'md:ml-[100px]' // Just enough margin for collapsed sidebar + small buffer
+            : ''
+            }`}
+        >
+          <div className="max-w-6xl mx-auto w-full">
+            {children}
+          </div>
         </main>
       </div>
       <Footer />
