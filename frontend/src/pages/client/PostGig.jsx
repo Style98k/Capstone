@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { categories } from '../../data/mockGigs'
+import { saveGig, initializeLocalStorage } from '../../utils/localStorage'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
 import Select from '../../components/UI/Select'
@@ -43,13 +44,33 @@ export default function PostGig() {
     e.preventDefault()
     setLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      // In real app, save to backend
-      console.log('Gig posted:', formData)
+    // Initialize localStorage if needed
+    initializeLocalStorage()
+
+    // Prepare gig data
+    const gigData = {
+      title: formData.title,
+      category: formData.category,
+      location: formData.location,
+      duration: formData.duration,
+      pay: parseFloat(formData.pay),
+      shortDesc: formData.fullDesc.substring(0, 100) + '...',
+      fullDesc: formData.fullDesc,
+      requirements: formData.requirements ? formData.requirements.split(',').map(r => r.trim()) : [],
+      ownerId: user.id
+    }
+
+    // Save gig to localStorage
+    const result = saveGig(gigData)
+    
+    if (result.success) {
       setLoading(false)
       navigate('/client/manage-gigs')
-    }, 1000)
+    } else {
+      console.error('Failed to save gig:', result.error)
+      setLoading(false)
+      // You could show an error message here
+    }
   }
 
   return (

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { mockUsers } from '../data/mockUsers'
+import { initializeLocalStorage } from '../utils/localStorage'
 
 const AuthContext = createContext(null)
 
@@ -8,6 +9,9 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Initialize localStorage with mock data if needed
+    initializeLocalStorage()
+    
     // Check localStorage for saved user
     const savedUser = localStorage.getItem('quickgig_user')
     if (savedUser) {

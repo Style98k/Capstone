@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { mockGigs, categories, locations } from '../../data/mockGigs'
+import { categories, locations } from '../../data/mockGigs'
+import { getOpenGigs, initializeLocalStorage } from '../../utils/localStorage'
 import GigCard from '../../components/Shared/GigCard'
 import Input from '../../components/UI/Input'
 import Select from '../../components/UI/Select'
@@ -13,8 +14,14 @@ export default function BrowseGigs() {
   const [minPay, setMinPay] = useState('')
   const [sortBy, setSortBy] = useState('newest')
 
+  // Initialize localStorage and get gigs
+  const gigs = useMemo(() => {
+    initializeLocalStorage()
+    return getOpenGigs()
+  }, [])
+
   const filteredGigs = useMemo(() => {
-    let filtered = mockGigs.filter(g => g.status === 'open')
+    let filtered = gigs.filter(g => g.status === 'open')
 
     if (search) {
       filtered = filtered.filter(
@@ -47,7 +54,7 @@ export default function BrowseGigs() {
     }
 
     return filtered
-  }, [search, category, location, minPay, sortBy])
+  }, [search, category, location, minPay, sortBy, gigs])
 
   return (
     <div className="space-y-8">

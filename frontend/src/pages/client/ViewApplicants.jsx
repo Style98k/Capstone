@@ -1,7 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { mockApplications } from '../../data/mockApplications'
-import { mockGigs } from '../../data/mockGigs'
+import { getApplications, getGigs, updateApplication, updateGig, getApplicationsForClient, initializeLocalStorage } from '../../utils/localStorage'
 import { mockUsers } from '../../data/mockUsers'
 import { mockTransactions } from '../../data/mockTransactions'
 import Card from '../../components/UI/Card'
@@ -17,25 +16,54 @@ export default function ViewApplicants() {
   const [ratingModal, setRatingModal] = useState(null)
   const [paymentModal, setPaymentModal] = useState(null)
   
-  const myGigs = mockGigs.filter(g => g.ownerId === user?.id)
+  // Get data from localStorage
+  const gigs = useMemo(() => {
+    initializeLocalStorage()
+    return getGigs()
+  }, [])
+  
+  const applications = useMemo(() => {
+    return getApplications()
+  }, [])
+  
+  const myGigs = gigs.filter(g => g.ownerId === user?.id)
   const selectedGigId = selectedGig || myGigs[0]?.id
   
-  const applicants = mockApplications
+  const applicants = applications
     .filter(app => app.gigId === selectedGigId)
     .map(app => ({
       ...app,
       user: mockUsers.find(u => u.id === app.userId),
-      gig: mockGigs.find(g => g.id === app.gigId),
+      gig: gigs.find(g => g.id === app.gigId),
     }))
 
   const handleApprove = (appId) => {
-    // In real app, update application status
-    console.log('Approved:', appId)
+    // Update application status to hired
+    const result = updateApplication(appId, { status: 'hired' })
+    
+    if (result.success) {
+      // Update gig status to hired
+      const application = applications.find(app => app.id === appId)
+      if (application) {
+        updateGig(application.gigId, { status: 'hired' })
+      }
+      alert('Application approved! Student has been hired.')
+      window.location.reload()
+    } else {
+      alert('Failed to approve application. Please try again.')
+    }
   }
 
   const handleReject = (appId) => {
-    // In real app, update application status
-    console.log('Rejected:', appId)
+    // Update application status to rejected
+    const result = updateApplication(appId, { status: 'rejected' })
+    
+    if (result.success) {
+      alert('Application rejected.')
+      window.location.reload()
+    } else {
+      alert('Failed to reject application. Please try again.')
+    }
   }
 
   const handleMakePayment = (app) => {

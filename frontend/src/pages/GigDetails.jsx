@@ -1,14 +1,13 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useLocalAuth'
-import { mockGigs } from '../data/mockGigs'
-import { mockApplications } from '../data/mockApplications'
+import { getGigs, getApplications, saveApplication, initializeLocalStorage } from '../utils/localStorage'
 import Card from '../components/UI/Card'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import Textarea from '../components/UI/Textarea'
 import GigCommentRating from '../components/Shared/GigCommentRating'
 import { MapPin, Clock, Coins, User, FileText, Sparkles } from 'lucide-react'
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 
 export default function GigDetails() {
   const { id } = useParams()
@@ -21,8 +20,18 @@ export default function GigDetails() {
   const [attachmentsToRemove, setAttachmentsToRemove] = useState([])
   const fileInputRef = useRef(null)
 
-  const gig = mockGigs.find(g => g.id === id)
-  const hasApplied = user && mockApplications.some(
+  // Get gigs and applications from localStorage
+  const gigs = useMemo(() => {
+    initializeLocalStorage()
+    return getGigs()
+  }, [])
+  
+  const applications = useMemo(() => {
+    return getApplications()
+  }, [])
+
+  const gig = gigs.find(g => g.id === id)
+  const hasApplied = user && applications.some(
     app => app.gigId === id && app.userId === user.id
   )
 
@@ -39,11 +48,30 @@ export default function GigDetails() {
 
   const handleApply = () => {
     if (proposal.trim()) {
-      // In real app, submit application
-      console.log('Application submitted:', proposal)
-      setShowApplyModal(false)
-      setProposal('')
-      alert('Application submitted successfully!')
+      // Save application to localStorage
+      const applicationData = {
+        gigId: id,
+        userId: user.id,
+        proposal: proposal,
+        attachments: attachments.map(f => ({
+          name: f.name,
+          size: f.size,
+          type: f.type
+        }))
+      }
+      
+      const result = saveApplication(applicationData)
+      
+      if (result.success) {
+        setShowApplyModal(false)
+        setProposal('')
+        setAttachments([])
+        alert('Application submitted successfully!')
+        // You could navigate or refresh the page here
+        window.location.reload()
+      } else {
+        alert('Failed to submit application. Please try again.')
+      }
     }
   }
 

@@ -1,7 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { mockGigs } from '../../data/mockGigs'
-import { mockApplications } from '../../data/mockApplications'
+import { getGigs, getApplications, getGigsByOwner, initializeLocalStorage } from '../../utils/localStorage'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import { Edit, Pause, Play, Trash2, Eye } from 'lucide-react'
@@ -11,13 +10,23 @@ export default function ManageGigs() {
   const { user } = useAuth()
   const [statusFilter, setStatusFilter] = useState('')
   
-  const myGigs = mockGigs
+  // Get data from localStorage
+  const gigs = useMemo(() => {
+    initializeLocalStorage()
+    return getGigs()
+  }, [])
+  
+  const applications = useMemo(() => {
+    return getApplications()
+  }, [])
+  
+  const myGigs = gigs
     .filter(g => g.ownerId === user?.id)
     .filter(g => !statusFilter || g.status === statusFilter)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
   const getApplicationCount = (gigId) => {
-    return mockApplications.filter(app => app.gigId === gigId).length
+    return applications.filter(app => app.gigId === gigId).length
   }
 
   return (
