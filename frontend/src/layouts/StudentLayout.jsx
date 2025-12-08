@@ -15,10 +15,12 @@ const navigation = [
 
 export default function StudentLayout() {
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50">
       <Sidebar navigation={navigation} />
-      <div className="flex-1 overflow-auto focus:outline-none">
-        <Outlet />
+      <div className="md:pl-72 flex flex-col flex-1">
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 overflow-auto">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

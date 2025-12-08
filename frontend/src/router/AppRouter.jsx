@@ -6,6 +6,22 @@ import Navbar from '../components/Layout/Navbar'
 import Footer from '../components/Layout/Footer'
 import Sidebar from '../components/Layout/Sidebar'
 
+// HeroIcons for sidebar navigation
+import {
+  HomeIcon,
+  BriefcaseIcon,
+  ClipboardDocumentListIcon,
+  CurrencyDollarIcon,
+  ChatBubbleLeftRightIcon,
+  DocumentPlusIcon,
+  UserGroupIcon,
+  CreditCardIcon,
+  UsersIcon,
+  DocumentTextIcon,
+  ChartBarIcon,
+  Cog6ToothIcon,
+} from '@heroicons/react/24/outline'
+
 // Auth Pages
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
@@ -86,11 +102,13 @@ function ProtectedRoute({ children, requiredRole = null }) {
 // Layout Component
 function Layout({ children, showSidebar = false, sidebarItems = [] }) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
       <Navbar />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex pt-16">
         {showSidebar && <Sidebar items={sidebarItems} />}
-        <main className="flex-1 p-6 max-w-7xl mx-auto w-full">{children}</main>
+        <main className={`flex-1 p-6 max-w-7xl mx-auto w-full transition-all duration-300 ${showSidebar ? 'md:pl-72' : ''}`}>
+          {children}
+        </main>
       </div>
       <Footer />
     </div>
@@ -102,28 +120,28 @@ export default function AppRouter() {
 
   // Sidebar items based on role
   const studentSidebarItems = [
-    { path: '/student/dashboard', label: 'Dashboard', icon: null },
-    { path: '/student/browse', label: 'Browse Gigs', icon: null },
-    { path: '/student/applications', label: 'My Applications', icon: null },
-    { path: '/student/earnings', label: 'My Earnings', icon: null },
-    { path: '/student/messages', label: 'Messages', icon: null },
+    { path: '/student/dashboard', label: 'Dashboard', icon: HomeIcon },
+    { path: '/student/browse', label: 'Browse Gigs', icon: BriefcaseIcon },
+    { path: '/student/applications', label: 'My Applications', icon: ClipboardDocumentListIcon },
+    { path: '/student/earnings', label: 'My Earnings', icon: CurrencyDollarIcon },
+    { path: '/student/messages', label: 'Messages', icon: ChatBubbleLeftRightIcon },
   ]
 
   const clientSidebarItems = [
-    { path: '/client/dashboard', label: 'Dashboard', icon: null },
-    { path: '/client/post-gig', label: 'Post Job', icon: null },
-    { path: '/client/manage-gigs', label: 'Manage Gigs', icon: null },
-    { path: '/client/applicants', label: 'View Applicants', icon: null },
-    { path: '/client/payments', label: 'Payments', icon: null },
-    { path: '/client/messages', label: 'Messages', icon: null },
+    { path: '/client/dashboard', label: 'Dashboard', icon: HomeIcon },
+    { path: '/client/post-gig', label: 'Post Job', icon: DocumentPlusIcon },
+    { path: '/client/manage-gigs', label: 'Manage Gigs', icon: BriefcaseIcon },
+    { path: '/client/applicants', label: 'View Applicants', icon: UserGroupIcon },
+    { path: '/client/payments', label: 'Payments', icon: CreditCardIcon },
+    { path: '/client/messages', label: 'Messages', icon: ChatBubbleLeftRightIcon },
   ]
 
   const adminSidebarItems = [
-    { path: '/admin/dashboard', label: 'Dashboard', icon: null },
-    { path: '/admin/users', label: 'Manage Users', icon: null },
-    { path: '/admin/gigs', label: 'Manage Gigs', icon: null },
-    { path: '/admin/reports', label: 'Reports', icon: null },
-    { path: '/admin/settings', label: 'Settings', icon: null },
+    { path: '/admin/dashboard', label: 'Dashboard', icon: HomeIcon },
+    { path: '/admin/users', label: 'Manage Users', icon: UsersIcon },
+    { path: '/admin/gigs', label: 'Manage Gigs', icon: DocumentTextIcon },
+    { path: '/admin/reports', label: 'Reports', icon: ChartBarIcon },
+    { path: '/admin/settings', label: 'Settings', icon: Cog6ToothIcon },
   ]
 
   return (
@@ -148,8 +166,8 @@ export default function AppRouter() {
                 user.role === 'student'
                   ? '/student/dashboard'
                   : user.role === 'client'
-                  ? '/client/dashboard'
-                  : '/admin/dashboard'
+                    ? '/client/dashboard'
+                    : '/admin/dashboard'
               }
               replace
             />
