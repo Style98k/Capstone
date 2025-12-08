@@ -28,7 +28,6 @@ export default function PostGig() {
     location: '',
     duration: '',
     pay: '',
-    shortDesc: '',
     fullDesc: '',
     requirements: '',
   })
@@ -226,22 +225,6 @@ export default function PostGig() {
               required
             />
           </div>
-
-          <Input
-            label={
-              <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                <FileText className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                <span>Short Description</span>
-                <span className="text-red-500">*</span>
-              </span>
-            }
-            name="shortDesc"
-            value={formData.shortDesc}
-            onChange={handleChange}
-            placeholder="Brief summary (shown in listings)"
-            className="transition-all duration-200 focus:ring-2 focus:ring-sky-500/60 focus:border-sky-500/70 hover:border-sky-400"
-            required
-          />
 
           <Textarea
             label={
