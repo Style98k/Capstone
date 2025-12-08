@@ -1,12 +1,18 @@
-import { useState } from 'react'
-import { mockGigs } from '../../data/mockGigs'
+import { useState, useMemo } from 'react'
+import { initializeLocalStorage, getGigs, deleteGig } from '../../utils/localStorage'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import { Trash2, Eye } from 'lucide-react'
 
 export default function ManageGigs() {
-  const [gigs, setGigs] = useState(mockGigs)
   const [filter, setFilter] = useState('')
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  // Get gigs from localStorage so all client-posted jobs are visible
+  const gigs = useMemo(() => {
+    initializeLocalStorage()
+    return getGigs()
+  }, [refreshKey])
 
   const filteredGigs = gigs.filter(
     g =>
@@ -16,7 +22,8 @@ export default function ManageGigs() {
 
   const handleDelete = (gigId) => {
     if (window.confirm('Are you sure you want to delete this gig?')) {
-      setGigs(gigs.filter(g => g.id !== gigId))
+      deleteGig(gigId)
+      setRefreshKey(prev => prev + 1)
     }
   }
 
@@ -59,11 +66,10 @@ export default function ManageGigs() {
                     ₱{gig.pay.toLocaleString()}
                   </span>
                   <span
-                    className={`px-2 py-0.5 text-xs rounded ${
-                      gig.status === 'open'
+                    className={`px-2 py-0.5 text-xs rounded ${gig.status === 'open'
                         ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
+                      }`}
                   >
                     {gig.status}
                   </span>

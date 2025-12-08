@@ -1,13 +1,19 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useLocalAuth'
-import { mockGigs } from '../data/mockGigs'
+import { initializeLocalStorage, getOpenGigs } from '../utils/localStorage'
 import GigCard from '../components/Shared/GigCard'
 import Button from '../components/UI/Button'
 import { Briefcase, Users, Shield, TrendingUp, CheckCircle, GraduationCap, Star } from 'lucide-react'
 
 export default function Home() {
   const { user } = useAuth()
-  const recentGigs = mockGigs.filter(g => g.status === 'open').slice(0, 6)
+
+  // Get gigs from localStorage so newly posted jobs appear
+  const recentGigs = useMemo(() => {
+    initializeLocalStorage()
+    return getOpenGigs().slice(0, 6)
+  }, [])
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-sky-50 via-white to-sky-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
