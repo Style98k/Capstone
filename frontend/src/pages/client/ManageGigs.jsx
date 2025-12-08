@@ -156,7 +156,7 @@ export default function ManageGigs() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all duration-200">
+                      <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all duration-200 min-w-[80px] flex items-center justify-center">
                         <Eye className="w-4 h-4 mr-1" />
                         View
                       </Button>
@@ -167,7 +167,7 @@ export default function ManageGigs() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all duration-200">
+                      <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all duration-200 min-w-[80px] flex items-center justify-center">
                         Applicants
                       </Button>
                     </motion.div>
@@ -177,7 +177,7 @@ export default function ManageGigs() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)} className="hover:bg-yellow-100 hover:text-yellow-700 hover:border-yellow-300 transition-all duration-200">
+                      <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)} className="hover:bg-yellow-100 hover:text-yellow-700 hover:border-yellow-300 transition-all duration-200 min-w-[80px] flex items-center justify-center">
                         <Pause className="w-4 h-4 mr-1" />
                         Pause
                       </Button>
@@ -187,7 +187,7 @@ export default function ManageGigs() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)} className="hover:bg-green-100 hover:text-green-700 hover:border-green-300 transition-all duration-200">
+                      <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)} className="hover:bg-green-100 hover:text-green-700 hover:border-green-300 transition-all duration-200 min-w-[80px] flex items-center justify-center">
                         <Play className="w-4 h-4 mr-1" />
                         Resume
                       </Button>
@@ -197,7 +197,7 @@ export default function ManageGigs() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Button variant="danger" size="sm" onClick={() => handleDeleteGig(gig.id)} className="hover:bg-red-700 hover:shadow-md transition-all duration-200">
+                    <Button variant="danger" size="sm" onClick={() => handleDeleteGig(gig.id)} className="hover:bg-red-700 hover:shadow-md transition-all duration-200 min-w-[80px] flex items-center justify-center">
                       <Trash2 className="w-4 h-4 mr-1" />
                       Delete
                     </Button>
