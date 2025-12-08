@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Bell, User, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
@@ -7,8 +7,14 @@ import Button from '../UI/Button'
 export default function Navbar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+
+  // Check if user is on a dashboard page (sidebar has logout)
+  const isDashboardPage = location.pathname.startsWith('/student/') ||
+    location.pathname.startsWith('/client/') ||
+    location.pathname.startsWith('/admin/')
 
   const handleLogout = () => {
     logout()
@@ -66,10 +72,12 @@ export default function Navbar() {
                 >
                   <User className="w-5 h-5" />
                 </Link>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
+                {!isDashboardPage && (
+                  <Button variant="outline" size="sm" onClick={handleLogout}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </Button>
+                )}
               </>
             ) : (
               <>
@@ -127,15 +135,17 @@ export default function Navbar() {
                   >
                     Profile
                   </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout()
-                      setMobileMenuOpen(false)
-                    }}
-                    className="text-left text-gray-700 dark:text-gray-300 hover:text-red-600"
-                  >
-                    Logout
-                  </button>
+                  {!isDashboardPage && (
+                    <button
+                      onClick={() => {
+                        handleLogout()
+                        setMobileMenuOpen(false)
+                      }}
+                      className="text-left text-gray-700 dark:text-gray-300 hover:text-red-600"
+                    >
+                      Logout
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
