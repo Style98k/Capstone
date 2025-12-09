@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { initializeLocalStorage, getGigs, deleteGig } from '../../utils/localStorage'
+import { initializeLocalStorage, getGigs, deleteGig, updateGig } from '../../utils/localStorage'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
+import Modal from '../../components/UI/Modal'
 import { 
   Trash2, 
   Eye, 
@@ -19,7 +20,10 @@ import {
   DollarSign,
   Tag,
   Shield,
-  Zap
+  Zap,
+  AlarmClock,
+  AlertOctagon,
+  Sparkles
 } from 'lucide-react'
 
 export default function ManageGigs() {
@@ -27,11 +31,28 @@ export default function ManageGigs() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
+  const [selectedGig, setSelectedGig] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleteMode, setDeleteMode] = useState('immediate')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   // Get gigs from localStorage so all client-posted jobs are visible
   const gigs = useMemo(() => {
     initializeLocalStorage()
-    return getGigs()
+    const stored = getGigs()
+
+    // Auto-remove anything that passed a scheduled removal window
+    const now = Date.now()
+    const expiredIds = stored
+      .filter(g => g.scheduledRemovalAt && new Date(g.scheduledRemovalAt).getTime() <= now)
+      .map(g => g.id)
+
+    if (expiredIds.length) {
+      expiredIds.forEach(id => deleteGig(id))
+      return getGigs()
+    }
+
+    return stored
   }, [refreshKey])
 
   // Get unique categories for filter
@@ -49,11 +70,27 @@ export default function ManageGigs() {
     return matchesSearch && matchesCategory && matchesStatus
   })
 
-  const handleDelete = (gigId) => {
-    if (window.confirm('Are you sure you want to delete this gig?')) {
-      deleteGig(gigId)
-      setRefreshKey(prev => prev + 1)
+  const handleDeleteClick = (gig) => {
+    setDeleteTarget(gig)
+    setDeleteMode('immediate')
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return
+
+    if (deleteMode === 'scheduled') {
+      updateGig(deleteTarget.id, {
+        scheduledRemovalAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        moderationNote: 'Scheduled for removal after 24h review window',
+      })
+    } else {
+      deleteGig(deleteTarget.id)
     }
+
+    setRefreshKey(prev => prev + 1)
+    setShowDeleteModal(false)
+    setDeleteTarget(null)
   }
 
   // Animation variants
@@ -189,38 +226,61 @@ export default function ManageGigs() {
       <div className="space-y-4">
         {filteredGigs.map((gig) => (
           <Card key={gig.id} hover>
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-white">{gig.title}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{gig.title}</h3>
+                  <div className={`px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(gig.status)}`}>
+                    <div className="flex items-center gap-1">
+                      {getStatusIcon(gig.status)}
+                      <span className="capitalize">{gig.status}</span>
+                    </div>
+                  </div>
+                  {gig.scheduledRemovalAt && new Date(gig.scheduledRemovalAt) > new Date() && (
+                    <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
+                      <AlarmClock className="w-3 h-3" />
+                      Removal in 24h
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   {gig.shortDesc}
                 </p>
-                <div className="flex gap-2 mt-2">
-                  <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-2 py-0.5 text-xs bg-sky-50 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200 rounded border border-sky-100">
+                    <Tag className="w-3 h-3 inline mr-1" />
                     {gig.category}
                   </span>
-                  <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">
+                  <span className="px-2 py-0.5 text-xs bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200 rounded border border-indigo-100">
+                    <MapPin className="w-3 h-3 inline mr-1" />
                     {gig.location}
                   </span>
-                  <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">
+                  <span className="px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200 rounded border border-emerald-100">
+                    <DollarSign className="w-3 h-3 inline mr-1" />
                     ₱{gig.pay.toLocaleString()}
                   </span>
-                  <span
-                    className={`px-2 py-0.5 text-xs rounded ${gig.status === 'open'
-                      ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                      }`}
-                  >
-                    {gig.status}
+                  <span className="px-2 py-0.5 text-xs bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded border border-gray-100">
+                    <Calendar className="w-3 h-3 inline mr-1" />
+                    {new Date(gig.createdAt || Date.now()).toLocaleDateString()}
                   </span>
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="btn-glow bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-none shadow-md"
+                  onClick={() => setSelectedGig(gig)}
+                >
                   <Eye className="w-4 h-4 mr-1" />
                   Review
                 </Button>
-                <Button variant="danger" size="sm" onClick={() => handleDelete(gig.id)}>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="btn-glow bg-gradient-to-r from-rose-500 to-red-600 text-white border-none shadow-md hover:shadow-lg"
+                  onClick={() => handleDeleteClick(gig)}
+                >
                   <Trash2 className="w-4 h-4 mr-1" />
                   Delete
                 </Button>
@@ -229,7 +289,153 @@ export default function ManageGigs() {
           </Card>
         ))}
       </div>
+
+      {/* Review modal */}
+      <Modal
+        isOpen={!!selectedGig}
+        onClose={() => setSelectedGig(null)}
+        title="Job Post Review"
+        size="xl"
+      >
+        {selectedGig && (
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-500">Title</p>
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo-500" />
+                  {selectedGig.title}
+                </h3>
+              </div>
+              <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(selectedGig.status)}`}>
+                <div className="flex items-center gap-1">
+                  {getStatusIcon(selectedGig.status)}
+                  <span className="capitalize">{selectedGig.status}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <InfoPill icon={<Tag className="w-4 h-4" />} label="Category" value={selectedGig.category} />
+              <InfoPill icon={<MapPin className="w-4 h-4" />} label="Location" value={selectedGig.location} />
+              <InfoPill icon={<DollarSign className="w-4 h-4" />} label="Pay" value={`₱${selectedGig.pay.toLocaleString()}`} />
+              <InfoPill icon={<Clock className="w-4 h-4" />} label="Duration" value={selectedGig.duration || 'N/A'} />
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Summary</p>
+              <p className="text-gray-600 dark:text-gray-300">{selectedGig.shortDesc}</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Full Description</p>
+              <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{selectedGig.fullDesc}</p>
+            </div>
+
+            {selectedGig.requirements?.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Requirements</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedGig.requirements.map((req) => (
+                    <span
+                      key={req}
+                      className="px-3 py-1 text-xs rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200 border border-indigo-100"
+                    >
+                      {req}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete confirmation modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Job Post?"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-700">
+              <AlertOctagon className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-gray-700 dark:text-gray-200">
+                Deleting will notify the client and remove the job from listings. You can either delete now or schedule a 24h hold so the client has time to review the warning.
+              </p>
+              {deleteTarget && (
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {deleteTarget.title}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:border-sky-400 transition-colors">
+              <input
+                type="radio"
+                name="deleteMode"
+                value="immediate"
+                checked={deleteMode === 'immediate'}
+                onChange={() => setDeleteMode('immediate')}
+                className="text-sky-600 focus:ring-sky-500"
+              />
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Delete now</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Immediate removal from the marketplace.</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:border-amber-400 transition-colors">
+              <input
+                type="radio"
+                name="deleteMode"
+                value="scheduled"
+                checked={deleteMode === 'scheduled'}
+                onChange={() => setDeleteMode('scheduled')}
+                className="text-amber-600 focus:ring-amber-500"
+              />
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Schedule deletion (24h)</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Grace period to warn the client; will auto-remove after 24h.</p>
+              </div>
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              className="btn-glow bg-gradient-to-r from-amber-500 via-red-500 to-rose-600 text-white border-none shadow-md"
+              onClick={confirmDelete}
+            >
+              {deleteMode === 'scheduled' ? 'Schedule deletion' : 'Delete now'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </motion.div>
+  )
+}
+
+function InfoPill({ icon, label, value }) {
+  return (
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 flex items-start gap-3 shadow-sm">
+      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-100 to-sky-100 dark:from-indigo-900/40 dark:to-sky-900/30 text-indigo-700 dark:text-indigo-200 flex items-center justify-center">
+        {icon}
+      </div>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
+        <p className="font-semibold text-gray-900 dark:text-white">{value}</p>
+      </div>
+    </div>
   )
 }
 

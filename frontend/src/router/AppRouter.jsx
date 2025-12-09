@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { useAuth } from '../hooks/useLocalAuth'
 import { mockUsers } from '../data/mockUsers'
 import Navbar from '../components/Layout/Navbar'
@@ -22,38 +22,34 @@ import {
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline'
 
-// Auth Pages
-import Login from '../pages/auth/Login'
-import Register from '../pages/auth/Register'
-import VerifyAccount from '../pages/auth/VerifyAccount'
+// Lazy-loaded pages for faster initial load
+const Login = lazy(() => import('../pages/auth/Login'))
+const Register = lazy(() => import('../pages/auth/Register'))
+const VerifyAccount = lazy(() => import('../pages/auth/VerifyAccount'))
 
-// Student Pages
-import StudentDashboard from '../pages/student/Dashboard'
-import BrowseGigs from '../pages/student/BrowseGigs'
-import MyApplications from '../pages/student/MyApplications'
-import MyEarnings from '../pages/student/MyEarnings'
-import Messages from '../pages/student/Messages'
+const StudentDashboard = lazy(() => import('../pages/student/Dashboard'))
+const BrowseGigs = lazy(() => import('../pages/student/BrowseGigs'))
+const MyApplications = lazy(() => import('../pages/student/MyApplications'))
+const MyEarnings = lazy(() => import('../pages/student/MyEarnings'))
+const Messages = lazy(() => import('../pages/student/Messages'))
 
-// Client Pages
-import ClientDashboard from '../pages/client/Dashboard'
-import PostGig from '../pages/client/PostGig'
-import ClientManageGigs from '../pages/client/ManageGigs'
-import ViewApplicants from '../pages/client/ViewApplicants'
-import ClientMessages from '../pages/client/Messages'
-import Payments from '../pages/client/Payments'
+const ClientDashboard = lazy(() => import('../pages/client/Dashboard'))
+const PostGig = lazy(() => import('../pages/client/PostGig'))
+const ClientManageGigs = lazy(() => import('../pages/client/ManageGigs'))
+const ViewApplicants = lazy(() => import('../pages/client/ViewApplicants'))
+const ClientMessages = lazy(() => import('../pages/client/Messages'))
+const Payments = lazy(() => import('../pages/client/Payments'))
 
-// Admin Pages
-import AdminDashboard from '../pages/admin/Dashboard'
-import ManageUsers from '../pages/admin/ManageUsers'
-import AdminManageGigs from '../pages/admin/ManageGigs'
-import Reports from '../pages/admin/Reports'
-import Settings from '../pages/admin/Settings'
+const AdminDashboard = lazy(() => import('../pages/admin/Dashboard'))
+const ManageUsers = lazy(() => import('../pages/admin/ManageUsers'))
+const AdminManageGigs = lazy(() => import('../pages/admin/ManageGigs'))
+const Reports = lazy(() => import('../pages/admin/Reports'))
+const Settings = lazy(() => import('../pages/admin/Settings'))
 
-// Shared Pages
-import Home from '../pages/Home'
-import GigDetails from '../pages/GigDetails'
-import Profile from '../pages/Profile'
-import Notifications from '../pages/Notifications'
+const Home = lazy(() => import('../pages/Home'))
+const GigDetails = lazy(() => import('../pages/GigDetails'))
+const Profile = lazy(() => import('../pages/Profile'))
+const Notifications = lazy(() => import('../pages/Notifications'))
 
 // Protected Route Component
 function ProtectedRoute({ children, requiredRole = null }) {
@@ -138,260 +134,271 @@ export default function AppRouter() {
   ]
 
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route
-        path="/"
-        element={
-          <Layout>
-            <Home />
-          </Layout>
-        }
-      />
-      <Route
-        path="/login"
-        element={
-          !user ? (
-            <Login />
-          ) : (
-            <Navigate
-              to={
-                user.role === 'student'
-                  ? '/student/dashboard'
-                  : user.role === 'client'
-                    ? '/client/dashboard'
-                    : '/admin/dashboard'
-              }
-              replace
-            />
-          )
-        }
-      />
-      <Route
-        path="/register"
-        element={!user ? <Register /> : <Navigate to="/" replace />}
-      />
-      <Route path="/verify/:token" element={<VerifyAccount />} />
-      <Route
-        path="/admin"
-        element={<Navigate to="/admin/dashboard" replace />}
-      />
-      <Route
-        path="/client"
-        element={<Navigate to="/client/dashboard" replace />}
-      />
-      <Route
-        path="/student"
-        element={<Navigate to="/student/dashboard" replace />}
-      />
-      <Route
-        path="/gigs"
-        element={
-          <Layout>
-            <BrowseGigs />
-          </Layout>
-        }
-      />
-      <Route
-        path="/gigs/:id"
-        element={
-          <Layout>
-            <GigDetails />
-          </Layout>
-        }
-      />
-
-      {/* Student Routes */}
-      <Route
-        path="/student/dashboard"
-        element={
-          <ProtectedRoute requiredRole="student">
-            <Layout showSidebar sidebarItems={studentSidebarItems}>
-              <StudentDashboard />
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="flex flex-col items-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="w-10 h-10 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm">Loading experience…</p>
+          </div>
+        </div>
+      }
+    >
+      <Routes>
+        {/* Public Routes */}
+        <Route
+          path="/"
+          element={
+            <Layout>
+              <Home />
             </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/browse"
-        element={
-          <ProtectedRoute requiredRole="student">
-            <Layout showSidebar sidebarItems={studentSidebarItems}>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            !user ? (
+              <Login />
+            ) : (
+              <Navigate
+                to={
+                  user.role === 'student'
+                    ? '/student/dashboard'
+                    : user.role === 'client'
+                      ? '/client/dashboard'
+                      : '/admin/dashboard'
+                }
+                replace
+              />
+            )
+          }
+        />
+        <Route
+          path="/register"
+          element={!user ? <Register /> : <Navigate to="/" replace />}
+        />
+        <Route path="/verify/:token" element={<VerifyAccount />} />
+        <Route
+          path="/admin"
+          element={<Navigate to="/admin/dashboard" replace />}
+        />
+        <Route
+          path="/client"
+          element={<Navigate to="/client/dashboard" replace />}
+        />
+        <Route
+          path="/student"
+          element={<Navigate to="/student/dashboard" replace />}
+        />
+        <Route
+          path="/gigs"
+          element={
+            <Layout>
               <BrowseGigs />
             </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/applications"
-        element={
-          <ProtectedRoute requiredRole="student">
-            <Layout showSidebar sidebarItems={studentSidebarItems}>
-              <MyApplications />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/earnings"
-        element={
-          <ProtectedRoute requiredRole="student">
-            <Layout showSidebar sidebarItems={studentSidebarItems}>
-              <MyEarnings />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/messages"
-        element={
-          <ProtectedRoute requiredRole="student">
-            <Layout showSidebar sidebarItems={studentSidebarItems}>
-              <Messages />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Client Routes */}
-      <Route
-        path="/client/dashboard"
-        element={
-          <ProtectedRoute requiredRole="client">
-            <Layout showSidebar sidebarItems={clientSidebarItems}>
-              <ClientDashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/client/post-gig"
-        element={
-          <ProtectedRoute requiredRole="client">
-            <Layout showSidebar sidebarItems={clientSidebarItems}>
-              <PostGig />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/client/manage-gigs"
-        element={
-          <ProtectedRoute requiredRole="client">
-            <Layout showSidebar sidebarItems={clientSidebarItems}>
-              <ClientManageGigs />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/client/applicants"
-        element={
-          <ProtectedRoute requiredRole="client">
-            <Layout showSidebar sidebarItems={clientSidebarItems}>
-              <ViewApplicants />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/client/messages"
-        element={
-          <ProtectedRoute requiredRole="client">
-            <Layout showSidebar sidebarItems={clientSidebarItems}>
-              <ClientMessages />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/client/payments"
-        element={
-          <ProtectedRoute requiredRole="client">
-            <Layout showSidebar sidebarItems={clientSidebarItems}>
-              <Payments />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Admin Routes */}
-      <Route
-        path="/admin/dashboard"
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <Layout showSidebar sidebarItems={adminSidebarItems}>
-              <AdminDashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/users"
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <Layout showSidebar sidebarItems={adminSidebarItems}>
-              <ManageUsers />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/gigs"
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <Layout showSidebar sidebarItems={adminSidebarItems}>
-              <AdminManageGigs />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/reports"
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <Layout showSidebar sidebarItems={adminSidebarItems}>
-              <Reports />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/settings"
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <Layout showSidebar sidebarItems={adminSidebarItems}>
-              <Settings />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Shared Routes */}
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="/gigs/:id"
+          element={
             <Layout>
-              <Profile />
+              <GigDetails />
             </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/notifications"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Notifications />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+          }
+        />
 
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Student Routes */}
+        <Route
+          path="/student/dashboard"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <Layout showSidebar sidebarItems={studentSidebarItems}>
+                <StudentDashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/browse"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <Layout showSidebar sidebarItems={studentSidebarItems}>
+                <BrowseGigs />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/applications"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <Layout showSidebar sidebarItems={studentSidebarItems}>
+                <MyApplications />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/earnings"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <Layout showSidebar sidebarItems={studentSidebarItems}>
+                <MyEarnings />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/messages"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <Layout showSidebar sidebarItems={studentSidebarItems}>
+                <Messages />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Client Routes */}
+        <Route
+          path="/client/dashboard"
+          element={
+            <ProtectedRoute requiredRole="client">
+              <Layout showSidebar sidebarItems={clientSidebarItems}>
+                <ClientDashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/client/post-gig"
+          element={
+            <ProtectedRoute requiredRole="client">
+              <Layout showSidebar sidebarItems={clientSidebarItems}>
+                <PostGig />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/client/manage-gigs"
+          element={
+            <ProtectedRoute requiredRole="client">
+              <Layout showSidebar sidebarItems={clientSidebarItems}>
+                <ClientManageGigs />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/client/applicants"
+          element={
+            <ProtectedRoute requiredRole="client">
+              <Layout showSidebar sidebarItems={clientSidebarItems}>
+                <ViewApplicants />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/client/messages"
+          element={
+            <ProtectedRoute requiredRole="client">
+              <Layout showSidebar sidebarItems={clientSidebarItems}>
+                <ClientMessages />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/client/payments"
+          element={
+            <ProtectedRoute requiredRole="client">
+              <Layout showSidebar sidebarItems={clientSidebarItems}>
+                <Payments />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout showSidebar sidebarItems={adminSidebarItems}>
+                <AdminDashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout showSidebar sidebarItems={adminSidebarItems}>
+                <ManageUsers />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/gigs"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout showSidebar sidebarItems={adminSidebarItems}>
+                <AdminManageGigs />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout showSidebar sidebarItems={adminSidebarItems}>
+                <Reports />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout showSidebar sidebarItems={adminSidebarItems}>
+                <Settings />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Shared Routes */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Notifications />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Catch all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   )
 }
 
