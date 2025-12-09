@@ -20,6 +20,7 @@ import {
   DocumentTextIcon,
   ChartBarIcon,
   Cog6ToothIcon,
+  UserCircleIcon,
 } from '@heroicons/react/24/outline'
 
 // Lazy-loaded pages for faster initial load
@@ -32,6 +33,7 @@ const BrowseGigs = lazy(() => import('../pages/student/BrowseGigs'))
 const MyApplications = lazy(() => import('../pages/student/MyApplications'))
 const MyEarnings = lazy(() => import('../pages/student/MyEarnings'))
 const Messages = lazy(() => import('../pages/student/Messages'))
+const ProfileManagement = lazy(() => import('../pages/student/ProfileManagement'))
 
 const ClientDashboard = lazy(() => import('../pages/client/Dashboard'))
 const PostGig = lazy(() => import('../pages/client/PostGig'))
@@ -110,6 +112,7 @@ export default function AppRouter() {
   // Sidebar items based on role
   const studentSidebarItems = [
     { path: '/student/dashboard', label: 'Dashboard', icon: HomeIcon },
+    { path: '/student/profile', label: 'Profile Management', icon: UserCircleIcon },
     { path: '/student/browse', label: 'Browse Gigs', icon: BriefcaseIcon },
     { path: '/student/applications', label: 'My Applications', icon: ClipboardDocumentListIcon },
     { path: '/student/earnings', label: 'My Earnings', icon: CurrencyDollarIcon },
@@ -254,6 +257,16 @@ export default function AppRouter() {
             <ProtectedRoute requiredRole="student">
               <Layout showSidebar sidebarItems={studentSidebarItems}>
                 <Messages />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/profile"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <Layout showSidebar sidebarItems={studentSidebarItems}>
+                <ProfileManagement />
               </Layout>
             </ProtectedRoute>
           }

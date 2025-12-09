@@ -11,16 +11,16 @@ import { Link } from 'react-router-dom'
 
 export default function StudentDashboard() {
   const { user } = useAuth()
-  
+
   const myApplications = mockApplications.filter(app => app.userId === user?.id)
   const pendingApps = myApplications.filter(app => app.status === 'pending').length
   const hiredApps = myApplications.filter(app => app.status === 'hired').length
   const completedApps = myApplications.filter(app => app.status === 'completed').length
-  
+
   const myEarnings = mockTransactions
     .filter(t => t.toUserId === user?.id && t.status === 'completed')
     .reduce((sum, t) => sum + t.amount, 0)
-  
+
   const recentGigs = mockGigs.filter(g => g.status === 'open').slice(0, 3)
   const myNotifications = mockNotifications.filter(n => n.userId === user?.id).slice(0, 5)
 
@@ -95,13 +95,12 @@ export default function StudentDashboard() {
                       </p>
                     </div>
                     <span
-                      className={`px-2 py-1 text-xs font-medium rounded ${
-                        app.status === 'hired'
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                          : app.status === 'pending'
+                      className={`px-2 py-1 text-xs font-medium rounded ${app.status === 'hired'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                        : app.status === 'pending'
                           ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
                           : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                      }`}
+                        }`}
                     >
                       {app.status}
                     </span>
@@ -162,6 +161,7 @@ export default function StudentDashboard() {
           ))}
         </div>
       </div>
+
     </div>
   )
 }
