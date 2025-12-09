@@ -30,16 +30,16 @@ export default function ManageGigs() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Manage Gigs</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Content Moderation</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Moderate and manage all job postings
+          Review, approve, or remove job posts submitted by users.
         </p>
       </div>
 
       <Card>
         <input
           type="text"
-          placeholder="Search gigs..."
+          placeholder="Search job posts..."
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="input mb-4"
@@ -67,8 +67,8 @@ export default function ManageGigs() {
                   </span>
                   <span
                     className={`px-2 py-0.5 text-xs rounded ${gig.status === 'open'
-                        ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                       }`}
                   >
                     {gig.status}
@@ -78,7 +78,7 @@ export default function ManageGigs() {
               <div className="flex gap-2">
                 <Button variant="outline" size="sm">
                   <Eye className="w-4 h-4 mr-1" />
-                  View
+                  Review
                 </Button>
                 <Button variant="danger" size="sm" onClick={() => handleDelete(gig.id)}>
                   <Trash2 className="w-4 h-4 mr-1" />

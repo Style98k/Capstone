@@ -1,7 +1,7 @@
 // src/components/shared/Sidebar.jsx
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useLocalAuth';
 import { ArrowLeftStartOnRectangleIcon } from '@heroicons/react/24/outline';
 
 // Modern color palette for hover effects - each menu item gets a unique color

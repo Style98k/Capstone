@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Initialize localStorage with mock data if needed
     initializeLocalStorage()
-    
+
     // Check localStorage for saved user
     const savedUser = localStorage.getItem('quickgig_user')
     if (savedUser) {
@@ -24,11 +24,11 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('quickgig_user')
       }
     }
-    
+
     // Development mode: Auto-login as admin if accessing admin routes
     const isDevMode = import.meta.env.DEV || import.meta.env.MODE === 'development'
     const isAdminRoute = window.location.pathname.startsWith('/admin')
-    
+
     if (isDevMode && isAdminRoute) {
       const adminUser = mockUsers.find(u => u.role === 'admin')
       if (adminUser) {
@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('quickgig_user', JSON.stringify(userWithoutPassword))
       }
     }
-    
+
     setLoading(false)
   }, [])
 
@@ -46,14 +46,14 @@ export function AuthProvider({ children }) {
     const foundUser = mockUsers.find(
       u => (u.email === email || u.schoolId === email) && u.password === password
     )
-    
+
     if (foundUser) {
       const { password: _, ...userWithoutPassword } = foundUser
       setUser(userWithoutPassword)
       localStorage.setItem('quickgig_user', JSON.stringify(userWithoutPassword))
       return { success: true, user: userWithoutPassword }
     }
-    
+
     return { success: false, message: 'Invalid credentials' }
   }
 
@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
       verified: userData.role === 'admin',
       createdAt: new Date().toISOString(),
     }
-    
+
     mockUsers.push(newUser)
     const { password: _, ...userWithoutPassword } = newUser
     setUser(userWithoutPassword)

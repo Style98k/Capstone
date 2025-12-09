@@ -61,15 +61,7 @@ function ProtectedRoute({ children, requiredRole = null }) {
   const isDevMode = import.meta.env.DEV || import.meta.env.MODE === 'development'
 
   // Development mode: Auto-login as admin for admin routes
-  useEffect(() => {
-    if (isDevMode && requiredRole === 'admin' && !user && !loading) {
-      const adminUser = mockUsers.find(u => u.role === 'admin')
-      if (adminUser) {
-        login(adminUser.email, adminUser.password)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requiredRole, user, loading])
+  // Development mode auto-login removed to allow logout testing
 
   if (loading) {
     return (
@@ -81,14 +73,7 @@ function ProtectedRoute({ children, requiredRole = null }) {
 
   // Development mode: Allow bypass for admin routes
   if (!user) {
-    if (isDevMode && requiredRole === 'admin') {
-      // Wait a bit for auto-login to complete
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-        </div>
-      )
-    }
+    // Dev mode bypass removed
     return <Navigate to="/login" replace />
   }
 
@@ -147,7 +132,7 @@ export default function AppRouter() {
   const adminSidebarItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: HomeIcon },
     { path: '/admin/users', label: 'Manage Users', icon: UsersIcon },
-    { path: '/admin/gigs', label: 'Manage Gigs', icon: DocumentTextIcon },
+    { path: '/admin/gigs', label: 'Content Moderation', icon: DocumentTextIcon },
     { path: '/admin/reports', label: 'Reports', icon: ChartBarIcon },
     { path: '/admin/settings', label: 'Settings', icon: Cog6ToothIcon },
   ]
