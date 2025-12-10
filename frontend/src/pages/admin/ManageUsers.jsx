@@ -82,15 +82,20 @@ export default function ManageUsers() {
 
     const matchesRole = roleFilter === 'all' || u.role === roleFilter
 
-    // Verification Tab Filter
+    // Updated Verification Tab Filter
     let matchesTab = true
-    if (verificationTab === 'pending') matchesTab = u.verificationStatus === 'pending'
-    if (verificationTab === 'verified') matchesTab = u.verificationStatus === 'verified'
+    if (verificationTab === 'pending') {
+      matchesTab = u.verificationStatus === 'pending' || u.assessmentStatus === 'pending'
+    } else if (verificationTab === 'verified') {
+      matchesTab = u.verificationStatus === 'verified' && u.assessmentStatus === 'verified'
+    }
 
     return matchesSearch && matchesRole && matchesTab
   })
 
-  const pendingCount = users.filter(u => u.verificationStatus === 'pending').length
+  const pendingCount = users.filter(u => 
+    u.verificationStatus === 'pending' || u.assessmentStatus === 'pending'
+  ).length
 
   const handleOpenVerify = (user) => {
     setUserToVerify(user)
@@ -102,12 +107,18 @@ export default function ManageUsers() {
 
     setUsers(prev => prev.map(u =>
       u.id === userToVerify.id
-        ? { ...u, verificationStatus: 'verified', verified: true }
+        ? { 
+            ...u, 
+            verificationStatus: 'verified',
+            assessmentStatus: 'verified',
+            verified: true 
+          }
         : u
     ))
 
     localStorage.setItem('verificationStatus', 'verified')
-    localStorage.setItem('studentNotification', 'Your ID has been approved!')
+    localStorage.setItem('assessmentStatus', 'verified')
+    localStorage.setItem('studentNotification', 'Your School ID and Assessment Form have been approved! You are now fully verified.')
     setIsVerifyModalOpen(false)
     setUserToVerify(null)
   }
@@ -117,12 +128,18 @@ export default function ManageUsers() {
 
     setUsers(prev => prev.map(u =>
       u.id === userToVerify.id
-        ? { ...u, verificationStatus: 'unverified', verified: false }
+        ? { 
+            ...u, 
+            verificationStatus: 'unverified',
+            assessmentStatus: 'unverified',
+            verified: false 
+          }
         : u
     ))
 
     localStorage.setItem('verificationStatus', 'unverified')
-    localStorage.setItem('studentNotification', 'ID Rejected. Please upload a clearer photo.')
+    localStorage.setItem('assessmentStatus', 'unverified')
+    localStorage.setItem('studentNotification', 'Your documents were rejected. Please upload clearer copies.')
     setIsVerifyModalOpen(false)
     setUserToVerify(null)
   }
@@ -961,7 +978,7 @@ export default function ManageUsers() {
       <Modal
         isOpen={isVerifyModalOpen}
         onClose={() => setIsVerifyModalOpen(false)}
-        title="Verify Student Identity"
+        title="Verify Student Documents"
         size="lg"
       >
         {userToVerify && (
@@ -979,13 +996,40 @@ export default function ManageUsers() {
               </div>
             </div>
 
+            {/* ID Photo Section */}
             <div>
-              <label className="text-sm font-medium text-gray-500 block mb-2">ID Photo</label>
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-sm font-medium text-gray-500">ID Photo</label>
+                {userToVerify.verificationStatus === 'pending' && (
+                  <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                    New Upload
+                  </span>
+                )}
+              </div>
               <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
                 <img
                   src="https://placehold.co/600x400"
                   alt="Student ID"
                   className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+            </div>
+
+            {/* Assessment Form Section */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-sm font-medium text-gray-500">Assessment Form / COR</label>
+                {userToVerify.assessmentStatus === 'pending' && (
+                  <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                    New Upload
+                  </span>
+                )}
+              </div>
+              <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center p-8">
+                <img
+                  src="https://placehold.co/600x200?text=Assessment+Form+PDF"
+                  alt="Assessment Form"
+                  className="max-w-full h-auto"
                 />
               </div>
             </div>
