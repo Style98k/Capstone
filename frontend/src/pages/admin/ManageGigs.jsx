@@ -4,20 +4,19 @@ import { initializeLocalStorage, getGigs, deleteGig, updateGig } from '../../uti
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import Modal from '../../components/UI/Modal'
-import { 
-  Trash2, 
-  Eye, 
-  Search, 
-  Filter, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Trash2,
+  Eye,
+  Search,
+  Filter,
+  CheckCircle,
+  XCircle,
   Clock,
   AlertTriangle,
   TrendingUp,
   FileText,
   Calendar,
   MapPin,
-  DollarSign,
   Tag,
   Shield,
   Zap,
@@ -25,6 +24,27 @@ import {
   AlertOctagon,
   Sparkles
 } from 'lucide-react'
+
+const PhilippinePeso = ({ className, ...props }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M7 21V4" />
+    <path d="M7 4h5a5 5 0 0 1 0 10h-5" />
+    <path d="M5 7h14" />
+    <path d="M5 10h13" />
+  </svg>
+)
 
 export default function ManageGigs() {
   const [filter, setFilter] = useState('')
@@ -63,8 +83,8 @@ export default function ManageGigs() {
 
   const filteredGigs = gigs.filter(g => {
     const matchesSearch = g.title.toLowerCase().includes(filter.toLowerCase()) ||
-                         g.category.toLowerCase().includes(filter.toLowerCase()) ||
-                         g.shortDesc.toLowerCase().includes(filter.toLowerCase())
+      g.category.toLowerCase().includes(filter.toLowerCase()) ||
+      g.shortDesc.toLowerCase().includes(filter.toLowerCase())
     const matchesCategory = selectedCategory === 'all' || g.category === selectedCategory
     const matchesStatus = selectedStatus === 'all' || g.status === selectedStatus
     return matchesSearch && matchesCategory && matchesStatus
@@ -117,7 +137,7 @@ export default function ManageGigs() {
   }
 
   const getStatusIcon = (status) => {
-    switch(status) {
+    switch (status) {
       case 'open': return <CheckCircle className="w-4 h-4 text-emerald-500" />
       case 'closed': return <XCircle className="w-4 h-4 text-red-500" />
       default: return <Clock className="w-4 h-4 text-amber-500" />
@@ -125,7 +145,7 @@ export default function ManageGigs() {
   }
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'open': return 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 text-emerald-700'
       case 'closed': return 'bg-gradient-to-r from-red-50 to-rose-50 border-red-200 text-red-700'
       default: return 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 text-amber-700'
@@ -144,7 +164,7 @@ export default function ManageGigs() {
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
-        
+
         <div className="relative">
           <div className="flex items-center gap-3 mb-2">
             <motion.div
@@ -158,7 +178,7 @@ export default function ManageGigs() {
           <p className="text-white/80 text-lg max-w-xl">
             Review, approve, or remove job posts submitted by users.
           </p>
-          
+
           {/* Stats */}
           <div className="flex gap-6 mt-6">
             <div className="flex items-center gap-2">
@@ -191,7 +211,7 @@ export default function ManageGigs() {
               className="w-full pl-10 pr-4 py-3 bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200"
             />
           </div>
-          
+
           {/* Category Filter */}
           <div className="relative">
             <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -206,7 +226,7 @@ export default function ManageGigs() {
               ))}
             </select>
           </div>
-          
+
           {/* Status Filter */}
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -256,7 +276,7 @@ export default function ManageGigs() {
                     {gig.location}
                   </span>
                   <span className="px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200 rounded border border-emerald-100">
-                    <DollarSign className="w-3 h-3 inline mr-1" />
+                    <PhilippinePeso className="w-3 h-3 inline mr-1" />
                     ₱{gig.pay.toLocaleString()}
                   </span>
                   <span className="px-2 py-0.5 text-xs bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded border border-gray-100">
@@ -318,7 +338,7 @@ export default function ManageGigs() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <InfoPill icon={<Tag className="w-4 h-4" />} label="Category" value={selectedGig.category} />
               <InfoPill icon={<MapPin className="w-4 h-4" />} label="Location" value={selectedGig.location} />
-              <InfoPill icon={<DollarSign className="w-4 h-4" />} label="Pay" value={`₱${selectedGig.pay.toLocaleString()}`} />
+              <InfoPill icon={<PhilippinePeso className="w-5 h-5" />} label="Pay" value={`₱${selectedGig.pay.toLocaleString()}`} />
               <InfoPill icon={<Clock className="w-4 h-4" />} label="Duration" value={selectedGig.duration || 'N/A'} />
             </div>
 
