@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
 import {
     User, Save, Camera, Star, Briefcase, TrendingUp,
     MapPin, Phone, Mail, Globe, Facebook, Calendar, Link as LinkIcon,
-    ShieldCheck, Upload
+    ShieldCheck, Upload, X, CheckCircle2, AlertCircle
 } from 'lucide-react'
 import Card from '../../components/UI/Card'
 import Modal from '../../components/UI/Modal'
@@ -19,9 +19,38 @@ export default function ProfileManagement() {
     const [loading, setLoading] = useState(false)
 
     // Verification State
-    const [verificationStatus, setVerificationStatus] = useState('unverified')
+    const [verificationStatus, setVerificationStatus] = useState(() => {
+        return localStorage.getItem('verificationStatus') || 'unverified'
+    })
     const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false)
     const [idFile, setIdFile] = useState(null)
+    const [notification, setNotification] = useState(null)
+
+    // Sync with Admin and Check Notifications
+    useEffect(() => {
+        // Sync Status (double check on mount)
+        const storedStatus = localStorage.getItem('verificationStatus')
+        if (storedStatus) {
+            setVerificationStatus(storedStatus)
+        }
+
+        // Check for Admin Notifications
+        const msg = localStorage.getItem('studentNotification')
+        if (msg) {
+            setNotification({
+                type: msg.includes('Approved') || msg.includes('approved') ? 'success' : 'error',
+                message: msg
+            })
+            // Clear message so it doesn't show again
+            localStorage.removeItem('studentNotification')
+
+            // Auto-dismiss
+            const timer = setTimeout(() => {
+                setNotification(null)
+            }, 5000)
+            return () => clearTimeout(timer)
+        }
+    }, [])
 
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -81,13 +110,52 @@ export default function ProfileManagement() {
     }
 
     const handleVerifySubmit = () => {
-        setVerificationStatus('pending')
+        const newStatus = 'pending'
+        setVerificationStatus(newStatus)
+        localStorage.setItem('verificationStatus', newStatus) // Sync to Admin
         setIsVerifyModalOpen(false)
         setIdFile(null)
     }
 
     return (
-        <div className="space-y-6 max-w-5xl mx-auto pb-12">
+        <div className="space-y-6 max-w-5xl mx-auto pb-12 relative">
+            {/* Notification Toast */}
+            {notification && (
+                <div className="fixed top-24 right-4 md:right-8 z-50 animate-in slide-in-from-right duration-300">
+                    <div className={`flex items-start gap-3 p-4 rounded-xl shadow-lg border-l-4 max-w-sm bg-white dark:bg-gray-800 ${notification.type === 'success'
+                        ? 'border-green-500'
+                        : 'border-red-500'
+                        }`}>
+                        <div className={`p-1.5 rounded-full ${notification.type === 'success'
+                            ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                            }`}>
+                            {notification.type === 'success' ? (
+                                <CheckCircle2 className="w-5 h-5" />
+                            ) : (
+                                <AlertCircle className="w-5 h-5" />
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                            <h4 className={`text-sm font-semibold ${notification.type === 'success'
+                                ? 'text-green-700 dark:text-green-300'
+                                : 'text-red-700 dark:text-red-300'
+                                }`}>
+                                {notification.type === 'success' ? 'Verification Update' : 'Action Required'}
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                {notification.message}
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setNotification(null)}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
