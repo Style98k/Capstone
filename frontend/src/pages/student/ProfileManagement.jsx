@@ -22,8 +22,13 @@ export default function ProfileManagement() {
     const [verificationStatus, setVerificationStatus] = useState(() => {
         return localStorage.getItem('verificationStatus') || 'unverified'
     })
+    const [assessmentStatus, setAssessmentStatus] = useState(() => {
+        return localStorage.getItem('assessmentStatus') || 'unverified'
+    })
     const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false)
+    const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState(false)
     const [idFile, setIdFile] = useState(null)
+    const [assessmentFile, setAssessmentFile] = useState(null)
     const [notification, setNotification] = useState(null)
 
     // Sync with Admin and Check Notifications
@@ -32,6 +37,11 @@ export default function ProfileManagement() {
         const storedStatus = localStorage.getItem('verificationStatus')
         if (storedStatus) {
             setVerificationStatus(storedStatus)
+        }
+
+        const storedAssessmentStatus = localStorage.getItem('assessmentStatus')
+        if (storedAssessmentStatus) {
+            setAssessmentStatus(storedAssessmentStatus)
         }
 
         // Check for Admin Notifications
@@ -109,12 +119,26 @@ export default function ProfileManagement() {
         }
     }
 
+    const handleAssessmentFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setAssessmentFile(e.target.files[0])
+        }
+    }
+
     const handleVerifySubmit = () => {
         const newStatus = 'pending'
         setVerificationStatus(newStatus)
         localStorage.setItem('verificationStatus', newStatus) // Sync to Admin
         setIsVerifyModalOpen(false)
         setIdFile(null)
+    }
+
+    const handleAssessmentSubmit = () => {
+        const newStatus = 'pending'
+        setAssessmentStatus(newStatus)
+        localStorage.setItem('assessmentStatus', newStatus) // Sync to Admin
+        setIsAssessmentModalOpen(false)
+        setAssessmentFile(null)
     }
 
     return (
@@ -279,6 +303,24 @@ export default function ProfileManagement() {
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Phone</span>
                                 <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">Unverified</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600 dark:text-gray-400">Assessment Form / COR</span>
+                                {assessmentStatus === 'verified' && (
+                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                                )}
+                                {assessmentStatus === 'pending' && (
+                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">Pending Review</span>
+                                )}
+                                {assessmentStatus === 'unverified' && (
+                                    <Button
+                                        size="sm"
+                                        className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                        onClick={() => setIsAssessmentModalOpen(true)}
+                                    >
+                                        Upload PDF
+                                    </Button>
+                                )}
                             </div>
                         </div>
                         {isEditing && (
@@ -458,6 +500,57 @@ export default function ProfileManagement() {
                             Cancel
                         </Button>
                         <Button onClick={handleVerifySubmit} disabled={!idFile}>
+                            Submit
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={isAssessmentModalOpen}
+                onClose={() => setIsAssessmentModalOpen(false)}
+                title="Upload Assessment Form"
+            >
+                <div className="space-y-6">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Please upload your Certificate of Registration (COR) or latest Assessment Form.
+                    </p>
+
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
+                        <input
+                            key={isAssessmentModalOpen ? 'open' : 'closed'}
+                            type="file"
+                            name="assessmentForm"
+                            id="assessment-form-upload"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            onChange={handleAssessmentFileChange}
+                        />
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-3">
+                            <Upload className="w-8 h-8 text-blue-500" />
+                        </div>
+                        {assessmentFile ? (
+                            <>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
+                                    {assessmentFile.name}
+                                </span>
+                                <span className="text-xs text-green-500 mt-1">File selected</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Click to upload Assessment Form
+                                </span>
+                                <span className="text-xs text-gray-500 mt-1">Supports PDF, PNG, JPG</span>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="outline" onClick={() => setIsAssessmentModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleAssessmentSubmit} disabled={!assessmentFile}>
                             Submit
                         </Button>
                     </div>
