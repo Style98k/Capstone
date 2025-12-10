@@ -22,12 +22,12 @@ export default function Login() {
     setLoading(true)
 
     const result = login(email, password)
-    
+
     if (result.success) {
-      const redirectPath = 
+      const redirectPath =
         result.user.role === 'student' ? '/student/dashboard' :
-        result.user.role === 'client' ? '/client/dashboard' :
-        result.user.role === 'admin' ? '/admin/dashboard' : '/'
+          result.user.role === 'client' ? '/client/dashboard' :
+            result.user.role === 'admin' ? '/admin/dashboard' : '/'
       navigate(redirectPath)
     } else {
       setError(result.message || 'Invalid credentials')
@@ -55,69 +55,78 @@ export default function Login() {
         >
           <Card>
             <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-                {error}
+              {error && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+
+              <Input
+                label="Email or School ID"
+                type="text"
+                name="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email or school ID"
+                required
+                leftIcon={Mail}
+              />
+
+              <Input
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                leftIcon={Lock}
+                rightElement={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                }
+              />
+
+              <div className="flex items-center justify-between">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="rememberMe"
+                    id="remember-me"
+                    className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Remember me</span>
+                </label>
+                <Link to="/forgot-password" className="text-sm text-sky-600 hover:text-sky-700">
+                  Forgot password?
+                </Link>
               </div>
-            )}
 
-            <Input
-              label="Email or School ID"
-              type="text"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email or school ID"
-              required
-              leftIcon={Mail}
-            />
+              <Button
+                type="submit"
+                className="w-full bg-gradient-to-r from-sky-500 to-teal-400 hover:from-sky-600 hover:to-teal-500 border-0"
+                disabled={loading}
+              >
+                {loading ? 'Signing in...' : 'Sign in'}
+              </Button>
+            </form>
 
-            <Input
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              leftIcon={Lock}
-              rightElement={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              }
-            />
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input type="checkbox" className="rounded border-gray-300 text-sky-600 focus:ring-sky-500" />
-                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Remember me</span>
-              </label>
-              <Link to="/forgot-password" className="text-sm text-sky-600 hover:text-sky-700">
-                Forgot password?
-              </Link>
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Don't have an account?{' '}
+                <Link to="/register" className="text-sky-600 hover:text-sky-700 font-medium">
+                  Sign up
+                </Link>
+              </p>
             </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-sky-500 to-teal-400 hover:from-sky-600 hover:to-teal-500 border-0"
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-sky-600 hover:text-sky-700 font-medium">
-                Sign up
-              </Link>
-            </p>
-          </div>
-        </Card>
+          </Card>
         </motion.div>
       </div>
     </div>

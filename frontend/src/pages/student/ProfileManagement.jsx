@@ -151,6 +151,8 @@ export default function ProfileManagement() {
 
                         <input
                             type="file"
+                            name="profilePhoto"
+                            id="profile-photo-upload"
                             ref={fileInputRef}
                             className="hidden"
                             accept="image/*"
@@ -357,6 +359,8 @@ export default function ProfileManagement() {
                         <input
                             key={isVerifyModalOpen ? 'open' : 'closed'}
                             type="file"
+                            name="schoolId"
+                            id="school-id-upload"
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             accept="image/*"
                             onChange={handleIdFileChange}

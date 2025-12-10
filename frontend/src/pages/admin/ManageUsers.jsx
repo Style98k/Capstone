@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { mockUsers } from '../../data/mockUsers'
 import Card from '../../components/UI/Card'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -16,8 +16,11 @@ import {
   Trash2,
   CheckCircle2,
   XCircle,
-  Shield
+  Shield,
+  Eye
 } from 'lucide-react'
+import Modal from '../../components/UI/Modal'
+import Button from '../../components/UI/Button'
 
 // Avatar color palette
 const avatarColors = [
@@ -37,13 +40,39 @@ const getAvatarColor = (name) => {
 }
 
 export default function ManageUsers() {
-  const [users, setUsers] = useState(mockUsers)
+  const [users, setUsers] = useState(() => {
+    // Initial state setup with hardcoded pending status for Maria
+    return mockUsers.map(u => {
+      if (u.name === 'Maria Student') {
+        return { ...u, verificationStatus: 'pending', verified: false }
+      }
+      return { ...u, verificationStatus: u.verified ? 'verified' : 'unverified' }
+    })
+  })
+
   const [filter, setFilter] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
+  const [verificationTab, setVerificationTab] = useState('all') // 'all', 'pending', 'verified'
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState('table')
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [selectedUsers, setSelectedUsers] = useState([])
+
+  // Verification Modal State
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false)
+  const [userToVerify, setUserToVerify] = useState(null)
+
+  // Load Logic
+  useEffect(() => {
+    const storedStatus = localStorage.getItem('verificationStatus')
+    if (storedStatus) {
+      setUsers(prev => prev.map(u =>
+        u.name === 'Maria Student'
+          ? { ...u, verificationStatus: storedStatus, verified: storedStatus === 'verified' }
+          : u
+      ))
+    }
+  }, [])
 
   const filteredUsers = users.filter(u => {
     const matchesSearch =
@@ -53,8 +82,50 @@ export default function ManageUsers() {
 
     const matchesRole = roleFilter === 'all' || u.role === roleFilter
 
-    return matchesSearch && matchesRole
+    // Verification Tab Filter
+    let matchesTab = true
+    if (verificationTab === 'pending') matchesTab = u.verificationStatus === 'pending'
+    if (verificationTab === 'verified') matchesTab = u.verificationStatus === 'verified'
+
+    return matchesSearch && matchesRole && matchesTab
   })
+
+  const pendingCount = users.filter(u => u.verificationStatus === 'pending').length
+
+  const handleOpenVerify = (user) => {
+    setUserToVerify(user)
+    setIsVerifyModalOpen(true)
+  }
+
+  const handleApproveVerify = () => {
+    if (!userToVerify) return
+
+    setUsers(prev => prev.map(u =>
+      u.id === userToVerify.id
+        ? { ...u, verificationStatus: 'verified', verified: true }
+        : u
+    ))
+
+    localStorage.setItem('verificationStatus', 'verified')
+    localStorage.setItem('studentNotification', 'Your ID has been approved!')
+    setIsVerifyModalOpen(false)
+    setUserToVerify(null)
+  }
+
+  const handleRejectVerify = () => {
+    if (!userToVerify) return
+
+    setUsers(prev => prev.map(u =>
+      u.id === userToVerify.id
+        ? { ...u, verificationStatus: 'unverified', verified: false }
+        : u
+    ))
+
+    localStorage.setItem('verificationStatus', 'unverified')
+    localStorage.setItem('studentNotification', 'ID Rejected. Please upload a clearer photo.')
+    setIsVerifyModalOpen(false)
+    setUserToVerify(null)
+  }
 
   // Pagination
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
@@ -102,6 +173,42 @@ export default function ManageUsers() {
           </p>
         </div>
       </motion.div>
+
+      {/* Tabs */}
+      <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => { setVerificationTab('all'); setCurrentPage(1); }}
+          className={`pb-3 px-1 text-sm font-medium transition-all relative ${verificationTab === 'all'
+            ? 'text-indigo-600 border-b-2 border-indigo-600'
+            : 'text-gray-500 hover:text-gray-700'
+            }`}
+        >
+          All Users
+        </button>
+        <button
+          onClick={() => { setVerificationTab('pending'); setCurrentPage(1); }}
+          className={`pb-3 px-1 text-sm font-medium transition-all relative ${verificationTab === 'pending'
+            ? 'text-indigo-600 border-b-2 border-indigo-600'
+            : 'text-gray-500 hover:text-gray-700'
+            }`}
+        >
+          Pending Verification
+          {pendingCount > 0 && (
+            <span className="ml-2 px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full">
+              {pendingCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => { setVerificationTab('verified'); setCurrentPage(1); }}
+          className={`pb-3 px-1 text-sm font-medium transition-all relative ${verificationTab === 'verified'
+            ? 'text-indigo-600 border-b-2 border-indigo-600'
+            : 'text-gray-500 hover:text-gray-700'
+            }`}
+        >
+          Verified
+        </button>
+      </div>
 
       {/* Toolbar */}
       <Card padding="p-4" delay={1}>
@@ -171,6 +278,8 @@ export default function ManageUsers() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
+                name="search"
+                id="search-users"
                 placeholder="Search users..."
                 value={filter}
                 onChange={(e) => {
@@ -203,7 +312,12 @@ export default function ManageUsers() {
                   <thead>
                     <tr className="border-b border-gray-100">
                       <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <input type="checkbox" className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <input
+                          type="checkbox"
+                          name="selectAll"
+                          id="select-all-users"
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
                       </th>
                       <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Full name
@@ -239,7 +353,12 @@ export default function ManageUsers() {
                           transition-colors duration-200 group"
                       >
                         <td className="py-4 px-6">
-                          <input type="checkbox" className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                          <input
+                            type="checkbox"
+                            name={`selectUser-${user.id}`}
+                            id={`select-user-${user.id}`}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
@@ -285,7 +404,12 @@ export default function ManageUsers() {
                           }
                         </td>
                         <td className="py-4 px-6">
-                          {user.verified ? (
+                          {user.verificationStatus === 'pending' ? (
+                            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                              Pending Review
+                            </span>
+                          ) : user.verified ? (
                             <span className="text-emerald-600 font-medium flex items-center gap-1">
                               <CheckCircle2 className="w-4 h-4" />
                               Verified
@@ -293,7 +417,7 @@ export default function ManageUsers() {
                           ) : (
                             <button
                               onClick={() => handleVerify(user.id)}
-                              className="text-amber-600 font-medium flex items-center gap-1 hover:text-amber-700 transition-colors"
+                              className="text-gray-400 font-medium flex items-center gap-1 hover:text-gray-600 transition-colors"
                             >
                               <XCircle className="w-4 h-4" />
                               Unverified
@@ -302,6 +426,17 @@ export default function ManageUsers() {
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-1">
+                            {user.verificationStatus === 'pending' && (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleOpenVerify(user)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Review Verification"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </motion.button>
+                            )}
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.95 }}
@@ -821,6 +956,58 @@ export default function ManageUsers() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Verification Modal */}
+      <Modal
+        isOpen={isVerifyModalOpen}
+        onClose={() => setIsVerifyModalOpen(false)}
+        title="Verify Student Identity"
+        size="lg"
+      >
+        {userToVerify && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Full Name</label>
+                <p className="text-lg font-bold text-gray-900">{userToVerify.name}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Student ID No.</label>
+                <p className="text-lg font-bold text-gray-900">
+                  {userToVerify.schoolId || '2024-001'}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-500 block mb-2">ID Photo</label>
+              <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                <img
+                  src="https://placehold.co/600x400"
+                  alt="Student ID"
+                  className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+              <Button
+                variant="danger"
+                onClick={handleRejectVerify}
+                className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+              >
+                Reject
+              </Button>
+              <Button
+                onClick={handleApproveVerify}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Approve
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </motion.div>
   )
 }

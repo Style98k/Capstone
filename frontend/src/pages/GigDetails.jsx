@@ -25,7 +25,7 @@ export default function GigDetails() {
     initializeLocalStorage()
     return getGigs()
   }, [])
-  
+
   const applications = useMemo(() => {
     return getApplications()
   }, [])
@@ -59,9 +59,9 @@ export default function GigDetails() {
           type: f.type
         }))
       }
-      
+
       const result = saveApplication(applicationData)
-      
+
       if (result.success) {
         setShowApplyModal(false)
         setProposal('')
@@ -201,6 +201,8 @@ export default function GigDetails() {
 
           <input
             type="file"
+            name="attachments"
+            id="attachment-upload"
             ref={fileInputRef}
             className="hidden"
             multiple
@@ -283,6 +285,8 @@ export default function GigDetails() {
                       {isManagingAttachments && (
                         <input
                           type="checkbox"
+                          name={`remove-attachment-${idx}`}
+                          id={`remove-attachment-${idx}`}
                           className="h-3 w-3 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                           checked={checked}
                           onChange={(e) => {
@@ -309,6 +313,8 @@ export default function GigDetails() {
           <div className="mt-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 px-4 py-3 sm:px-5 sm:py-4 shadow-sm hover:shadow-md focus-within:border-primary-300 focus-within:ring-1 focus-within:ring-primary-200 dark:focus-within:border-primary-500 dark:focus-within:ring-primary-800 transition-all">
             <Textarea
               label="Your Proposal"
+              name="proposal"
+              id="gig-proposal"
               value={proposal}
               onChange={(e) => setProposal(e.target.value)}
               placeholder="Tell the client why you're a great fit, your experience, and when you can start..."
