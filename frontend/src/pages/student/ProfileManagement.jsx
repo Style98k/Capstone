@@ -114,31 +114,91 @@ export default function ProfileManagement() {
     }
 
     const handleIdFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            setIdFile(e.target.files[0])
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Check file size (2MB = 2 * 1024 * 1024 bytes)
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        if (file.size > maxSize) {
+            alert('File is too large. Please choose an image smaller than 2MB.');
+            e.target.value = ''; // Reset the file input
+            return;
         }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            // Save the base64 string to localStorage
+            localStorage.setItem('studentIDImage', event.target.result);
+            // Update state with the file
+            setIdFile(file);
+        };
+        reader.onerror = (error) => {
+            console.error('Error reading file:', error);
+            alert('Error reading the file. Please try again.');
+        };
+        reader.readAsDataURL(file);
     }
 
     const handleAssessmentFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            setAssessmentFile(e.target.files[0])
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Check file size (2MB = 2 * 1024 * 1024 bytes)
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        if (file.size > maxSize) {
+            alert('File is too large. Please choose a file smaller than 2MB.');
+            e.target.value = ''; // Reset the file input
+            return;
         }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            // Save the base64 string to localStorage
+            localStorage.setItem('studentAssessmentImage', event.target.result);
+            // Update state with the file
+            setAssessmentFile(file);
+        };
+        reader.onerror = (error) => {
+            console.error('Error reading file:', error);
+            alert('Error reading the file. Please try again.');
+        };
+        reader.readAsDataURL(file);
     }
 
     const handleVerifySubmit = () => {
-        const newStatus = 'pending'
-        setVerificationStatus(newStatus)
-        localStorage.setItem('verificationStatus', newStatus) // Sync to Admin
-        setIsVerifyModalOpen(false)
-        setIdFile(null)
+        const newStatus = 'pending';
+        setVerificationStatus(newStatus);
+        localStorage.setItem('verificationStatus', newStatus); // Sync to Admin
+        setIsVerifyModalOpen(false);
+        
+        // Reset file input
+        const fileInput = document.getElementById('school-id-upload');
+        if (fileInput) fileInput.value = '';
+        setIdFile(null);
+        
+        // Show success message
+        setNotification({
+            type: 'success',
+            message: 'School ID uploaded successfully! Your document is pending review.'
+        });
     }
 
     const handleAssessmentSubmit = () => {
-        const newStatus = 'pending'
-        setAssessmentStatus(newStatus)
-        localStorage.setItem('assessmentStatus', newStatus) // Sync to Admin
-        setIsAssessmentModalOpen(false)
-        setAssessmentFile(null)
+        const newStatus = 'pending';
+        setAssessmentStatus(newStatus);
+        localStorage.setItem('assessmentStatus', newStatus); // Sync to Admin
+        setIsAssessmentModalOpen(false);
+        
+        // Reset file input
+        const fileInput = document.getElementById('assessment-form-upload');
+        if (fileInput) fileInput.value = '';
+        setAssessmentFile(null);
+        
+        // Show success message
+        setNotification({
+            type: 'success',
+            message: 'Assessment Form uploaded successfully! Your document is pending review.'
+        });
     }
 
     return (

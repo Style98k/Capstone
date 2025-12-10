@@ -61,6 +61,8 @@ export default function ManageUsers() {
   // Verification Modal State
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false)
   const [userToVerify, setUserToVerify] = useState(null)
+  const [storedID, setStoredID] = useState(null)
+  const [storedAssessment, setStoredAssessment] = useState(null)
 
   // Load Logic
   useEffect(() => {
@@ -99,6 +101,11 @@ export default function ManageUsers() {
 
   const handleOpenVerify = (user) => {
     setUserToVerify(user)
+    // Load images from localStorage when opening the modal
+    const idImage = localStorage.getItem('studentIDImage')
+    const assessmentImage = localStorage.getItem('studentAssessmentImage')
+    setStoredID(idImage)
+    setStoredAssessment(assessmentImage)
     setIsVerifyModalOpen(true)
   }
 
@@ -1008,9 +1015,13 @@ export default function ManageUsers() {
               </div>
               <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
                 <img
-                  src="https://placehold.co/600x400"
+                  src={storedID || "https://placehold.co/600x400"}
                   alt="Student ID"
                   className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
+                  onError={(e) => {
+                    e.target.onerror = null
+                    e.target.src = "https://placehold.co/600x400"
+                  }}
                 />
               </div>
             </div>
@@ -1027,9 +1038,13 @@ export default function ManageUsers() {
               </div>
               <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center p-8">
                 <img
-                  src="https://placehold.co/600x200?text=Assessment+Form+PDF"
+                  src={storedAssessment || "https://placehold.co/600x200?text=Assessment+Form+PDF"}
                   alt="Assessment Form"
                   className="max-w-full h-auto"
+                  onError={(e) => {
+                    e.target.onerror = null
+                    e.target.src = "https://placehold.co/600x200?text=Assessment+Form+PDF"
+                  }}
                 />
               </div>
             </div>
