@@ -6,6 +6,7 @@ import {
     ShieldCheck, Upload
 } from 'lucide-react'
 import Card from '../../components/UI/Card'
+import Modal from '../../components/UI/Modal'
 import Input from '../../components/UI/Input'
 import Textarea from '../../components/UI/Textarea'
 import Button from '../../components/UI/Button'
@@ -16,6 +17,11 @@ export default function ProfileManagement() {
 
     const [isEditing, setIsEditing] = useState(false)
     const [loading, setLoading] = useState(false)
+
+    // Verification State
+    const [verificationStatus, setVerificationStatus] = useState('unverified')
+    const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false)
+    const [idFile, setIdFile] = useState(null)
 
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -66,6 +72,18 @@ export default function ProfileManagement() {
         updateUser(updates)
         setLoading(false)
         setIsEditing(false)
+    }
+
+    const handleIdFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setIdFile(e.target.files[0])
+        }
+    }
+
+    const handleVerifySubmit = () => {
+        setVerificationStatus('pending')
+        setIsVerifyModalOpen(false)
+        setIdFile(null)
     }
 
     return (
@@ -172,7 +190,21 @@ export default function ProfileManagement() {
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">School ID</span>
-                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                                {verificationStatus === 'verified' && (
+                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                                )}
+                                {verificationStatus === 'pending' && (
+                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">Pending Review</span>
+                                )}
+                                {verificationStatus === 'unverified' && (
+                                    <Button
+                                        size="sm"
+                                        className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                        onClick={() => setIsVerifyModalOpen(true)}
+                                    >
+                                        Upload ID
+                                    </Button>
+                                )}
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Phone</span>
@@ -310,6 +342,55 @@ export default function ProfileManagement() {
                     </Card>
                 </div>
             </div>
+
+            <Modal
+                isOpen={isVerifyModalOpen}
+                onClose={() => setIsVerifyModalOpen(false)}
+                title="Verify Student Identity"
+            >
+                <div className="space-y-6">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Please upload a clear photo of your valid School ID to verify your student status.
+                    </p>
+
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
+                        <input
+                            key={isVerifyModalOpen ? 'open' : 'closed'}
+                            type="file"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            accept="image/*"
+                            onChange={handleIdFileChange}
+                        />
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-3">
+                            <Upload className="w-8 h-8 text-blue-500" />
+                        </div>
+                        {idFile ? (
+                            <>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
+                                    {idFile.name}
+                                </span>
+                                <span className="text-xs text-green-500 mt-1">File selected</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Click to upload School ID
+                                </span>
+                                <span className="text-xs text-gray-500 mt-1">Supports PNG, JPG</span>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="outline" onClick={() => setIsVerifyModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleVerifySubmit} disabled={!idFile}>
+                            Submit
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 }
