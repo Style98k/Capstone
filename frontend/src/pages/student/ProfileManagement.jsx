@@ -457,27 +457,31 @@ export default function ProfileManagement() {
                                 disabled={!isEditing}
                                 leftIcon={Mail}
                             />
-                            <div className="flex items-start gap-3">
-                                <div className="flex-1">
-                                    <Input
-                                        label="Phone Number"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        disabled={!isEditing}
-                                        leftIcon={Phone}
-                                    />
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="label">Phone Number</span>
+                                    {phoneStatus === 'verified' && (
+                                        <span className="flex items-center text-green-600 gap-1 text-sm font-medium -mt-2">
+                                            <CheckCircle2 className="w-4 h-4 ml-1" />
+                                            Verified
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="pt-7">
-                                    {phoneStatus === 'verified' ? (
-                                        <div className="flex items-center text-green-600 dark:text-green-400 gap-1 text-sm">
-                                            <CheckCircle2 className="w-5 h-5" />
-                                            <span>Verified</span>
-                                        </div>
-                                    ) : (
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1">
+                                        <Input
+                                            label={null}
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                            disabled={!isEditing}
+                                            leftIcon={() => <Phone className="w-4 h-4 -mt-2" />}
+                                            className="-mt-2"
+                                        />
+                                    </div>
+                                    {phoneStatus !== 'verified' && (
                                         <Button
-                                            size="sm"
-                                            className="h-9 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+                                            className="h-10 bg-blue-600 text-white px-5 rounded-lg font-medium hover:bg-blue-700 transition -mt-6"
                                             onClick={() => setIsPhoneModalOpen(true)}
                                         >
                                             Verify
