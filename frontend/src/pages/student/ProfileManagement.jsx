@@ -177,9 +177,6 @@ export default function ProfileManagement() {
         if (fileInput) fileInput.value = '';
         setIdFile(null);
         
-        // Trigger notification to admin
-        triggerNotification('admin', 'Pending Verification', 'A student submitted documents for review.', 'verification');
-        
         // Show success message
         setNotification({
             type: 'success',
@@ -198,8 +195,10 @@ export default function ProfileManagement() {
         if (fileInput) fileInput.value = '';
         setAssessmentFile(null);
         
-        // Trigger notification to admin
-        triggerNotification('admin', 'Pending Verification', 'A student submitted documents for review.', 'verification');
+        // Only send notification to admin when BOTH documents are uploaded
+        if (verificationStatus === 'pending' && newStatus === 'pending') {
+          triggerNotification('admin', 'Pending Verification', 'A student submitted documents for review.', 'verification');
+        }
         
         // Show success message
         setNotification({
