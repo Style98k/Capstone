@@ -139,7 +139,9 @@ export default function ProfileManagement() {
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            // Save the base64 string to localStorage
+            // Save the base64 string to localStorage with user ID
+            localStorage.setItem(`studentIDImage_${user.id}`, event.target.result);
+            // Also save without ID for backward compatibility
             localStorage.setItem('studentIDImage', event.target.result);
             // Update state with the file
             setIdFile(file);
@@ -165,7 +167,9 @@ export default function ProfileManagement() {
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            // Save the base64 string to localStorage
+            // Save the base64 string to localStorage with user ID
+            localStorage.setItem(`studentAssessmentImage_${user.id}`, event.target.result);
+            // Also save without ID for backward compatibility
             localStorage.setItem('studentAssessmentImage', event.target.result);
             // Update state with the file
             setAssessmentFile(file);
@@ -177,17 +181,33 @@ export default function ProfileManagement() {
         reader.readAsDataURL(file);
     }
 
+    // Helper to save per-user verification status
+    const saveUserVerificationStatus = (verificationStatus, assessmentStatus) => {
+        try {
+            const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses') || '{}')
+            statuses[user.id] = { verificationStatus, assessmentStatus }
+            localStorage.setItem('quickgig_user_verification_statuses', JSON.stringify(statuses))
+        } catch (e) {
+            console.error('Error saving verification status:', e)
+        }
+    }
+
     const handleVerifySubmit = () => {
         const newStatus = 'pending';
         setVerificationStatus(newStatus);
-        localStorage.setItem('verificationStatus', newStatus); // Sync to Admin
+
+        // Save per-user verification status
+        saveUserVerificationStatus(newStatus, assessmentStatus);
+
+        // Also save for backward compatibility
+        localStorage.setItem('verificationStatus', newStatus);
         setIsVerifyModalOpen(false);
-        
+
         // Reset file input
         const fileInput = document.getElementById('school-id-upload');
         if (fileInput) fileInput.value = '';
         setIdFile(null);
-        
+
         // Show success message
         setNotification({
             type: 'success',
@@ -198,19 +218,24 @@ export default function ProfileManagement() {
     const handleAssessmentSubmit = () => {
         const newStatus = 'pending';
         setAssessmentStatus(newStatus);
-        localStorage.setItem('assessmentStatus', newStatus); // Sync to Admin
+
+        // Save per-user verification status
+        saveUserVerificationStatus(verificationStatus, newStatus);
+
+        // Also save for backward compatibility
+        localStorage.setItem('assessmentStatus', newStatus);
         setIsAssessmentModalOpen(false);
-        
+
         // Reset file input
         const fileInput = document.getElementById('assessment-form-upload');
         if (fileInput) fileInput.value = '';
         setAssessmentFile(null);
-        
+
         // Only send notification to admin when BOTH documents are uploaded
         if (verificationStatus === 'pending' && newStatus === 'pending') {
-          triggerNotification('admin', 'Pending Verification', 'A student submitted documents for review.', 'verification');
+            triggerNotification('admin', 'Pending Verification', `${user.name} submitted documents for review.`, 'verification');
         }
-        
+
         // Show success message
         setNotification({
             type: 'success',

@@ -40,14 +40,67 @@ const getAvatarColor = (name) => {
   return avatarColors[index]
 }
 
+// Helper to get registered users from localStorage
+const getRegisteredUsers = () => {
+  try {
+    const saved = localStorage.getItem('quickgig_registered_users')
+    return saved ? JSON.parse(saved) : []
+  } catch (e) {
+    return []
+  }
+}
+
+// Helper to get per-user verification status
+const getUserVerificationStatus = (userId) => {
+  try {
+    const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses') || '{}')
+    return statuses[userId] || { verificationStatus: 'unverified', assessmentStatus: 'unverified' }
+  } catch (e) {
+    return { verificationStatus: 'unverified', assessmentStatus: 'unverified' }
+  }
+}
+
+// Helper to save per-user verification status
+const saveUserVerificationStatus = (userId, verificationStatus, assessmentStatus) => {
+  try {
+    const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses') || '{}')
+    statuses[userId] = { verificationStatus, assessmentStatus }
+    localStorage.setItem('quickgig_user_verification_statuses', JSON.stringify(statuses))
+  } catch (e) {
+    console.error('Error saving verification status:', e)
+  }
+}
+
 export default function ManageUsers() {
   const [users, setUsers] = useState(() => {
-    // Initial state setup with hardcoded pending status for Maria
-    return mockUsers.map(u => {
+    // Combine mockUsers with registered users from localStorage
+    const registeredUsers = getRegisteredUsers()
+    const allUsers = [...mockUsers, ...registeredUsers]
+
+    // Remove duplicates based on email
+    const uniqueUsers = allUsers.filter((user, index, self) =>
+      index === self.findIndex(u => u.email === user.email)
+    )
+
+    // Map users with their verification status from localStorage
+    return uniqueUsers.map(u => {
+      const storedStatus = getUserVerificationStatus(u.id)
+
+      // Special case for Maria (demo user with pending status)
       if (u.name === 'Maria Student') {
         return { ...u, verificationStatus: 'pending', verified: false }
       }
-      return { ...u, verificationStatus: u.verified ? 'verified' : 'unverified' }
+
+      // For other users, use stored status or computed default
+      const verificationStatus = storedStatus.verificationStatus || (u.verified ? 'verified' : 'unverified')
+      const assessmentStatus = storedStatus.assessmentStatus || (u.verified ? 'verified' : 'unverified')
+
+      return {
+        ...u,
+        verificationStatus,
+        assessmentStatus,
+        verified: verificationStatus === 'verified' && assessmentStatus === 'verified'
+      }
     })
   })
 
@@ -65,16 +118,52 @@ export default function ManageUsers() {
   const [storedID, setStoredID] = useState(null)
   const [storedAssessment, setStoredAssessment] = useState(null)
 
-  // Load Logic
+  // Refresh users list periodically to catch new registrations
   useEffect(() => {
-    const storedStatus = localStorage.getItem('verificationStatus')
-    if (storedStatus) {
-      setUsers(prev => prev.map(u =>
-        u.name === 'Maria Student'
-          ? { ...u, verificationStatus: storedStatus, verified: storedStatus === 'verified' }
-          : u
-      ))
+    const refreshUsers = () => {
+      const registeredUsers = getRegisteredUsers()
+      const allUsers = [...mockUsers, ...registeredUsers]
+
+      // Remove duplicates based on email
+      const uniqueUsers = allUsers.filter((user, index, self) =>
+        index === self.findIndex(u => u.email === user.email)
+      )
+
+      setUsers(prev => {
+        // Keep existing user states but add new users
+        const existingIds = new Set(prev.map(u => u.id))
+        const newUsers = uniqueUsers.filter(u => !existingIds.has(u.id)).map(u => {
+          const storedStatus = getUserVerificationStatus(u.id)
+          return {
+            ...u,
+            verificationStatus: storedStatus.verificationStatus || 'unverified',
+            assessmentStatus: storedStatus.assessmentStatus || 'unverified',
+            verified: false
+          }
+        })
+
+        // Update existing users with latest verification statuses
+        const updatedExisting = prev.map(u => {
+          const storedStatus = getUserVerificationStatus(u.id)
+          if (storedStatus.verificationStatus && storedStatus.verificationStatus !== u.verificationStatus) {
+            return {
+              ...u,
+              verificationStatus: storedStatus.verificationStatus,
+              assessmentStatus: storedStatus.assessmentStatus,
+              verified: storedStatus.verificationStatus === 'verified' && storedStatus.assessmentStatus === 'verified'
+            }
+          }
+          return u
+        })
+
+        return [...updatedExisting, ...newUsers]
+      })
     }
+
+    // Refresh on mount and every 2 seconds
+    refreshUsers()
+    const interval = setInterval(refreshUsers, 2000)
+    return () => clearInterval(interval)
   }, [])
 
   const filteredUsers = users.filter(u => {
@@ -96,15 +185,15 @@ export default function ManageUsers() {
     return matchesSearch && matchesRole && matchesTab
   })
 
-  const pendingCount = users.filter(u => 
+  const pendingCount = users.filter(u =>
     u.verificationStatus === 'pending' || u.assessmentStatus === 'pending'
   ).length
 
   const handleOpenVerify = (user) => {
     setUserToVerify(user)
-    // Load images from localStorage when opening the modal
-    const idImage = localStorage.getItem('studentIDImage')
-    const assessmentImage = localStorage.getItem('studentAssessmentImage')
+    // Load images from per-user localStorage when opening the modal
+    const idImage = localStorage.getItem(`studentIDImage_${user.id}`)
+    const assessmentImage = localStorage.getItem(`studentAssessmentImage_${user.id}`)
     setStoredID(idImage)
     setStoredAssessment(assessmentImage)
     setIsVerifyModalOpen(true)
@@ -115,22 +204,26 @@ export default function ManageUsers() {
 
     setUsers(prev => prev.map(u =>
       u.id === userToVerify.id
-        ? { 
-            ...u, 
-            verificationStatus: 'verified',
-            assessmentStatus: 'verified',
-            verified: true 
-          }
+        ? {
+          ...u,
+          verificationStatus: 'verified',
+          assessmentStatus: 'verified',
+          verified: true
+        }
         : u
     ))
 
+    // Save per-user verification status
+    saveUserVerificationStatus(userToVerify.id, 'verified', 'verified')
+
+    // Also save for backward compatibility with current student session
     localStorage.setItem('verificationStatus', 'verified')
     localStorage.setItem('assessmentStatus', 'verified')
     localStorage.setItem('studentNotification', 'Your School ID and Assessment Form have been approved! You are now fully verified.')
-    
+
     // Trigger bell notification to student
     triggerNotification('student', 'Verification Approved', 'Your documents are approved. You are verified!', 'system');
-    
+
     setIsVerifyModalOpen(false)
     setUserToVerify(null)
   }
@@ -140,22 +233,26 @@ export default function ManageUsers() {
 
     setUsers(prev => prev.map(u =>
       u.id === userToVerify.id
-        ? { 
-            ...u, 
-            verificationStatus: 'unverified',
-            assessmentStatus: 'unverified',
-            verified: false 
-          }
+        ? {
+          ...u,
+          verificationStatus: 'unverified',
+          assessmentStatus: 'unverified',
+          verified: false
+        }
         : u
     ))
 
+    // Save per-user verification status
+    saveUserVerificationStatus(userToVerify.id, 'unverified', 'unverified')
+
+    // Also save for backward compatibility with current student session
     localStorage.setItem('verificationStatus', 'unverified')
     localStorage.setItem('assessmentStatus', 'unverified')
     localStorage.setItem('studentNotification', 'Your documents were rejected. Please upload clearer copies.')
-    
+
     // Trigger bell notification to student
     triggerNotification('student', 'Verification Rejected', 'Your documents were rejected.', 'system');
-    
+
     setIsVerifyModalOpen(false)
     setUserToVerify(null)
   }
