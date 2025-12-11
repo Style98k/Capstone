@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
+import { triggerNotification } from '../../utils/notificationManager'
 import { mockTransactions } from '../../data/mockTransactions'
 import { mockGigs } from '../../data/mockGigs'
 import { mockApplications } from '../../data/mockApplications'
@@ -52,6 +53,10 @@ export default function Payments() {
   const handlePaymentSuccess = (paymentData) => {
     // In real app, this would create a transaction record
     console.log('Payment successful:', paymentData)
+    
+    // Trigger notification to student
+    triggerNotification('student', 'Payment Received', 'You received a payment! Check your wallet.', 'payment');
+    
     alert('Payment processed successfully!')
     setPaymentModal(null)
   }

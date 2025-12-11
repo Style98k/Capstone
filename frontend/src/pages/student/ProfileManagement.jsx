@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
+import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Save, Camera, Star, Briefcase, TrendingUp,
     MapPin, Phone, Mail, Globe, Facebook, Calendar, Link as LinkIcon,
@@ -176,6 +177,9 @@ export default function ProfileManagement() {
         if (fileInput) fileInput.value = '';
         setIdFile(null);
         
+        // Trigger notification to admin
+        triggerNotification('admin', 'Verification Request', 'A student submitted documents for verification.', 'verification');
+        
         // Show success message
         setNotification({
             type: 'success',
@@ -193,6 +197,9 @@ export default function ProfileManagement() {
         const fileInput = document.getElementById('assessment-form-upload');
         if (fileInput) fileInput.value = '';
         setAssessmentFile(null);
+        
+        // Trigger notification to admin
+        triggerNotification('admin', 'Verification Request', 'A student submitted documents for verification.', 'verification');
         
         // Show success message
         setNotification({

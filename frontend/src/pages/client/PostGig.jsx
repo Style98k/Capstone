@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { categories } from '../../data/mockGigs'
 import { saveGig, initializeLocalStorage } from '../../utils/localStorage'
+import { triggerNotification } from '../../utils/notificationManager'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
 import Select from '../../components/UI/Select'
@@ -64,6 +65,10 @@ export default function PostGig() {
     const result = saveGig(gigData)
     
     if (result.success) {
+      // Trigger notifications to different roles
+      triggerNotification('admin', 'Job Review Needed', 'A client posted a new job. Please review it.', 'moderation');
+      triggerNotification('student', 'New Job Alert', 'New job posted! It might be suited for you, check it out.', 'gig');
+      
       setLoading(false)
       navigate('/client/manage-gigs')
     } else {

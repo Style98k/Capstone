@@ -1,6 +1,7 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useLocalAuth'
 import { getGigs, getApplications, saveApplication, initializeLocalStorage } from '../utils/localStorage'
+import { triggerNotification } from '../utils/notificationManager'
 import Card from '../components/UI/Card'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
@@ -63,6 +64,9 @@ export default function GigDetails() {
       const result = saveApplication(applicationData)
 
       if (result.success) {
+        // Trigger notification to client (gig owner)
+        triggerNotification('client', 'New Applicant', 'A student applied for your gig. Click to view details.', 'application');
+        
         setShowApplyModal(false)
         setProposal('')
         setAttachments([])
