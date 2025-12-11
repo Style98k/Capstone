@@ -26,8 +26,13 @@ export default function ProfileManagement() {
     const [assessmentStatus, setAssessmentStatus] = useState(() => {
         return localStorage.getItem('assessmentStatus') || 'unverified'
     })
+    const [phoneStatus, setPhoneStatus] = useState(() => {
+        return localStorage.getItem('phoneVerified') === 'true' ? 'verified' : 'unverified'
+    })
     const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false)
     const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState(false)
+    const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false)
+    const [otpCode, setOtpCode] = useState('')
     const [idFile, setIdFile] = useState(null)
     const [assessmentFile, setAssessmentFile] = useState(null)
     const [notification, setNotification] = useState(null)
@@ -43,6 +48,12 @@ export default function ProfileManagement() {
         const storedAssessmentStatus = localStorage.getItem('assessmentStatus')
         if (storedAssessmentStatus) {
             setAssessmentStatus(storedAssessmentStatus)
+        }
+
+        // Sync phone verification status
+        const storedPhoneStatus = localStorage.getItem('phoneVerified')
+        if (storedPhoneStatus === 'true') {
+            setPhoneStatus('verified')
         }
 
         // Check for Admin Notifications
@@ -207,6 +218,17 @@ export default function ProfileManagement() {
         });
     }
 
+    const handlePhoneVerify = () => {
+        setPhoneStatus('verified')
+        localStorage.setItem('phoneVerified', 'true')
+        setIsPhoneModalOpen(false)
+        setOtpCode('')
+        setNotification({
+            type: 'success',
+            message: 'Phone number verified successfully!'
+        })
+    }
+
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-12 relative">
             {/* Notification Toast */}
@@ -368,7 +390,11 @@ export default function ProfileManagement() {
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Phone</span>
-                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">Unverified</span>
+                                {phoneStatus === 'verified' ? (
+                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                                ) : (
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">Unverified</span>
+                                )}
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Assessment Form / COR</span>
@@ -431,14 +457,34 @@ export default function ProfileManagement() {
                                 disabled={!isEditing}
                                 leftIcon={Mail}
                             />
-                            <Input
-                                label="Phone Number"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                leftIcon={Phone}
-                            />
+                            <div className="flex items-start gap-3">
+                                <div className="flex-1">
+                                    <Input
+                                        label="Phone Number"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        disabled={!isEditing}
+                                        leftIcon={Phone}
+                                    />
+                                </div>
+                                <div className="pt-7">
+                                    {phoneStatus === 'verified' ? (
+                                        <div className="flex items-center text-green-600 dark:text-green-400 gap-1 text-sm">
+                                            <CheckCircle2 className="w-5 h-5" />
+                                            <span>Verified</span>
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            size="sm"
+                                            className="h-9 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+                                            onClick={() => setIsPhoneModalOpen(true)}
+                                        >
+                                            Verify
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
                             <div className="md:col-span-2">
                                 <Input
                                     label="Location"
@@ -520,6 +566,33 @@ export default function ProfileManagement() {
                     </Card>
                 </div>
             </div>
+
+            <Modal
+                isOpen={isPhoneModalOpen}
+                onClose={() => setIsPhoneModalOpen(false)}
+                title="Phone Verification"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Enter the 6-digit code sent to your number.
+                    </p>
+                    <Input
+                        label="Verification Code"
+                        type="text"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value)}
+                        placeholder="123456"
+                    />
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="outline" onClick={() => setIsPhoneModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handlePhoneVerify} disabled={!otpCode}>
+                            Verify
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
 
             <Modal
                 isOpen={isVerifyModalOpen}
