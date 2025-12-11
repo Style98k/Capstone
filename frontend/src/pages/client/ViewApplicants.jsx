@@ -1,295 +1,335 @@
 import { useState, useMemo } from 'react'
-import { useAuth } from '../../hooks/useLocalAuth'
-import { getApplications, getGigs, updateApplication, updateGig, getApplicationsForClient, initializeLocalStorage } from '../../utils/localStorage'
-import { mockUsers } from '../../data/mockUsers'
-import { mockTransactions } from '../../data/mockTransactions'
+import { Eye, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react'
 import Card from '../../components/UI/Card'
+import Input from '../../components/UI/Input'
 import Button from '../../components/UI/Button'
-import UserCard from '../../components/Shared/UserCard'
-import Modal from '../../components/UI/Modal'
-import PaymentModal from '../../components/Shared/PaymentModal'
-import { Check, X, Star, Coins } from 'lucide-react'
+import ApplicantDetailsModal from '../../components/applicants/ApplicantDetailsModal'
+import { useAuth } from '../../hooks/useLocalAuth'
+import { getApplications, getGigs, updateApplication, updateGig, initializeLocalStorage } from '../../utils/localStorage'
+import { mockUsers } from '../../data/mockUsers'
 
 export default function ViewApplicants() {
-  const { user } = useAuth()
-  const [selectedGig, setSelectedGig] = useState('')
-  const [ratingModal, setRatingModal] = useState(null)
-  const [paymentModal, setPaymentModal] = useState(null)
-  
-  // Get data from localStorage
-  const gigs = useMemo(() => {
-    initializeLocalStorage()
-    return getGigs()
-  }, [])
-  
-  const applications = useMemo(() => {
-    return getApplications()
-  }, [])
-  
-  const myGigs = gigs.filter(g => g.ownerId === user?.id)
-  const selectedGigId = selectedGig || myGigs[0]?.id
-  
-  const applicants = applications
-    .filter(app => app.gigId === selectedGigId)
-    .map(app => ({
-      ...app,
-      user: mockUsers.find(u => u.id === app.userId),
-      gig: gigs.find(g => g.id === app.gigId),
-    }))
-
-  const handleApprove = (appId) => {
-    // Update application status to hired
-    const result = updateApplication(appId, { status: 'hired' })
+    const { user } = useAuth()
+    const [selectedGig, setSelectedGig] = useState('')
+    const [selectedApplicant, setSelectedApplicant] = useState(null)
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+    const [searchTerm, setSearchTerm] = useState('')
+    const [statusFilter, setStatusFilter] = useState('all')
+    const [isLoading, setIsLoading] = useState(false)
     
-    if (result.success) {
-      // Update gig status to hired
-      const application = applications.find(app => app.id === appId)
-      if (application) {
-        updateGig(application.gigId, { status: 'hired' })
+    // Get data from localStorage
+    const gigs = useMemo(() => {
+      initializeLocalStorage()
+      return getGigs()
+    }, [])
+    
+    const applications = useMemo(() => {
+      return getApplications()
+    }, [])
+    
+    const myGigs = gigs.filter(g => g.ownerId === user?.id)
+    const selectedGigId = selectedGig || myGigs[0]?.id
+    
+    // Map applications with user and gig data
+    const applicants = useMemo(() => {
+      return applications
+        .filter(app => app.gigId === selectedGigId)
+        .map(app => ({
+          ...app,
+          name: mockUsers.find(u => u.id === app.userId)?.name || 'Unknown',
+          email: mockUsers.find(u => u.id === app.userId)?.email || '',
+          phone: mockUsers.find(u => u.id === app.userId)?.phone || '',
+          title: mockUsers.find(u => u.id === app.userId)?.title || '',
+          skills: mockUsers.find(u => u.id === app.userId)?.skills || [],
+          rating: mockUsers.find(u => u.id === app.userId)?.rating || 'New',
+          totalRatings: mockUsers.find(u => u.id === app.userId)?.totalRatings || 0,
+          appliedFor: gigs.find(g => g.id === app.gigId)?.title || '',
+        }))
+    }, [applications, selectedGigId, gigs])
+
+    // Filter applicants based on search and status
+    const filteredApplicants = useMemo(() => {
+      return applicants.filter(app => {
+        const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          app.email.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesStatus = statusFilter === 'all' || app.status === statusFilter
+        return matchesSearch && matchesStatus
+      })
+    }, [applicants, searchTerm, statusFilter])
+
+    // Count applicants by status
+    const statusCounts = useMemo(() => ({
+      all: applicants.length,
+      pending: applicants.filter(a => a.status === 'pending').length,
+      hired: applicants.filter(a => a.status === 'hired').length,
+      rejected: applicants.filter(a => a.status === 'rejected').length
+    }), [applicants])
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+            case 'hired':
+                return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+            case 'rejected':
+                return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+            default:
+                return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+        }
+    }
+
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case 'pending':
+                return <Clock className="w-4 h-4" />
+            case 'hired':
+                return <CheckCircle className="w-4 h-4" />
+            case 'rejected':
+                return <XCircle className="w-4 h-4" />
+            default:
+                return null
+        }
+    }
+
+    const handleViewDetails = (applicant) => {
+      setSelectedApplicant(applicant)
+      setIsDetailsModalOpen(true)
+    }
+
+    const handleHireApplicant = async () => {
+      if (selectedApplicant) {
+        const result = updateApplication(selectedApplicant.id, { status: 'hired' })
+        if (result.success) {
+          updateGig(selectedApplicant.gigId, { status: 'hired' })
+          setIsLoading(false)
+          setIsDetailsModalOpen(false)
+          window.location.reload()
+        }
       }
-      alert('Application approved! Student has been hired.')
-      window.location.reload()
-    } else {
-      alert('Failed to approve application. Please try again.')
     }
-  }
 
-  const handleReject = (appId) => {
-    // Update application status to rejected
-    const result = updateApplication(appId, { status: 'rejected' })
-    
-    if (result.success) {
-      alert('Application rejected.')
-      window.location.reload()
-    } else {
-      alert('Failed to reject application. Please try again.')
+    const handleRejectApplicant = async () => {
+      if (selectedApplicant) {
+        const result = updateApplication(selectedApplicant.id, { status: 'rejected' })
+        if (result.success) {
+          setIsLoading(false)
+          setIsDetailsModalOpen(false)
+          window.location.reload()
+        }
+      }
     }
-  }
 
-  const handleMakePayment = (app) => {
-    setPaymentModal({
-      amount: app.gig?.pay,
-      gigTitle: app.gig?.title,
-      studentName: app.user?.name,
-      gigId: app.gigId,
-      studentId: app.userId,
-    })
-  }
-
-  const handlePaymentSuccess = (paymentData) => {
-    // In real app, this would create a transaction record
-    console.log('Payment successful:', paymentData)
-    alert('Payment processed successfully!')
-    setPaymentModal(null)
-  }
-
-  const hasPaymentBeenMade = (gigId) => {
-    return mockTransactions.some(
-      t => t.gigId === gigId && t.fromUserId === user?.id && t.status === 'completed'
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">View Applicants</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Review and manage applications for your job posts
-        </p>
-      </div>
-
-      <Card>
-        <div className="mb-4">
-          <label className="label">Select Job</label>
-          <select
-            value={selectedGig}
-            onChange={(e) => setSelectedGig(e.target.value)}
-            className="input"
-          >
-            {myGigs.map((gig) => (
-              <option key={gig.id} value={gig.id}>
-                {gig.title}
-              </option>
-            ))}
-          </select>
-        </div>
-      </Card>
-
-      <div className="space-y-4">
-        {applicants.length > 0 ? (
-          applicants.map((app) => (
-            <Card key={app.id} hover>
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="flex-1">
-                  <UserCard user={app.user} />
-                  
-                  {app.proposal && (
-                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Proposal:
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {app.proposal}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                    <span>
-                      Applied: {new Date(app.appliedAt).toLocaleDateString()}
-                    </span>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded ${
-                        app.status === 'hired'
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                          : app.status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                          : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      {app.status}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  {app.status === 'pending' && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleApprove(app.id)}
-                        className="flex items-center justify-center gap-2"
-                      >
-                        <Check className="w-4 h-4" />
-                        Hire
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleReject(app.id)}
-                        className="flex items-center justify-center gap-2"
-                      >
-                        <X className="w-4 h-4" />
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                  {app.status === 'completed' && (
-                    <>
-                      {!hasPaymentBeenMade(app.gigId) && (
-                        <Button
-                          onClick={() => handleMakePayment(app)}
-                          className="flex items-center justify-center gap-2"
-                        >
-                          <Coins className="w-4 h-4" />
-                          Pay Now
-                        </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        onClick={() => setRatingModal(app)}
-                        className="flex items-center justify-center gap-2"
-                      >
-                        <Star className="w-4 h-4" />
-                        Rate Student
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </Card>
-          ))
-        ) : (
-          <Card>
-            <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">
-                No applicants for this job yet
-              </p>
-            </div>
+    // Show message if no gigs
+    if (myGigs.length === 0) {
+      return (
+        <div className="space-y-6 max-w-7xl mx-auto pb-12">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Applicants</h1>
+          <Card className="p-12 text-center">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              You haven't posted any gigs yet. Create a gig to receive applications.
+            </p>
           </Card>
-        )}
-      </div>
-
-      {/* Rating Modal */}
-      {ratingModal && (
-        <Modal
-          isOpen={!!ratingModal}
-          onClose={() => setRatingModal(null)}
-          title="Rate Student"
-        >
-          <RatingForm
-            application={ratingModal}
-            onClose={() => setRatingModal(null)}
-          />
-        </Modal>
-      )}
-
-      {/* Payment Modal */}
-      {paymentModal && (
-        <PaymentModal
-          isOpen={!!paymentModal}
-          onClose={() => setPaymentModal(null)}
-          amount={paymentModal.amount}
-          gigTitle={paymentModal.gigTitle}
-          studentName={paymentModal.studentName}
-          onSuccess={handlePaymentSuccess}
-        />
-      )}
-    </div>
-  )
-}
-
-function RatingForm({ application, onClose }) {
-  const [stars, setStars] = useState(5)
-  const [review, setReview] = useState('')
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // In real app, submit rating
-    console.log('Rating submitted:', { stars, review })
-    onClose()
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="label">Rating</label>
-        <div className="flex gap-2">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              onClick={() => setStars(star)}
-              className={`text-3xl ${
-                star <= stars
-                  ? 'text-yellow-400'
-                  : 'text-gray-300 dark:text-gray-600'
-              }`}
-            >
-              ★
-            </button>
-          ))}
         </div>
-      </div>
+      )
+    }
 
-      <div>
-        <label className="label">Review (Optional)</label>
-        <textarea
-          value={review}
-          onChange={(e) => setReview(e.target.value)}
-          className="input"
-          rows={4}
-          placeholder="Write a review..."
-        />
-      </div>
+    return (
+        <div className="space-y-6 max-w-7xl mx-auto pb-12">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                        Applicants
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">
+                        Review and manage all applications for your gigs
+                    </p>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <TrendingUp className="w-5 h-5" />
+                    <span><strong className="text-gray-900 dark:text-white">{applicants.length}</strong> Total Applicants</span>
+                </div>
+            </div>
 
-      <div className="flex gap-2">
-        <Button type="submit" className="flex-1">Submit Rating</Button>
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-      </div>
-    </form>
-  )
+            {/* Gig Selector */}
+            {myGigs.length > 1 && (
+              <Card className="p-4">
+                <select
+                  value={selectedGig}
+                  onChange={(e) => setSelectedGig(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white"
+                >
+                  {myGigs.map(gig => (
+                    <option key={gig.id} value={gig.id}>
+                      {gig.title}
+                    </option>
+                  ))}
+                </select>
+              </Card>
+            )}
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="p-4 text-center cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => setStatusFilter('all')}>
+                    <div className={`text-2xl font-bold ${statusFilter === 'all' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
+                        {statusCounts.all}
+                    </div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mt-2">All</p>
+                </Card>
+                <Card className="p-4 text-center cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => setStatusFilter('pending')}>
+                    <div className={`text-2xl font-bold ${statusFilter === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-900 dark:text-white'}`}>
+                        {statusCounts.pending}
+                    </div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mt-2">Pending</p>
+                </Card>
+                <Card className="p-4 text-center cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => setStatusFilter('hired')}>
+                    <div className={`text-2xl font-bold ${statusFilter === 'hired' ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}`}>
+                        {statusCounts.hired}
+                    </div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mt-2">Hired</p>
+                </Card>
+                <Card className="p-4 text-center cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => setStatusFilter('rejected')}>
+                    <div className={`text-2xl font-bold ${statusFilter === 'rejected' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                        {statusCounts.rejected}
+                    </div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mt-2">Rejected</p>
+                </Card>
+            </div>
+
+            {/* Search Bar */}
+            <Card className="p-4">
+                <Input
+                    type="text"
+                    placeholder="Search applicants by name or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full"
+                />
+            </Card>
+
+            {/* Applicants List */}
+            <div className="space-y-3">
+                {filteredApplicants.length > 0 ? (
+                    filteredApplicants.map((applicant) => (
+                        <Card key={applicant.id} className="p-5 hover:shadow-lg transition-shadow">
+                            <div className="flex items-start justify-between gap-4">
+                                {/* Left: Avatar & Info */}
+                                <div className="flex gap-4 flex-1 min-w-0">
+                                    <div className="flex-shrink-0">
+                                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                                            {applicant.name.charAt(0)}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                                                {applicant.name}
+                                            </h3>
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${getStatusColor(applicant.status)}`}>
+                                                {getStatusIcon(applicant.status)}
+                                                {applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                                            {applicant.email}
+                                        </p>
+                                        <p className="text-sm text-primary-600 font-medium mt-1">
+                                            {applicant.title}
+                                        </p>
+                                        <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                            <span>{applicant.phone}</span>
+                                            <span>•</span>
+                                            <span>Applied: {new Date(applicant.appliedAt).toLocaleDateString()}</span>
+                                            <span>•</span>
+                                            <span>For: {applicant.appliedFor}</span>
+                                        </div>
+                                        {applicant.rating !== 'New' && (
+                                            <div className="flex items-center gap-1 mt-2 text-xs">
+                                                <span className="font-semibold text-gray-900 dark:text-white">
+                                                    {applicant.rating} ⭐
+                                                </span>
+                                                <span className="text-gray-500 dark:text-gray-400">
+                                                    ({applicant.totalRatings} jobs)
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Right: Skills & Actions */}
+                                <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                                    <div className="flex flex-wrap gap-1 justify-end max-w-xs">
+                                        {applicant.skills.slice(0, 2).map((skill, idx) => (
+                                            <span
+                                                key={idx}
+                                                className="px-2 py-1 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 rounded text-xs font-medium"
+                                            >
+                                                {skill}
+                                            </span>
+                                        ))}
+                                        {applicant.skills.length > 2 && (
+                                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded text-xs font-medium">
+                                                +{applicant.skills.length - 2}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => handleViewDetails(applicant)}
+                                            className="flex items-center gap-1.5 whitespace-nowrap"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                            View
+                                        </Button>
+                                        {applicant.status === 'pending' && (
+                                            <>
+                                                <Button
+                                                    size="sm"
+                                                    className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                                                    onClick={() => handleViewDetails(applicant)}
+                                                >
+                                                    Hire
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="text-red-600 hover:text-red-700 border-red-200 dark:border-red-800 whitespace-nowrap"
+                                                    onClick={() => handleViewDetails(applicant)}
+                                                >
+                                                    Reject
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    ))
+                ) : (
+                    <Card className="p-12 text-center">
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">
+                            No applicants found matching your filters.
+                        </p>
+                    </Card>
+                )}
+            </div>
+
+            {/* Applicant Details Modal */}
+            <ApplicantDetailsModal
+                isOpen={isDetailsModalOpen}
+                onClose={() => setIsDetailsModalOpen(false)}
+                applicant={selectedApplicant}
+                onHire={handleHireApplicant}
+                onReject={handleRejectApplicant}
+                isLoading={isLoading}
+            />
+        </div>
+    )
 }
 
