@@ -41,12 +41,14 @@ const ClientManageGigs = lazy(() => import('../pages/client/ManageGigs'))
 const ViewApplicants = lazy(() => import('../pages/client/ViewApplicants'))
 const ClientMessages = lazy(() => import('../pages/client/Messages'))
 const Payments = lazy(() => import('../pages/client/Payments'))
+const ClientProfile = lazy(() => import('../pages/client/ClientProfile'))
 
 const AdminDashboard = lazy(() => import('../pages/admin/Dashboard'))
 const ManageUsers = lazy(() => import('../pages/admin/ManageUsers'))
 const AdminManageGigs = lazy(() => import('../pages/admin/ManageGigs'))
 const Reports = lazy(() => import('../pages/admin/Reports'))
 const Settings = lazy(() => import('../pages/admin/Settings'))
+const AdminProfile = lazy(() => import('../pages/admin/AdminProfile'))
 
 const Home = lazy(() => import('../pages/Home'))
 const GigDetails = lazy(() => import('../pages/GigDetails'))
@@ -386,14 +388,47 @@ export default function AppRouter() {
           }
         />
 
-        {/* Shared Routes */}
+        {/* Admin Profile Route */}
+        <Route
+          path="/admin/profile"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout showSidebar sidebarItems={adminSidebarItems}>
+                <AdminProfile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Client Profile Route */}
+        <Route
+          path="/client/profile"
+          element={
+            <ProtectedRoute requiredRole="client">
+              <Layout showSidebar sidebarItems={clientSidebarItems}>
+                <ClientProfile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Shared Routes - Profile redirects based on role */}
         <Route
           path="/profile"
           element={
             <ProtectedRoute>
-              <Layout>
-                <Profile />
-              </Layout>
+              <Navigate
+                to={
+                  user?.role === 'student'
+                    ? '/student/profile'
+                    : user?.role === 'client'
+                      ? '/client/profile'
+                      : user?.role === 'admin'
+                        ? '/admin/profile'
+                        : '/login'
+                }
+                replace
+              />
             </ProtectedRoute>
           }
         />
