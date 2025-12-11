@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { User, LogOut, Menu, X, LayoutDashboard, Briefcase, Search, LogIn, UserPlus, Sparkles } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getNotifications, markNotificationAsRead, initializeSampleNotifications } from '../../utils/notificationManager'
+import { getNotifications, markNotificationAsRead, clearAllNotifications } from '../../utils/notificationManager'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -18,17 +18,19 @@ export default function Navbar() {
     location.pathname.startsWith('/client/') ||
     location.pathname.startsWith('/admin/')
 
+  // Clear old notifications on first app load
+  useEffect(() => {
+    clearAllNotifications();
+  }, []);
+
   // Initialize notifications on mount or when user changes
   useEffect(() => {
     if (!user?.role) {
       setNotifications([]);
       return;
     }
-
-    // Initialize sample notifications if none exist
-    initializeSampleNotifications(user.role);
     
-    // Load notifications for current user's role
+    // Load notifications for current user's role (starts empty)
     const roleNotifications = getNotifications(user.role);
     setNotifications(roleNotifications);
   }, [user?.role]);

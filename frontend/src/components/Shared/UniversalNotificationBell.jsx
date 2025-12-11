@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useLocalAuth';
-import { getNotifications, markNotificationAsRead, initializeSampleNotifications } from '../../utils/notificationManager';
+import { getNotifications, markNotificationAsRead } from '../../utils/notificationManager';
 
 export default function UniversalNotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,11 +19,8 @@ export default function UniversalNotificationBell() {
       setNotifications([]);
       return;
     }
-
-    // Initialize sample notifications if none exist
-    initializeSampleNotifications(userRole);
     
-    // Load notifications for current user's role
+    // Load notifications for current user's role (starts empty)
     const roleNotifications = getNotifications(userRole);
     setNotifications(roleNotifications);
   }, [user?.id, userRole]);

@@ -181,3 +181,25 @@ export const initializeSampleNotifications = (role) => {
     localStorage.setItem(notificationKey, JSON.stringify(samples[role] || []));
   }
 };
+
+/**
+ * Clear all notifications for all roles (cleanup utility)
+ */
+export const clearAllNotifications = () => {
+  try {
+    localStorage.removeItem('notifications_student');
+    localStorage.removeItem('notifications_client');
+    localStorage.removeItem('notifications_admin');
+    
+    window.dispatchEvent(
+      new CustomEvent('notificationUpdate', {
+        detail: { type: 'cleared_all' }
+      })
+    );
+    
+    return true;
+  } catch (error) {
+    console.error('Error clearing all notifications:', error);
+    return false;
+  }
+};
