@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { User, LogOut, Menu, X, LayoutDashboard, Briefcase, Search, LogIn, UserPlus, Sparkles } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getNotifications, markNotificationAsRead, clearAllNotifications } from '../../utils/notificationManager'
+import { getNotifications, markNotificationAsRead } from '../../utils/notificationManager'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -18,11 +18,6 @@ export default function Navbar() {
     location.pathname.startsWith('/client/') ||
     location.pathname.startsWith('/admin/')
 
-  // Clear old notifications on first app load
-  useEffect(() => {
-    clearAllNotifications();
-  }, []);
-
   // Initialize notifications on mount or when user changes
   useEffect(() => {
     if (!user?.role) {
@@ -30,22 +25,24 @@ export default function Navbar() {
       return;
     }
     
-    // Load notifications for current user's role (starts empty)
-    const roleNotifications = getNotifications(user.role);
-    setNotifications(roleNotifications);
+    // Load notifications for current user's role
+    const role = user.role;
+    const notifications = getNotifications(role);
+    setNotifications(notifications);
   }, [user?.role]);
 
-  // Listen for notification updates
+  // Listen for storage changes to update notifications in real-time
   useEffect(() => {
-    const handleNotificationUpdate = (event) => {
+    const handleStorageChange = () => {
       if (user?.role) {
-        const updated = getNotifications(user.role);
-        setNotifications(updated);
+        const role = user.role;
+        const notifications = getNotifications(role);
+        setNotifications(notifications);
       }
     };
 
-    window.addEventListener('notificationUpdate', handleNotificationUpdate);
-    return () => window.removeEventListener('notificationUpdate', handleNotificationUpdate);
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [user?.role]);
 
   // Close notification dropdown when clicking outside
@@ -88,6 +85,9 @@ export default function Navbar() {
           return '/student/applications';
         case 'gig':
           return '/student/browse';
+        case 'system':
+          // Verification response - go to profile
+          return '/student/profile';
         default:
           return null;
       }
@@ -125,6 +125,19 @@ export default function Navbar() {
     }
     
     setNotificationsOpen(false);
+  };
+
+  const handleDeleteNotification = (e, notificationId) => {
+    e.stopPropagation();
+    // Remove notification from state
+    const updated = notifications.filter(n => n.id !== notificationId);
+    setNotifications(updated);
+    // Update localStorage
+    const role = user?.role;
+    if (role) {
+      localStorage.setItem(`notifications_${role}`, JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
+    }
   };
 
   const unreadCount = notifications.filter(n => n.isUnread).length;
@@ -223,7 +236,7 @@ export default function Navbar() {
                               <div
                                 key={notification.id}
                                 onClick={() => handleNotificationClick(notification)}
-                                className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer transition-colors flex items-start gap-3 ${
+                                className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer transition-colors flex items-start gap-3 group ${
                                   notification.isUnread ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                                 }`}
                               >
@@ -248,6 +261,15 @@ export default function Navbar() {
                                     </p>
                                   )}
                                 </div>
+
+                                {/* Delete Button */}
+                                <button
+                                  onClick={(e) => handleDeleteNotification(e, notification.id)}
+                                  className="flex-shrink-0 mt-0.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Delete notification"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
                               </div>
                             ))}
                           </div>

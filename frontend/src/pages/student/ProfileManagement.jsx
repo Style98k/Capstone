@@ -178,7 +178,7 @@ export default function ProfileManagement() {
         setIdFile(null);
         
         // Trigger notification to admin
-        triggerNotification('admin', 'Verification Request', 'A student submitted documents for verification.', 'verification');
+        triggerNotification('admin', 'Pending Verification', 'A student submitted documents for review.', 'verification');
         
         // Show success message
         setNotification({
@@ -199,7 +199,7 @@ export default function ProfileManagement() {
         setAssessmentFile(null);
         
         // Trigger notification to admin
-        triggerNotification('admin', 'Verification Request', 'A student submitted documents for verification.', 'verification');
+        triggerNotification('admin', 'Pending Verification', 'A student submitted documents for review.', 'verification');
         
         // Show success message
         setNotification({
