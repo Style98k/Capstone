@@ -23,7 +23,7 @@ export default function PermissionsTab({ settings, handleChange }) {
         handleChange({
             target: {
                 name: key,
-                value: e.target.checked,
+                checked: e.target.checked,
                 type: 'checkbox'
             }
         })
@@ -44,14 +44,8 @@ export default function PermissionsTab({ settings, handleChange }) {
                     onChange={handleToggle('studentsCanApply')}
                 />
                 <Toggle
-                    label="Client Posting"
-                    description="Allow clients to post new gigs without immediate approval."
-                    checked={settings.clientsCanPost}
-                    onChange={handleToggle('clientsCanPost')}
-                />
-                <Toggle
-                    label="Content Moderation"
-                    description="Require admin approval for all new content."
+                    label="Job Post Review"
+                    description="New job posts require admin review before going live."
                     checked={settings.adminModeration}
                     onChange={handleToggle('adminModeration')}
                 />

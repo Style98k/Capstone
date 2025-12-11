@@ -4,6 +4,23 @@ import { initializeLocalStorage } from '../utils/localStorage'
 
 const AuthContext = createContext(null)
 
+// Helper to get registered users from localStorage
+const getRegisteredUsers = () => {
+  try {
+    const saved = localStorage.getItem('quickgig_registered_users')
+    return saved ? JSON.parse(saved) : []
+  } catch (e) {
+    return []
+  }
+}
+
+// Helper to save a new registered user to localStorage
+const saveRegisteredUser = (user) => {
+  const registeredUsers = getRegisteredUsers()
+  registeredUsers.push(user)
+  localStorage.setItem('quickgig_registered_users', JSON.stringify(registeredUsers))
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -43,9 +60,18 @@ export function AuthProvider({ children }) {
 
 
   const login = (email, password) => {
-    const foundUser = mockUsers.find(
+    // First check mockUsers (pre-defined users)
+    let foundUser = mockUsers.find(
       u => (u.email === email || u.schoolId === email) && u.password === password
     )
+
+    // If not found in mockUsers, check registered users from localStorage
+    if (!foundUser) {
+      const registeredUsers = getRegisteredUsers()
+      foundUser = registeredUsers.find(
+        u => (u.email === email || u.schoolId === email) && u.password === password
+      )
+    }
 
     if (foundUser) {
       const { password: _, ...userWithoutPassword } = foundUser
@@ -58,6 +84,15 @@ export function AuthProvider({ children }) {
   }
 
   const register = (userData) => {
+    // Check if email already exists in mockUsers or registered users
+    const existingMock = mockUsers.find(u => u.email === userData.email)
+    const registeredUsers = getRegisteredUsers()
+    const existingRegistered = registeredUsers.find(u => u.email === userData.email)
+
+    if (existingMock || existingRegistered) {
+      return { success: false, message: 'Email already registered' }
+    }
+
     const newUser = {
       id: `user_${Date.now()}`,
       ...userData,
@@ -65,10 +100,27 @@ export function AuthProvider({ children }) {
       createdAt: new Date().toISOString(),
     }
 
+    // Save to localStorage for persistence across page refreshes
+    saveRegisteredUser(newUser)
+
+    // Also push to mockUsers for current session
     mockUsers.push(newUser)
+
     const { password: _, ...userWithoutPassword } = newUser
     setUser(userWithoutPassword)
     localStorage.setItem('quickgig_user', JSON.stringify(userWithoutPassword))
+
+    // Reset verification statuses for new student signups
+    if (userData.role === 'student') {
+      localStorage.setItem('verificationStatus', 'unverified')
+      localStorage.setItem('assessmentStatus', 'unverified')
+      localStorage.setItem('phoneVerified', 'false')
+      // Clear any leftover uploaded documents from previous sessions
+      localStorage.removeItem('studentIDImage')
+      localStorage.removeItem('studentAssessmentImage')
+      localStorage.removeItem('studentNotification')
+    }
+
     return { success: true, user: userWithoutPassword }
   }
 

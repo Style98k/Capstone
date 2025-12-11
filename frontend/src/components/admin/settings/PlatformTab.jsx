@@ -23,7 +23,7 @@ export default function PlatformTab({ settings, handleChange }) {
         handleChange({
             target: {
                 name: key,
-                value: e.target.checked,
+                checked: e.target.checked,
                 type: 'checkbox'
             }
         })

@@ -180,7 +180,7 @@ export default function ManageGigs() {
             >
               <Shield className="w-8 h-8 text-white/90" />
             </motion.div>
-            <h1 className="text-3xl font-bold">Content Moderation</h1>
+            <h1 className="text-3xl font-bold">Job Post Review</h1>
           </div>
           <p className="text-white/80 text-lg max-w-xl">
             Review, approve, or remove job posts submitted by users.
@@ -293,24 +293,36 @@ export default function ManageGigs() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="btn-glow bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-none shadow-md"
-                  onClick={() => setSelectedGig(gig)}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
-                  <Eye className="w-4 h-4 mr-1" />
-                  Review
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  className="btn-glow bg-gradient-to-r from-rose-500 to-red-600 text-white border-none shadow-md hover:shadow-lg"
-                  onClick={() => handleDeleteClick(gig)}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="group bg-white border-gray-200 text-gray-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 shadow-sm transition-all duration-200"
+                    onClick={() => setSelectedGig(gig)}
+                  >
+                    <Eye className="w-4 h-4 mr-1.5 text-indigo-500 group-hover:animate-pulse" />
+                    Review
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Delete
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="group bg-white border-gray-200 text-gray-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600 shadow-sm transition-all duration-200"
+                    onClick={() => handleDeleteClick(gig)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1.5 text-red-500 group-hover:animate-bounce" />
+                    Delete
+                  </Button>
+                </motion.div>
               </div>
             </div>
           </Card>

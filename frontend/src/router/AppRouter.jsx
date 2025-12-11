@@ -133,7 +133,7 @@ export default function AppRouter() {
   const adminSidebarItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: HomeIcon },
     { path: '/admin/users', label: 'Manage Users', icon: UsersIcon },
-    { path: '/admin/gigs', label: 'Content Moderation', icon: DocumentTextIcon },
+    { path: '/admin/gigs', label: 'Job Post Review', icon: DocumentTextIcon },
     { path: '/admin/reports', label: 'Reports', icon: ChartBarIcon },
     { path: '/admin/settings', label: 'Settings', icon: Cog6ToothIcon },
   ]
