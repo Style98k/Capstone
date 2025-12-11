@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { mockGigs } from '../../data/mockGigs'
 import { mockApplications } from '../../data/mockApplications'
@@ -26,6 +26,7 @@ import {
 
 export default function StudentDashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   const myApplications = mockApplications.filter(app => app.userId === user?.id)
   const pendingApps = myApplications.filter(app => app.status === 'pending').length
@@ -102,6 +103,7 @@ export default function StudentDashboard() {
           color="emerald"
           linkText="See payouts"
           delay={0}
+          onClick={() => navigate('/student/earnings')}
         />
         <StatCard
           title="Active Applications"
@@ -110,6 +112,7 @@ export default function StudentDashboard() {
           color="blue"
           linkText="Manage applications"
           delay={1}
+          onClick={() => navigate('/student/applications')}
         />
         <StatCard
           title="Completed Gigs"
@@ -118,6 +121,7 @@ export default function StudentDashboard() {
           color="amber"
           linkText="View history"
           delay={2}
+          onClick={() => navigate('/student/applications')}
         />
         <StatCard
           title="Your Rating"
@@ -126,6 +130,7 @@ export default function StudentDashboard() {
           color="violet"
           linkText="Improve profile"
           delay={3}
+          onClick={() => navigate('/student/profile')}
         />
       </div>
 
