@@ -65,9 +65,9 @@ export default function PostGig() {
     const result = saveGig(gigData)
     
     if (result.success) {
-      // Trigger notifications to different roles
-      triggerNotification('admin', 'Job Review Needed', 'A client posted a new job. Please review it.', 'moderation');
-      triggerNotification('student', 'New Job Alert', 'New job posted! It might be suited for you, check it out.', 'gig');
+      // GLOBAL NOTIFICATION: Send to both admin and students
+      triggerNotification('admin', 'New Job Posted', 'A client posted a new job. Please review it.', 'moderation');
+      triggerNotification('student', 'New Job Opportunity', 'New job posted! You might find a new opportunity.', 'gig');
       
       setLoading(false)
       navigate('/client/manage-gigs')

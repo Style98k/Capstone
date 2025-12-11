@@ -97,6 +97,9 @@ export default function Navbar() {
           return '/client/applicants';
         case 'job_completed':
           return '/client/manage-gigs';
+        case 'warning':
+          // Admin warning about job - go to manage gigs
+          return '/client/manage-gigs';
         default:
           return null;
       }
@@ -105,6 +108,9 @@ export default function Navbar() {
         case 'verification':
           return '/admin/users';
         case 'report':
+          return '/admin/gigs';
+        case 'moderation':
+          // Job review/moderation - go to manage gigs
           return '/admin/gigs';
         default:
           return null;

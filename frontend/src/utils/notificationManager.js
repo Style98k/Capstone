@@ -3,27 +3,39 @@
  * Handles all notification logic including creation, storage, and event dispatching
  */
 
+/**
+ * Trigger notification to single or multiple roles
+ * @param {string|array} targetRole - The user role(s) ('student', 'client', 'admin') or array of roles
+ * @param {string} title - Notification title
+ * @param {string} message - Notification message
+ * @param {string} type - Notification type for routing
+ */
 export const triggerNotification = (targetRole, title, message, type) => {
-  // 1. Determine the key (e.g., 'notifications_admin')
-  const storageKey = `notifications_${targetRole}`;
+  // Support both single role and multiple roles
+  const roles = Array.isArray(targetRole) ? targetRole : [targetRole];
   
-  // 2. Get existing data
-  const currentData = localStorage.getItem(storageKey);
-  const existing = currentData ? JSON.parse(currentData) : [];
-  
-  // 3. Add new notification
-  const newNotif = {
-    id: Date.now(),
-    title,
-    message,
-    type, 
-    isUnread: true,
-    timestamp: new Date().toISOString()
-  };
-  
-  // 4. Save and Dispatch Event
-  localStorage.setItem(storageKey, JSON.stringify([newNotif, ...existing]));
-  window.dispatchEvent(new Event("storage")); 
+  roles.forEach(role => {
+    // 1. Determine the key (e.g., 'notifications_admin')
+    const storageKey = `notifications_${role}`;
+    
+    // 2. Get existing data
+    const currentData = localStorage.getItem(storageKey);
+    const existing = currentData ? JSON.parse(currentData) : [];
+    
+    // 3. Add new notification
+    const newNotif = {
+      id: Date.now() + Math.random(), // Unique ID for each role
+      title,
+      message,
+      type, 
+      isUnread: true,
+      timestamp: new Date().toISOString()
+    };
+    
+    // 4. Save and Dispatch Event
+    localStorage.setItem(storageKey, JSON.stringify([newNotif, ...existing]));
+    window.dispatchEvent(new Event("storage")); 
+  });
 };
 
 export const getNotifications = (role) => {
