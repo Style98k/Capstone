@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { User, LogOut, Menu, X, LayoutDashboard, Briefcase, Search, LogIn, UserPlus, Sparkles } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
+import { getNotifications, markNotificationAsRead, initializeSampleNotifications } from '../../utils/notificationManager'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -24,54 +25,26 @@ export default function Navbar() {
       return;
     }
 
-    // Check if stored notifications belong to current user
-    const storedNotifications = localStorage.getItem('userNotifications');
-    const storedUserId = localStorage.getItem('notificationUserId');
+    // Initialize sample notifications if none exist
+    initializeSampleNotifications(user.role);
     
-    if (storedNotifications && storedUserId === user.id) {
-      // Notifications are for current user, use them (preserving read/unread status)
-      setNotifications(JSON.parse(storedNotifications));
-    } else {
-      // User has changed or first time, generate new notifications for this user
-      let dummyData = [];
-      
-      if (user.role === 'student') {
-        dummyData = [
-          { 
-            id: 1, 
-            type: 'payment', 
-            title: 'Payment Received', 
-            message: 'You received ₱500', 
-            isUnread: true 
-          }
-        ];
-      } else if (user.role === 'client') {
-        dummyData = [
-          { 
-            id: 1, 
-            type: 'application', 
-            title: 'New Applicant', 
-            message: 'Maria applied for Math Tutor', 
-            isUnread: true 
-          }
-        ];
-      } else if (user.role === 'admin') {
-        dummyData = [
-          { 
-            id: 1, 
-            type: 'verification', 
-            title: 'Pending ID', 
-            message: 'Carlos submitted an ID for review', 
-            isUnread: true 
-          }
-        ];
+    // Load notifications for current user's role
+    const roleNotifications = getNotifications(user.role);
+    setNotifications(roleNotifications);
+  }, [user?.role]);
+
+  // Listen for notification updates
+  useEffect(() => {
+    const handleNotificationUpdate = (event) => {
+      if (user?.role) {
+        const updated = getNotifications(user.role);
+        setNotifications(updated);
       }
-      
-      localStorage.setItem('userNotifications', JSON.stringify(dummyData));
-      localStorage.setItem('notificationUserId', user.id);
-      setNotifications(dummyData);
-    }
-  }, [user?.id]);
+    };
+
+    window.addEventListener('notificationUpdate', handleNotificationUpdate);
+    return () => window.removeEventListener('notificationUpdate', handleNotificationUpdate);
+  }, [user?.role]);
 
   // Close notification dropdown when clicking outside
   useEffect(() => {
@@ -140,13 +113,10 @@ export default function Navbar() {
   };
 
   const handleNotificationClick = (notification) => {
-    const updatedNotifications = notifications.map(n => 
-      n.id === notification.id ? { ...n, isUnread: false } : n
-    );
+    // Mark as read using the notification manager
+    markNotificationAsRead(user?.role, notification.id);
     
-    setNotifications(updatedNotifications);
-    localStorage.setItem('userNotifications', JSON.stringify(updatedNotifications));
-    
+    // Navigate to the appropriate page
     const path = getNavigationPath(notification);
     if (path) {
       navigate(path);
@@ -231,51 +201,56 @@ export default function Navbar() {
                   {/* Notification Dropdown */}
                   {notificationsOpen && (
                     <div 
-                      className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto z-50"
+                      className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 shadow-xl rounded-lg z-50 border border-gray-100 dark:border-gray-700 overflow-hidden"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
+                      {/* Header */}
+                      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-sky-50 to-indigo-50 dark:from-gray-750 dark:to-gray-700">
+                        <h3 className="font-semibold text-gray-900 dark:text-white text-base">Notifications</h3>
                       </div>
                       
-                      {notifications.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                          No notifications
-                        </div>
-                      ) : (
-                        <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                          {notifications.map((notification) => (
-                            <div
-                              key={notification.id}
-                              onClick={() => handleNotificationClick(notification)}
-                              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer transition-colors ${
-                                notification.isUnread ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                              }`}
-                            >
-                              <div className="flex items-start gap-3">
+                      {/* Content */}
+                      <div className="max-h-96 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                            <p className="text-sm">No notifications yet</p>
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                            {notifications.map((notification) => (
+                              <div
+                                key={notification.id}
+                                onClick={() => handleNotificationClick(notification)}
+                                className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer transition-colors flex items-start gap-3 ${
+                                  notification.isUnread ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                }`}
+                              >
+                                {/* Unread indicator */}
                                 {notification.isUnread && (
-                                  <div className="flex-shrink-0 mt-1">
-                                    <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                                  <div className="flex-shrink-0 mt-1.5">
+                                    <div className="h-2.5 w-2.5 bg-blue-500 rounded-full"></div>
                                   </div>
                                 )}
+                                
+                                {/* Content */}
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                                  <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">
                                     {notification.title}
                                   </p>
-                                  <p className="text-gray-600 dark:text-gray-400 text-sm truncate">
+                                  <p className="text-gray-600 dark:text-gray-400 text-xs mt-1 line-clamp-2">
                                     {notification.message}
                                   </p>
-                                  {notification.time && (
-                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                      {notification.time}
+                                  {notification.timestamp && (
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                                      {new Date(notification.timestamp).toLocaleDateString()}
                                     </p>
                                   )}
                                 </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

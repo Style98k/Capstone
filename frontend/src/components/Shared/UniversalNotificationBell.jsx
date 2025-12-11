@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useLocalAuth';
+import { getNotifications, markNotificationAsRead, initializeSampleNotifications } from '../../utils/notificationManager';
 
 export default function UniversalNotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,54 +20,26 @@ export default function UniversalNotificationBell() {
       return;
     }
 
-    // Check if stored notifications belong to current user
-    const storedNotifications = localStorage.getItem('userNotifications');
-    const storedUserId = localStorage.getItem('notificationUserId');
+    // Initialize sample notifications if none exist
+    initializeSampleNotifications(userRole);
     
-    if (storedNotifications && storedUserId === user?.id) {
-      // Notifications are for current user, use them (preserving read/unread status)
-      setNotifications(JSON.parse(storedNotifications));
-    } else {
-      // User has changed or first time, generate new notifications for this user
-      let dummyData = [];
-      
-      if (userRole === 'student') {
-        dummyData = [
-          { 
-            id: 1, 
-            type: 'payment', 
-            title: 'Payment Received', 
-            message: 'You received ₱500', 
-            isUnread: true 
-          }
-        ];
-      } else if (userRole === 'client') {
-        dummyData = [
-          { 
-            id: 1, 
-            type: 'application', 
-            title: 'New Applicant', 
-            message: 'Maria applied for Math Tutor', 
-            isUnread: true 
-          }
-        ];
-      } else if (userRole === 'admin') {
-        dummyData = [
-          { 
-            id: 1, 
-            type: 'verification', 
-            title: 'Pending ID', 
-            message: 'Carlos submitted an ID for review', 
-            isUnread: true 
-          }
-        ];
-      }
-      
-      localStorage.setItem('userNotifications', JSON.stringify(dummyData));
-      localStorage.setItem('notificationUserId', user?.id);
-      setNotifications(dummyData);
-    }
+    // Load notifications for current user's role
+    const roleNotifications = getNotifications(userRole);
+    setNotifications(roleNotifications);
   }, [user?.id, userRole]);
+
+  // Listen for notification updates
+  useEffect(() => {
+    const handleNotificationUpdate = (event) => {
+      if (userRole) {
+        const updated = getNotifications(userRole);
+        setNotifications(updated);
+      }
+    };
+
+    window.addEventListener('notificationUpdate', handleNotificationUpdate);
+    return () => window.removeEventListener('notificationUpdate', handleNotificationUpdate);
+  }, [userRole]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -122,15 +95,10 @@ export default function UniversalNotificationBell() {
   };
 
   const handleNotificationClick = (notification) => {
-    // Mark as read
-    const updatedNotifications = notifications.map(n => 
-      n.id === notification.id ? { ...n, isUnread: false } : n
-    );
+    // Mark as read using the notification manager
+    markNotificationAsRead(userRole, notification.id);
     
-    setNotifications(updatedNotifications);
-    localStorage.setItem('userNotifications', JSON.stringify(updatedNotifications));
-    
-    // Navigate based on role and type
+    // Navigate to the appropriate page
     const path = getNavigationPath(notification);
     if (path) {
       navigate(path);
