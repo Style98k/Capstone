@@ -34,17 +34,32 @@ export default function ViewApplicants() {
     const applicants = useMemo(() => {
       return applications
         .filter(app => app.gigId === selectedGigId)
-        .map(app => ({
-          ...app,
-          name: mockUsers.find(u => u.id === app.userId)?.name || 'Unknown',
-          email: mockUsers.find(u => u.id === app.userId)?.email || '',
-          phone: mockUsers.find(u => u.id === app.userId)?.phone || '',
-          title: mockUsers.find(u => u.id === app.userId)?.title || '',
-          skills: mockUsers.find(u => u.id === app.userId)?.skills || [],
-          rating: mockUsers.find(u => u.id === app.userId)?.rating || 'New',
-          totalRatings: mockUsers.find(u => u.id === app.userId)?.totalRatings || 0,
-          appliedFor: gigs.find(g => g.id === app.gigId)?.title || '',
-        }))
+        .map(app => {
+          const user = mockUsers.find(u => u.id === app.userId)
+          return {
+            ...app,
+            id: app.id,
+            userId: app.userId,
+            gigId: app.gigId,
+            proposal: app.proposal,
+            attachments: app.attachments || [],
+            appliedAt: app.appliedAt,
+            status: app.status,
+            name: user?.name || 'Unknown',
+            email: user?.email || '',
+            phone: user?.phone || '',
+            title: user?.title || '',
+            location: user?.location || '',
+            skills: user?.skills || [],
+            rating: user?.rating || 'New',
+            totalRatings: user?.totalRatings || 0,
+            experience: user?.experience || '',
+            availability: user?.availability || '',
+            schoolIdVerified: user?.schoolIdVerified || 'unverified',
+            assessmentVerified: user?.assessmentVerified || 'unverified',
+            appliedFor: gigs.find(g => g.id === app.gigId)?.title || '',
+          }
+        })
     }, [applications, selectedGigId, gigs])
 
     // Filter applicants based on search and status

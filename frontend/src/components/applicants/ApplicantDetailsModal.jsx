@@ -1,4 +1,4 @@
-import { X, Star, MapPin, Mail, Phone, Award, CheckCircle, Clock, Briefcase, Shield } from 'lucide-react'
+import { X, Star, MapPin, Mail, Phone, Award, CheckCircle, Clock, Briefcase, Shield, Download, FileText, Image as ImageIcon } from 'lucide-react'
 import Modal from '../UI/Modal'
 import Button from '../UI/Button'
 
@@ -21,6 +21,39 @@ export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHi
                 return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
         }
     }
+
+    const getFileIcon = (fileName) => {
+        const extension = fileName.split('.').pop().toLowerCase()
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
+            return <ImageIcon className="w-5 h-5 text-blue-500" />
+        } else if (['pdf'].includes(extension)) {
+            return <FileText className="w-5 h-5 text-red-500" />
+        } else if (['doc', 'docx'].includes(extension)) {
+            return <FileText className="w-5 h-5 text-blue-600" />
+        }
+        return <FileText className="w-5 h-5 text-gray-500" />
+    }
+
+    const handleDownloadFile = (file) => {
+        if (file.data) {
+            const link = document.createElement('a')
+            link.href = file.data
+            link.download = file.name
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+        }
+    }
+
+    const imageAttachments = applicant.attachments && applicant.attachments.filter(f => {
+        const ext = f.name.split('.').pop().toLowerCase()
+        return ['jpg', 'jpeg', 'png', 'gif'].includes(ext)
+    }) || []
+
+    const otherAttachments = applicant.attachments && applicant.attachments.filter(f => {
+        const ext = f.name.split('.').pop().toLowerCase()
+        return !['jpg', 'jpeg', 'png', 'gif'].includes(ext)
+    }) || []
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Applicant Details" size="lg">
@@ -148,11 +181,97 @@ export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHi
                     </div>
                 )}
 
+                {/* Image Attachments Section */}
+                {imageAttachments.length > 0 && (
+                    <div className="space-y-3">
+                        <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <ImageIcon className="w-5 h-5 text-primary-600" />
+                            Image Gallery
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                            {imageAttachments.map((file, idx) => (
+                                <div
+                                    key={idx}
+                                    className="relative rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 aspect-square group cursor-pointer border border-gray-200 dark:border-gray-700"
+                                    onClick={() => handleDownloadFile(file)}
+                                >
+                                    {file.data ? (
+                                        <>
+                                            <img
+                                                src={file.data}
+                                                alt={file.name}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    console.error('Image failed to load:', file.name)
+                                                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ccc" width="100" height="100"/%3E%3Ctext x="50" y="50" text-anchor="middle" dy=".3em" fill="white"%3ENo Image%3C/text%3E%3C/svg%3E'
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                <Download className="w-6 h-6 text-white" />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gray-300 dark:bg-gray-600">
+                                            <span className="text-gray-600 dark:text-gray-300 text-xs text-center p-2">No image data</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Other Attachments Section */}
+                {otherAttachments.length > 0 && (
+                    <div className="space-y-3">
+                        <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Download className="w-5 h-5 text-primary-600" />
+                            Attachments ({otherAttachments.length})
+                        </h4>
+                        <div className="grid grid-cols-1 gap-2">
+                            {otherAttachments.map((file, idx) => (
+                                <div
+                                    key={idx}
+                                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        {getFileIcon(file.name)}
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                {file.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                {file.size} KB
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDownloadFile(file)}
+                                        className="ml-2 p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors flex-shrink-0"
+                                        title="Download file"
+                                    >
+                                        <Download className="w-4 h-4 text-primary-600 hover:text-primary-700" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* No attachments message */}
+                {(!applicant.attachments || applicant.attachments.length === 0) && (
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            No attachments submitted
+                        </p>
+                    </div>
+                )}
+
                 {/* Application Date */}
                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Applied on</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                        {applicant.appliedDate ? new Date(applicant.appliedDate).toLocaleDateString() : 'N/A'}
+                        {applicant.appliedAt ? new Date(applicant.appliedAt).toLocaleDateString() : 'N/A'}
                     </span>
                 </div>
 
