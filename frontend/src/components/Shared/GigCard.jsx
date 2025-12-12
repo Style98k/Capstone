@@ -15,11 +15,11 @@ export default function GigCard({ gig, showActions = true }) {
             {gig.category}
           </span>
         </div>
-        
+
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
           {gig.shortDesc}
         </p>
-        
+
         <div className="flex flex-wrap gap-3 text-sm text-gray-500 dark:text-gray-400 mb-4">
           <div className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
@@ -32,12 +32,12 @@ export default function GigCard({ gig, showActions = true }) {
           <div className="flex items-center gap-1">
             <Coins className="w-4 h-4" />
             <span className="font-semibold text-sky-600 dark:text-sky-400">
-              ₱{gig.pay.toLocaleString()}
+              ₱{(gig.pay ?? 0).toLocaleString()}
             </span>
           </div>
         </div>
       </div>
-      
+
       {showActions && (
         <Link
           to={`/gigs/${gig.id}`}
