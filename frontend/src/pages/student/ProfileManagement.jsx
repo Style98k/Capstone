@@ -169,18 +169,20 @@ export default function ProfileManagement() {
             return;
         }
 
+        // Set file state immediately so Submit button enables right away
+        setIdFile(file);
+
         const reader = new FileReader();
         reader.onload = (event) => {
             // Save the base64 string to localStorage with user ID
             localStorage.setItem(`studentIDImage_${user.id}`, event.target.result);
             // Also save without ID for backward compatibility
             localStorage.setItem('studentIDImage', event.target.result);
-            // Update state with the file
-            setIdFile(file);
         };
         reader.onerror = (error) => {
             console.error('Error reading file:', error);
             alert('Error reading the file. Please try again.');
+            setIdFile(null); // Reset on error
         };
         reader.readAsDataURL(file);
     }
@@ -197,18 +199,20 @@ export default function ProfileManagement() {
             return;
         }
 
+        // Set file state immediately so Submit button enables right away
+        setAssessmentFile(file);
+
         const reader = new FileReader();
         reader.onload = (event) => {
             // Save the base64 string to localStorage with user ID
             localStorage.setItem(`studentAssessmentImage_${user.id}`, event.target.result);
             // Also save without ID for backward compatibility
             localStorage.setItem('studentAssessmentImage', event.target.result);
-            // Update state with the file
-            setAssessmentFile(file);
         };
         reader.onerror = (error) => {
             console.error('Error reading file:', error);
             alert('Error reading the file. Please try again.');
+            setAssessmentFile(null); // Reset on error
         };
         reader.readAsDataURL(file);
     }
@@ -216,15 +220,17 @@ export default function ProfileManagement() {
     // Helper to save per-user verification status
     const saveUserVerificationStatus = (verificationStatus, assessmentStatus) => {
         try {
-            const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses') || '{}')
+            const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
             statuses[user.id] = { verificationStatus, assessmentStatus }
-            localStorage.setItem('quickgig_user_verification_statuses', JSON.stringify(statuses))
+            localStorage.setItem('quickgig_user_verification_statuses_v2', JSON.stringify(statuses))
         } catch (e) {
             console.error('Error saving verification status:', e)
         }
     }
 
     const handleVerifySubmit = () => {
+        if (!idFile) return; // Guard against submit without file
+        
         const newStatus = 'pending';
         setVerificationStatus(newStatus);
 
@@ -233,6 +239,10 @@ export default function ProfileManagement() {
 
         // Also save for backward compatibility
         localStorage.setItem('verificationStatus', newStatus);
+        
+        // Send notification to admin about School ID upload
+        triggerNotification('admin', 'Document Upload', `${user.name} uploaded their School ID for verification.`, 'verification');
+        
         setIsVerifyModalOpen(false);
 
         // Reset file input
@@ -248,6 +258,8 @@ export default function ProfileManagement() {
     }
 
     const handleAssessmentSubmit = () => {
+        if (!assessmentFile) return; // Guard against submit without file
+        
         const newStatus = 'pending';
         setAssessmentStatus(newStatus);
 
@@ -256,17 +268,16 @@ export default function ProfileManagement() {
 
         // Also save for backward compatibility
         localStorage.setItem('assessmentStatus', newStatus);
+        
+        // Send notification to admin about Assessment Form upload
+        triggerNotification('admin', 'Document Upload', `${user.name} uploaded their Assessment Form/COR for verification.`, 'verification');
+        
         setIsAssessmentModalOpen(false);
 
         // Reset file input
         const fileInput = document.getElementById('assessment-form-upload');
         if (fileInput) fileInput.value = '';
         setAssessmentFile(null);
-
-        // Only send notification to admin when BOTH documents are uploaded
-        if (verificationStatus === 'pending' && newStatus === 'pending') {
-            triggerNotification('admin', 'Pending Verification', `${user.name} submitted documents for review.`, 'verification');
-        }
 
         // Show success message
         setNotification({
@@ -667,7 +678,7 @@ export default function ProfileManagement() {
                             type="file"
                             name="schoolId"
                             id="school-id-upload"
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             accept="image/*"
                             onChange={handleIdFileChange}
                         />
@@ -718,7 +729,7 @@ export default function ProfileManagement() {
                             type="file"
                             name="assessmentForm"
                             id="assessment-form-upload"
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             accept=".pdf,.png,.jpg,.jpeg"
                             onChange={handleAssessmentFileChange}
                         />
