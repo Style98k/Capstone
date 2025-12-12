@@ -40,9 +40,11 @@ export const saveGig = (gigData) => {
       status: 'open',
       createdAt: new Date().toISOString()
     }
-    
+
     gigs.push(newGig)
     localStorage.setItem(localStorageKeys.GIGS, JSON.stringify(gigs))
+    // Dispatch storage event for immediate UI updates across tabs/components
+    window.dispatchEvent(new Event('storage'))
     return { success: true, gig: newGig }
   } catch (error) {
     console.error('Error saving gig to localStorage:', error)
@@ -54,11 +56,11 @@ export const updateGig = (gigId, updates) => {
   try {
     const gigs = getGigs()
     const gigIndex = gigs.findIndex(gig => gig.id === gigId)
-    
+
     if (gigIndex === -1) {
       return { success: false, error: 'Gig not found' }
     }
-    
+
     gigs[gigIndex] = { ...gigs[gigIndex], ...updates }
     localStorage.setItem(localStorageKeys.GIGS, JSON.stringify(gigs))
     return { success: true, gig: gigs[gigIndex] }
@@ -72,11 +74,11 @@ export const deleteGig = (gigId) => {
   try {
     const gigs = getGigs()
     const filteredGigs = gigs.filter(gig => gig.id !== gigId)
-    
+
     if (filteredGigs.length === gigs.length) {
       return { success: false, error: 'Gig not found' }
     }
-    
+
     localStorage.setItem(localStorageKeys.GIGS, JSON.stringify(filteredGigs))
     return { success: true }
   } catch (error) {
@@ -115,7 +117,7 @@ export const saveApplication = (applicationData) => {
       appliedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
-    
+
     applications.push(newApplication)
     localStorage.setItem(localStorageKeys.APPLICATIONS, JSON.stringify(applications))
     return { success: true, application: newApplication }
@@ -129,17 +131,17 @@ export const updateApplication = (applicationId, updates) => {
   try {
     const applications = getApplications()
     const appIndex = applications.findIndex(app => app.id === applicationId)
-    
+
     if (appIndex === -1) {
       return { success: false, error: 'Application not found' }
     }
-    
-    applications[appIndex] = { 
-      ...applications[appIndex], 
+
+    applications[appIndex] = {
+      ...applications[appIndex],
       ...updates,
       updatedAt: new Date().toISOString()
     }
-    
+
     localStorage.setItem(localStorageKeys.APPLICATIONS, JSON.stringify(applications))
     return { success: true, application: applications[appIndex] }
   } catch (error) {
@@ -162,7 +164,7 @@ export const getApplicationsForClient = (clientId) => {
   // Get all gigs owned by this client
   const clientGigs = getGigsByOwner(clientId)
   const gigIds = clientGigs.map(gig => gig.id)
-  
+
   // Get all applications for these gigs
   const applications = getApplications()
   return applications.filter(app => gigIds.includes(app.gigId))

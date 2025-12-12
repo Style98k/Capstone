@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useLocalAuth'
 import { initializeLocalStorage, getOpenGigs, getGigs } from '../utils/localStorage'
@@ -7,11 +7,25 @@ import GigCard from '../components/Shared/GigCard'
 import Button from '../components/UI/Button'
 import { Briefcase, Users, Shield, TrendingUp, CheckCircle, GraduationCap, Star } from 'lucide-react'
 
-// Helper to get all users (mock + registered)
+// Helper to get all users (mock + registered from both storage keys)
 const getAllUsers = () => {
   try {
+    // Read from both quickgig_registered_users and quickgig_users for compatibility
     const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users') || '[]')
-    return [...mockUsers, ...registeredUsers]
+    const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users') || '[]')
+
+    // Merge all users, avoiding duplicates by email
+    const allUsers = [...mockUsers]
+    const seenEmails = new Set(mockUsers.map(u => u.email))
+
+    for (const user of [...registeredUsers, ...additionalUsers]) {
+      if (!seenEmails.has(user.email)) {
+        allUsers.push(user)
+        seenEmails.add(user.email)
+      }
+    }
+
+    return allUsers
   } catch (error) {
     console.error('Error reading users:', error)
     return mockUsers
@@ -22,47 +36,50 @@ const getAllUsers = () => {
 const getStatistics = () => {
   const allUsers = getAllUsers()
   const gigs = getGigs()
-  
+
   const activeStudents = allUsers.filter(user => user.role === 'student').length
   const registeredClients = allUsers.filter(user => user.role === 'client').length
-  const completedGigs = gigs.filter(gig => gig.status === 'completed').length
-  
+  const activeGigs = gigs.filter(gig => gig.status === 'open').length
+
   return {
     activeStudents: activeStudents > 0 ? activeStudents : '10+',
     registeredClients: registeredClients > 0 ? registeredClients : '5+',
-    completedGigs: completedGigs > 0 ? completedGigs : '0'
+    activeGigs: activeGigs
   }
 }
 
 export default function Home() {
   const { user } = useAuth()
-  const [stats, setStats] = useState({ activeStudents: '10+', registeredClients: '5+', completedGigs: '0' })
+  const [stats, setStats] = useState({ activeStudents: '10+', registeredClients: '5+', activeGigs: 0 })
+  const [recentGigs, setRecentGigs] = useState([])
 
-  // Get gigs from localStorage so newly posted jobs appear
-  const recentGigs = useMemo(() => {
+  // Initialize and get recent gigs
+  useEffect(() => {
     initializeLocalStorage()
-    return getOpenGigs().slice(0, 6)
+    setRecentGigs(getOpenGigs().slice(0, 6))
   }, [])
 
-  // Update statistics when component mounts or when localStorage changes
+  // Update statistics and recent gigs when component mounts or when localStorage changes
   useEffect(() => {
-    const updateStats = () => {
+    const updateData = () => {
       const newStats = getStatistics()
       setStats(newStats)
+      // Also update recent gigs for immediate display of new jobs
+      setRecentGigs(getOpenGigs().slice(0, 6))
     }
-    
-    updateStats()
-    
-    // Listen for storage changes to update stats in real-time
+
+    updateData()
+
+    // Listen for storage changes to update stats and gigs in real-time
     const handleStorageChange = () => {
-      updateStats()
+      updateData()
     }
-    
+
     window.addEventListener('storage', handleStorageChange)
-    
+
     // Also update periodically for same-tab changes
-    const interval = setInterval(updateStats, 2000)
-    
+    const interval = setInterval(updateData, 2000)
+
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       clearInterval(interval)
@@ -202,10 +219,10 @@ export default function Home() {
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <CheckCircle className="h-5 w-5 text-emerald-500" />
                   <span className="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                    Completed Gigs
+                    Active Gigs
                   </span>
                 </div>
-                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">{stats.completedGigs}</div>
+                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">{stats.activeGigs}</div>
               </div>
             </div>
           </div>

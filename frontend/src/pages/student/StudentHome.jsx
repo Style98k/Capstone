@@ -66,7 +66,7 @@ export default function StudentHome() {
                                         {gig.category}
                                     </span>
                                     <span className="text-sm font-bold text-primary-600">
-                                        ₱{gig.pay.toLocaleString()}
+                                        ₱{(gig.pay || 0).toLocaleString()}
                                     </span>
                                 </div>
 

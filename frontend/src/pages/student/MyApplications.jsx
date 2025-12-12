@@ -118,11 +118,10 @@ export default function MyApplications() {
               <button
                 key={f.value || 'all'}
                 onClick={() => setStatusFilter(f.value)}
-                className={`group inline-flex items-center gap-2 min-h-[40px] px-3.5 py-2 rounded-full text-sm font-semibold border transition-all duration-200 ${
-                  active
+                className={`group inline-flex items-center gap-2 min-h-[40px] px-3.5 py-2 rounded-full text-sm font-semibold border transition-all duration-200 ${active
                     ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/30 dark:border-primary-700 dark:text-primary-200'
                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-primary-200 hover:text-primary-700'
-                }`}
+                  }`}
               >
                 {ActiveIcon && <ActiveIcon className="w-4 h-4" />}
                 {f.label}
@@ -195,7 +194,7 @@ export default function MyApplications() {
                           </div>
                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/70">
                             <Coins className="w-4 h-4" />
-                            <span className="font-semibold text-gray-800 dark:text-gray-100">₱{gig.pay.toLocaleString()}</span>
+                            <span className="font-semibold text-gray-800 dark:text-gray-100">₱{(gig.pay || 0).toLocaleString()}</span>
                           </div>
                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/70">
                             <Calendar className="w-4 h-4" />

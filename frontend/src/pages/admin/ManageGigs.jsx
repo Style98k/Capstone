@@ -284,7 +284,7 @@ export default function ManageGigs() {
                   </span>
                   <span className="px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200 rounded border border-emerald-100">
                     <PhilippinePeso className="w-3 h-3 inline mr-1" />
-                    ₱{gig.pay.toLocaleString()}
+                    ₱{(gig.pay || 0).toLocaleString()}
                   </span>
                   <span className="px-2 py-0.5 text-xs bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded border border-gray-100">
                     <Calendar className="w-3 h-3 inline mr-1" />

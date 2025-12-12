@@ -132,7 +132,7 @@ export default function BrowseGigs() {
                                         {gig.category}
                                     </span>
                                     <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                        ₱{gig.pay.toLocaleString()}
+                                        ₱{(gig.pay || 0).toLocaleString()}
                                     </span>
                                 </div>
 

@@ -66,7 +66,7 @@ export default function GigDetails() {
       if (result.success) {
         // Trigger notification to client (gig owner)
         triggerNotification('client', 'New Applicant', 'A student applied for your gig. Click to view details.', 'application');
-        
+
         setShowApplyModal(false)
         setProposal('')
         setAttachments([])
@@ -99,7 +99,7 @@ export default function GigDetails() {
               <div className="flex items-center gap-1">
                 <Coins className="w-4 h-4" />
                 <span className="font-semibold text-primary-600 dark:text-primary-400">
-                  ₱{gig.pay.toLocaleString()}
+                  ₱{(gig.pay || 0).toLocaleString()}
                 </span>
               </div>
             </div>

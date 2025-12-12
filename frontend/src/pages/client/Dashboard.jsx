@@ -9,16 +9,16 @@ import { Link } from 'react-router-dom'
 
 export default function ClientDashboard() {
   const { user } = useAuth()
-  
+
   const myGigs = mockGigs.filter(g => g.ownerId === user?.id)
   const activeGigs = myGigs.filter(g => g.status === 'open').length
-  const totalApplications = mockApplications.filter(app => 
+  const totalApplications = mockApplications.filter(app =>
     myGigs.some(g => g.id === app.gigId)
   ).length
-  const hiredCount = mockApplications.filter(app => 
+  const hiredCount = mockApplications.filter(app =>
     myGigs.some(g => g.id === app.gigId) && app.status === 'hired'
   ).length
-  const completedCount = mockApplications.filter(app => 
+  const completedCount = mockApplications.filter(app =>
     myGigs.some(g => g.id === app.gigId) && app.status === 'completed'
   ).length
 
@@ -93,15 +93,14 @@ export default function ClientDashboard() {
                       {gig.title}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {gig.category} • ₱{gig.pay.toLocaleString()}
+                      {gig.category} • ₱{(gig.pay || 0).toLocaleString()}
                     </p>
                   </div>
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded ${
-                      gig.status === 'open'
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                        : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                    }`}
+                    className={`px-2 py-1 text-xs font-medium rounded ${gig.status === 'open'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                      : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                      }`}
                   >
                     {gig.status}
                   </span>
@@ -153,11 +152,11 @@ export default function ClientDashboard() {
             )}
           </div>
         </Card>
-      </div>
+      </div >
 
       {/* Ratings & Reviews Section */}
-      <CommentRating userId={user?.id} userRole={user?.role} />
-    </div>
+      < CommentRating userId={user?.id} userRole={user?.role} />
+    </div >
   )
 }
 

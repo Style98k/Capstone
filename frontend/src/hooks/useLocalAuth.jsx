@@ -103,6 +103,13 @@ export function AuthProvider({ children }) {
     // Save to localStorage for persistence across page refreshes
     saveRegisteredUser(newUser)
 
+    // Also save to quickgig_users for dynamic homepage counter updates
+    const existingUsers = JSON.parse(localStorage.getItem('quickgig_users') || '[]')
+    existingUsers.push(newUser)
+    localStorage.setItem('quickgig_users', JSON.stringify(existingUsers))
+    // Dispatch storage event for immediate UI updates across tabs/components
+    window.dispatchEvent(new Event('storage'))
+
     // Also push to mockUsers for current session
     mockUsers.push(newUser)
 

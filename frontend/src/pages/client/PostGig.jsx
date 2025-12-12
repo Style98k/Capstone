@@ -63,12 +63,12 @@ export default function PostGig() {
 
     // Save gig to localStorage
     const result = saveGig(gigData)
-    
+
     if (result.success) {
-      // GLOBAL NOTIFICATION: Send to both admin and students
-      triggerNotification('admin', 'New Job Posted', 'A client posted a new job. Please review it.', 'moderation');
-      triggerNotification('student', 'New Job Opportunity', 'New job posted! You might find a new opportunity.', 'gig');
-      
+      // GLOBAL NOTIFICATION: Send to both admin and students with job title
+      triggerNotification('admin', 'Job Review Needed', `A client posted a new job: ${formData.title}`, 'moderation');
+      triggerNotification('student', 'New Job Alert', `New gig posted: ${formData.title}. Check it out!`, 'gig');
+
       setLoading(false)
       navigate('/client/manage-gigs')
     } else {
@@ -176,11 +176,10 @@ export default function PostGig() {
                             return prev
                           })
                         }}
-                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 font-medium transition-colors duration-150 ${
-                          isActive
+                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 font-medium transition-colors duration-150 ${isActive
                             ? 'border-sky-500 bg-sky-50 text-sky-700 dark:border-sky-400 dark:bg-sky-950/60 dark:text-sky-200'
                             : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-500'
-                        }`}
+                          }`}
                       >
                         <span className="h-1.5 w-1.5 rounded-full bg-current" />
                         <span>{mode.label}</span>
