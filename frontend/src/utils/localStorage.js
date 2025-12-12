@@ -3,9 +3,9 @@ import { mockGigs } from '../data/mockGigs.js'
 import { mockApplications } from '../data/mockApplications.js'
 
 export const localStorageKeys = {
-  GIGS: 'quickgig_gigs',
-  APPLICATIONS: 'quickgig_applications',
-  USERS: 'quickgig_users'
+  GIGS: 'quickgig_gigs_v2',
+  APPLICATIONS: 'quickgig_applications_v2',
+  USERS: 'quickgig_users_v2'
 }
 
 // Initialize localStorage with mock data if empty

@@ -26,5 +26,15 @@ export const mockUsers = [
     rating: 4.5,
     totalRatings: 12,
     createdAt: '2024-01-03T00:00:00Z',
+  },
+  // 3. PEPITOO (The Client)
+  {
+    id: 'user_pepitoo',
+    name: 'Pepitoo',
+    email: 'pepitoo@mail.com',
+    password: 'password',
+    role: 'client',
+    status: 'active',
+    verified: true
   }
 ]

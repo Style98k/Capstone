@@ -43,7 +43,7 @@ const getAvatarColor = (name) => {
 // Helper to get registered users from localStorage
 const getRegisteredUsers = () => {
   try {
-    const saved = localStorage.getItem('quickgig_registered_users')
+    const saved = localStorage.getItem('quickgig_registered_users_v2')
     return saved ? JSON.parse(saved) : []
   } catch (e) {
     return []
@@ -53,7 +53,7 @@ const getRegisteredUsers = () => {
 // Helper to get per-user verification status
 const getUserVerificationStatus = (userId) => {
   try {
-    const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses') || '{}')
+    const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
     return statuses[userId] || { verificationStatus: 'unverified', assessmentStatus: 'unverified' }
   } catch (e) {
     return { verificationStatus: 'unverified', assessmentStatus: 'unverified' }
@@ -63,9 +63,9 @@ const getUserVerificationStatus = (userId) => {
 // Helper to save per-user verification status
 const saveUserVerificationStatus = (userId, verificationStatus, assessmentStatus) => {
   try {
-    const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses') || '{}')
+    const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
     statuses[userId] = { verificationStatus, assessmentStatus }
-    localStorage.setItem('quickgig_user_verification_statuses', JSON.stringify(statuses))
+    localStorage.setItem('quickgig_user_verification_statuses_v2', JSON.stringify(statuses))
   } catch (e) {
     console.error('Error saving verification status:', e)
   }

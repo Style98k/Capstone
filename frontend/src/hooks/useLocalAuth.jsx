@@ -7,7 +7,7 @@ const AuthContext = createContext(null)
 // Helper to get registered users from localStorage
 const getRegisteredUsers = () => {
   try {
-    const saved = localStorage.getItem('quickgig_registered_users')
+    const saved = localStorage.getItem('quickgig_registered_users_v2')
     return saved ? JSON.parse(saved) : []
   } catch (e) {
     return []
@@ -18,7 +18,7 @@ const getRegisteredUsers = () => {
 const saveRegisteredUser = (user) => {
   const registeredUsers = getRegisteredUsers()
   registeredUsers.push(user)
-  localStorage.setItem('quickgig_registered_users', JSON.stringify(registeredUsers))
+  localStorage.setItem('quickgig_registered_users_v2', JSON.stringify(registeredUsers))
 }
 
 export function AuthProvider({ children }) {
@@ -103,10 +103,10 @@ export function AuthProvider({ children }) {
     // Save to localStorage for persistence across page refreshes
     saveRegisteredUser(newUser)
 
-    // Also save to quickgig_users for dynamic homepage counter updates
-    const existingUsers = JSON.parse(localStorage.getItem('quickgig_users') || '[]')
+    // Also save to quickgig_users_v2 for dynamic homepage counter updates
+    const existingUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
     existingUsers.push(newUser)
-    localStorage.setItem('quickgig_users', JSON.stringify(existingUsers))
+    localStorage.setItem('quickgig_users_v2', JSON.stringify(existingUsers))
     // Dispatch storage event for immediate UI updates across tabs/components
     window.dispatchEvent(new Event('storage'))
 

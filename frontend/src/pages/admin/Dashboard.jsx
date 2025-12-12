@@ -25,9 +25,9 @@ import {
 // Helper to get all users (mock + registered from both storage keys) - same as Home.jsx
 const getAllUsers = () => {
     try {
-        // Read from both quickgig_registered_users and quickgig_users for compatibility
-        const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users') || '[]')
-        const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users') || '[]')
+        // Read from both quickgig_registered_users_v2 and quickgig_users_v2 for compatibility
+        const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+        const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
 
         // Merge all users, avoiding duplicates by email
         const allUsers = [...mockUsers]
