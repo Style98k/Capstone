@@ -62,14 +62,22 @@ export default function ViewApplicants() {
     }, [])
 
     const myGigs = gigs.filter(g => g.ownerId === user?.id)
-    const selectedGigId = selectedGig || myGigs[0]?.id
+    // Default to 'all' to show everything at a glance
+    const selectedGigId = selectedGig || 'all'
 
     // Map applications with user and gig data
     const applicants = useMemo(() => {
         return applications
-            .filter(app => app.gigId === selectedGigId)
+            .filter(app => {
+                if (selectedGigId === 'all') {
+                    // Show applications for any of my gigs
+                    return myGigs.some(g => g.id === app.gigId)
+                }
+                return app.gigId === selectedGigId
+            })
             .map(app => {
                 const userData = allUsers.find(u => u.id === app.userId)
+                const gigData = gigs.find(g => g.id === app.gigId)
                 return {
                     ...app,
                     id: app.id,
@@ -84,33 +92,38 @@ export default function ViewApplicants() {
                     phone: userData?.phone || '',
                     title: userData?.title || '',
                     location: userData?.location || '',
-                    skills: userData?.skills || [],
+                    // Use gig category as skills/tags for the application, not user's profile skills
+                    skills: gigData?.category ? [gigData.category] : [],
                     rating: userData?.rating || 'New',
                     totalRatings: userData?.totalRatings || 0,
                     experience: userData?.experience || '',
                     availability: userData?.availability || '',
                     schoolIdVerified: userData?.schoolIdVerified || 'unverified',
                     assessmentVerified: userData?.assessmentVerified || 'unverified',
-                    appliedFor: gigs.find(g => g.id === app.gigId)?.title || '',
+                    appliedFor: gigData?.title || '',
                 }
             })
     }, [applications, selectedGigId, gigs, allUsers])
 
     // Filter applicants based on search and status
+    // Note: When filtering by 'hired', include both 'hired' and 'completed' to match Dashboard
     const filteredApplicants = useMemo(() => {
         return applicants.filter(app => {
             const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 app.email.toLowerCase().includes(searchTerm.toLowerCase())
-            const matchesStatus = statusFilter === 'all' || app.status === statusFilter
+            // 'hired' filter should show both hired and completed applicants
+            const matchesStatus = statusFilter === 'all' ||
+                (statusFilter === 'hired' ? (app.status === 'hired' || app.status === 'completed') : app.status === statusFilter)
             return matchesSearch && matchesStatus
         })
     }, [applicants, searchTerm, statusFilter])
 
     // Count applicants by status
+    // Note: 'hired' count includes both 'hired' and 'completed' to match Dashboard logic
     const statusCounts = useMemo(() => ({
         all: applicants.length,
         pending: applicants.filter(a => a.status === 'pending').length,
-        hired: applicants.filter(a => a.status === 'hired').length,
+        hired: applicants.filter(a => a.status === 'hired' || a.status === 'completed').length,
         rejected: applicants.filter(a => a.status === 'rejected').length
     }), [applicants])
 
@@ -235,6 +248,7 @@ export default function ViewApplicants() {
                     onChange={(e) => setSelectedGig(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white"
                 >
+                    <option value="all">All Gigs (Show Everything)</option>
                     {myGigs.map(gig => (
                         <option key={gig.id} value={gig.id}>
                             {gig.title} ({applications.filter(a => a.gigId === gig.id).length} applicants)
