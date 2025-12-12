@@ -1,9 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { triggerNotification } from '../../utils/notificationManager'
-import { mockTransactions } from '../../data/mockTransactions'
-import { mockGigs } from '../../data/mockGigs'
-import { mockApplications } from '../../data/mockApplications'
+import { getTransactions, saveTransaction, getGigs, getApplications } from '../../utils/localStorage'
 import { mockUsers } from '../../data/mockUsers'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
@@ -13,31 +11,74 @@ import { Coins, Clock, CheckCircle, CreditCard, Smartphone } from 'lucide-react'
 export default function Payments() {
   const { user } = useAuth()
   const [paymentModal, setPaymentModal] = useState(null)
+  const [allTransactions, setAllTransactions] = useState([])
+  const [allGigs, setAllGigs] = useState([])
+  const [allApplications, setAllApplications] = useState([])
+
+  // Load data from localStorage and update periodically
+  useEffect(() => {
+    const updateData = () => {
+      setAllTransactions(getTransactions())
+      setAllGigs(getGigs())
+      setAllApplications(getApplications())
+    }
+
+    updateData()
+
+    window.addEventListener('storage', updateData)
+    const interval = setInterval(updateData, 2000)
+
+    return () => {
+      window.removeEventListener('storage', updateData)
+      clearInterval(interval)
+    }
+  }, [])
+
+  // Get all users from localStorage and mockUsers
+  const getAllUsers = () => {
+    try {
+      const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+      const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+      const allUsers = [...mockUsers]
+      const seenEmails = new Set(mockUsers.map(u => u.email))
+      for (const u of [...registeredUsers, ...additionalUsers]) {
+        if (!seenEmails.has(u.email)) {
+          allUsers.push(u)
+          seenEmails.add(u.email)
+        }
+      }
+      return allUsers
+    } catch {
+      return mockUsers
+    }
+  }
+
+  const allUsers = getAllUsers()
 
   // Get all transactions where user is the payer
-  const myPayments = mockTransactions
+  const myPayments = allTransactions
     .filter(t => t.fromUserId === user?.id)
     .map(trans => ({
       ...trans,
-      gig: mockGigs.find(g => g.id === trans.gigId),
-      student: mockUsers.find(u => u.id === trans.toUserId),
+      gig: allGigs.find(g => g.id === trans.gigId),
+      student: allUsers.find(u => u.id === trans.toUserId),
     }))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
   // Get completed gigs that need payment
-  const completedGigs = mockApplications
+  const completedGigs = allApplications
     .filter(app => {
-      const gig = mockGigs.find(g => g.id === app.gigId)
+      const gig = allGigs.find(g => g.id === app.gigId)
       return gig?.ownerId === user?.id && app.status === 'completed'
     })
     .map(app => ({
       ...app,
-      gig: mockGigs.find(g => g.id === app.gigId),
-      student: mockUsers.find(u => u.id === app.userId),
+      gig: allGigs.find(g => g.id === app.gigId),
+      student: allUsers.find(u => u.id === app.userId),
     }))
     .filter(app => {
       // Only show if payment hasn't been made yet
-      return !mockTransactions.some(
+      return !allTransactions.some(
         t => t.gigId === app.gigId && t.fromUserId === user?.id && t.status === 'completed'
       )
     })
@@ -51,14 +92,26 @@ export default function Payments() {
     .reduce((sum, p) => sum + p.amount, 0)
 
   const handlePaymentSuccess = (paymentData) => {
-    // In real app, this would create a transaction record
-    console.log('Payment successful:', paymentData)
-    
-    // Trigger notification to student
-    triggerNotification('student', 'Payment Received', 'You received a payment! Check your wallet.', 'payment');
-    
-    alert('Payment processed successfully!')
-    setPaymentModal(null)
+    // Save transaction to localStorage
+    const transactionData = {
+      gigId: paymentModal.gigId,
+      fromUserId: user?.id,
+      toUserId: paymentModal.studentId,
+      amount: paymentModal.amount,
+      paymentMethod: paymentData.paymentMethod || 'GCash'
+    }
+
+    const result = saveTransaction(transactionData)
+
+    if (result.success) {
+      // Trigger notification to student
+      triggerNotification('student', 'Payment Received', `You received ₱${paymentModal.amount.toLocaleString()} for "${paymentModal.gigTitle}"!`, 'payment')
+
+      alert('Payment processed successfully!')
+      setPaymentModal(null)
+    } else {
+      alert('Payment failed. Please try again.')
+    }
   }
 
   const handleMakePayment = (gig, student) => {
@@ -223,11 +276,10 @@ export default function Payments() {
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded ${
-                          payment.status === 'completed'
+                        className={`px-2 py-1 text-xs font-medium rounded ${payment.status === 'completed'
                             ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                             : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                        }`}
+                          }`}
                       >
                         {payment.status}
                       </span>

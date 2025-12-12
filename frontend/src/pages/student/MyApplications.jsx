@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { mockApplications } from '../../data/mockApplications'
-import { mockGigs } from '../../data/mockGigs'
+import { getApplications, getGigs } from '../../utils/localStorage'
 import Card from '../../components/UI/Card'
 import Select from '../../components/UI/Select'
 import {
@@ -23,14 +22,34 @@ import {
 export default function MyApplications() {
   const { user } = useAuth()
   const [statusFilter, setStatusFilter] = useState('')
+  const [allApplications, setAllApplications] = useState([])
+  const [allGigs, setAllGigs] = useState([])
 
-  const myApplications = mockApplications
+  // Load data from localStorage and update periodically
+  useEffect(() => {
+    const updateData = () => {
+      setAllApplications(getApplications())
+      setAllGigs(getGigs())
+    }
+
+    updateData()
+
+    window.addEventListener('storage', updateData)
+    const interval = setInterval(updateData, 2000)
+
+    return () => {
+      window.removeEventListener('storage', updateData)
+      clearInterval(interval)
+    }
+  }, [])
+
+  const myApplications = allApplications
     .filter(app => app.userId === user?.id)
     .filter(app => !statusFilter || app.status === statusFilter)
     .sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt))
 
   const stats = useMemo(() => {
-    const all = mockApplications.filter(app => app.userId === user?.id)
+    const all = allApplications.filter(app => app.userId === user?.id)
     return {
       total: all.length,
       pending: all.filter(a => a.status === 'pending').length,
@@ -38,7 +57,7 @@ export default function MyApplications() {
       completed: all.filter(a => a.status === 'completed').length,
       rejected: all.filter(a => a.status === 'rejected').length
     }
-  }, [user?.id])
+  }, [allApplications, user?.id])
 
   const getStatusBadge = (status) => {
     const styles = {
@@ -119,8 +138,8 @@ export default function MyApplications() {
                 key={f.value || 'all'}
                 onClick={() => setStatusFilter(f.value)}
                 className={`group inline-flex items-center gap-2 min-h-[40px] px-3.5 py-2 rounded-full text-sm font-semibold border transition-all duration-200 ${active
-                    ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/30 dark:border-primary-700 dark:text-primary-200'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-primary-200 hover:text-primary-700'
+                  ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/30 dark:border-primary-700 dark:text-primary-200'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-primary-200 hover:text-primary-700'
                   }`}
               >
                 {ActiveIcon && <ActiveIcon className="w-4 h-4" />}
@@ -137,7 +156,7 @@ export default function MyApplications() {
         <AnimatePresence mode="popLayout">
           {myApplications.length > 0 ? (
             myApplications.map((app) => {
-              const gig = mockGigs.find(g => g.id === app.gigId)
+              const gig = allGigs.find(g => g.id === app.gigId)
               if (!gig) return null
 
               const statusColor = {

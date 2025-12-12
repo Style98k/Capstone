@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { mockUsers } from '../../data/mockUsers'
-import { mockGigs } from '../../data/mockGigs'
 import { mockApplications } from '../../data/mockApplications'
 import { mockTransactions } from '../../data/mockTransactions'
 import { getGigs } from '../../utils/localStorage'
@@ -320,7 +319,7 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="space-y-1">
-                        {mockGigs.slice(0, 5).map((gig, index) => (
+                        {gigs.slice(0, 5).map((gig, index) => (
                             <motion.div
                                 key={gig.id}
                                 initial={{ opacity: 0, x: -20 }}
@@ -371,6 +370,9 @@ export default function AdminDashboard() {
                                 </div>
                             </motion.div>
                         ))}
+                        {gigs.length === 0 && (
+                            <p className="text-gray-500 text-center py-4">No recent activity</p>
+                        )}
                     </div>
                 </Card>
             </div>

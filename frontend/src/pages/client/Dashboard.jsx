@@ -1,6 +1,6 @@
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { mockGigs } from '../../data/mockGigs'
-import { mockApplications } from '../../data/mockApplications'
+import { getGigs, getApplications } from '../../utils/localStorage'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
 import CommentRating from '../../components/Shared/CommentRating'
@@ -9,21 +9,41 @@ import { Link } from 'react-router-dom'
 
 export default function ClientDashboard() {
   const { user } = useAuth()
+  const [allGigs, setAllGigs] = useState([])
+  const [allApplications, setAllApplications] = useState([])
 
-  const myGigs = mockGigs.filter(g => g.ownerId === user?.id)
+  // Load data from localStorage and update periodically
+  useEffect(() => {
+    const updateData = () => {
+      setAllGigs(getGigs())
+      setAllApplications(getApplications())
+    }
+
+    updateData()
+
+    window.addEventListener('storage', updateData)
+    const interval = setInterval(updateData, 2000)
+
+    return () => {
+      window.removeEventListener('storage', updateData)
+      clearInterval(interval)
+    }
+  }, [])
+
+  const myGigs = allGigs.filter(g => g.ownerId === user?.id)
   const activeGigs = myGigs.filter(g => g.status === 'open').length
-  const totalApplications = mockApplications.filter(app =>
+  const totalApplications = allApplications.filter(app =>
     myGigs.some(g => g.id === app.gigId)
   ).length
-  const hiredCount = mockApplications.filter(app =>
+  const hiredCount = allApplications.filter(app =>
     myGigs.some(g => g.id === app.gigId) && app.status === 'hired'
   ).length
-  const completedCount = mockApplications.filter(app =>
+  const completedCount = allApplications.filter(app =>
     myGigs.some(g => g.id === app.gigId) && app.status === 'completed'
   ).length
 
   const recentGigs = myGigs.slice(0, 3)
-  const pendingApps = mockApplications
+  const pendingApps = allApplications
     .filter(app => myGigs.some(g => g.id === app.gigId) && app.status === 'pending')
     .slice(0, 5)
 
@@ -130,7 +150,7 @@ export default function ClientDashboard() {
           </div>
           <div className="space-y-3">
             {pendingApps.map((app) => {
-              const gig = mockGigs.find(g => g.id === app.gigId)
+              const gig = allGigs.find(g => g.id === app.gigId)
               return (
                 <div
                   key={app.id}

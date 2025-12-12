@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
+import { getApplications } from '../../utils/localStorage'
 import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Save, Camera, Star, Briefcase, TrendingUp,
@@ -18,6 +19,7 @@ export default function ProfileManagement() {
 
     const [isEditing, setIsEditing] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [completedJobs, setCompletedJobs] = useState(0)
 
     // Verification State
     const [verificationStatus, setVerificationStatus] = useState(() => {
@@ -39,6 +41,17 @@ export default function ProfileManagement() {
 
     // Sync with Admin and Check Notifications
     useEffect(() => {
+        // Fetch completed jobs count
+        const updateCompletedJobs = () => {
+            const apps = getApplications()
+            const completed = apps.filter(app => app.userId === user?.id && app.status === 'completed').length
+            setCompletedJobs(completed)
+        }
+        updateCompletedJobs()
+
+        // Update periodically
+        const interval = setInterval(updateCompletedJobs, 2000)
+
         // Sync Status (double check on mount)
         const storedStatus = localStorage.getItem('verificationStatus')
         if (storedStatus) {
@@ -70,9 +83,14 @@ export default function ProfileManagement() {
             const timer = setTimeout(() => {
                 setNotification(null)
             }, 5000)
-            return () => clearTimeout(timer)
+            return () => {
+                clearInterval(interval)
+                clearTimeout(timer)
+            }
         }
-    }, [])
+
+        return () => clearInterval(interval)
+    }, [user?.id])
 
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -372,13 +390,13 @@ export default function ProfileManagement() {
                         <div className="mt-6 w-full grid grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-700 pt-6">
                             <div className="text-center">
                                 <span className="block text-2xl font-bold text-gray-900 dark:text-white">
-                                    {user?.totalRatings || 0}
+                                    {completedJobs}
                                 </span>
                                 <span className="text-xs text-gray-500 uppercase tracking-wide">Jobs Done</span>
                             </div>
                             <div className="text-center">
                                 <span className="block text-2xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-1">
-                                    {user?.rating || 'New'} <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                    {completedJobs > 0 ? (user?.rating || '—') : 'New'} <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                                 </span>
                                 <span className="text-xs text-gray-500 uppercase tracking-wide">Rating</span>
                             </div>

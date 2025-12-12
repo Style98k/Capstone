@@ -5,7 +5,8 @@ import { mockApplications } from '../data/mockApplications.js'
 export const localStorageKeys = {
   GIGS: 'quickgig_gigs_v2',
   APPLICATIONS: 'quickgig_applications_v2',
-  USERS: 'quickgig_users_v2'
+  USERS: 'quickgig_users_v2',
+  TRANSACTIONS: 'quickgig_transactions_v2'
 }
 
 // Initialize localStorage with mock data if empty
@@ -18,6 +19,11 @@ export const initializeLocalStorage = () => {
   // Initialize applications if empty
   if (!localStorage.getItem(localStorageKeys.APPLICATIONS)) {
     localStorage.setItem(localStorageKeys.APPLICATIONS, JSON.stringify(mockApplications))
+  }
+
+  // Initialize transactions if empty
+  if (!localStorage.getItem(localStorageKeys.TRANSACTIONS)) {
+    localStorage.setItem(localStorageKeys.TRANSACTIONS, JSON.stringify([]))
   }
 }
 
@@ -169,3 +175,40 @@ export const getApplicationsForClient = (clientId) => {
   const applications = getApplications()
   return applications.filter(app => gigIds.includes(app.gigId))
 }
+
+// TRANSACTION MANAGEMENT
+export const getTransactions = () => {
+  try {
+    return JSON.parse(localStorage.getItem(localStorageKeys.TRANSACTIONS) || '[]')
+  } catch (error) {
+    console.error('Error reading transactions from localStorage:', error)
+    return []
+  }
+}
+
+export const saveTransaction = (transactionData) => {
+  try {
+    const transactions = getTransactions()
+    const newTransaction = {
+      id: `trans_${Date.now()}`,
+      ...transactionData,
+      status: 'completed',
+      createdAt: new Date().toISOString()
+    }
+
+    transactions.push(newTransaction)
+    localStorage.setItem(localStorageKeys.TRANSACTIONS, JSON.stringify(transactions))
+    // Dispatch storage event for immediate UI updates
+    window.dispatchEvent(new Event('storage'))
+    return { success: true, transaction: newTransaction }
+  } catch (error) {
+    console.error('Error saving transaction to localStorage:', error)
+    return { success: false, error: 'Failed to save transaction' }
+  }
+}
+
+export const getTransactionsByUser = (userId) => {
+  const transactions = getTransactions()
+  return transactions.filter(t => t.fromUserId === userId || t.toUserId === userId)
+}
+

@@ -1,6 +1,6 @@
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { mockTransactions } from '../../data/mockTransactions'
-import { mockGigs } from '../../data/mockGigs'
+import { getTransactions, getGigs } from '../../utils/localStorage'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
 import { Coins, TrendingUp, Clock, CheckCircle } from 'lucide-react'
@@ -19,8 +19,28 @@ import {
 
 export default function MyEarnings() {
   const { user } = useAuth()
-  
-  const myTransactions = mockTransactions
+  const [allTransactions, setAllTransactions] = useState([])
+  const [allGigs, setAllGigs] = useState([])
+
+  // Load data from localStorage and update periodically
+  useEffect(() => {
+    const updateData = () => {
+      setAllTransactions(getTransactions())
+      setAllGigs(getGigs())
+    }
+
+    updateData()
+
+    window.addEventListener('storage', updateData)
+    const interval = setInterval(updateData, 2000)
+
+    return () => {
+      window.removeEventListener('storage', updateData)
+      clearInterval(interval)
+    }
+  }, [])
+
+  const myTransactions = allTransactions
     .filter(t => t.toUserId === user?.id)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
@@ -36,11 +56,11 @@ export default function MyEarnings() {
 
   // Chart data
   const monthlyData = [
-    { month: 'Jan', earnings: 1500 },
-    { month: 'Feb', earnings: 2000 },
-    { month: 'Mar', earnings: 1800 },
-    { month: 'Apr', earnings: 2500 },
-    { month: 'May', earnings: 3000 },
+    { month: 'Jan', earnings: 0 },
+    { month: 'Feb', earnings: 0 },
+    { month: 'Mar', earnings: 0 },
+    { month: 'Apr', earnings: 0 },
+    { month: 'May', earnings: 0 },
     { month: 'Jun', earnings: totalEarnings },
   ]
 
@@ -153,7 +173,7 @@ export default function MyEarnings() {
               </thead>
               <tbody>
                 {myTransactions.map((trans) => {
-                  const gig = mockGigs.find(g => g.id === trans.gigId)
+                  const gig = allGigs.find(g => g.id === trans.gigId)
                   return (
                     <tr
                       key={trans.id}
@@ -174,11 +194,10 @@ export default function MyEarnings() {
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded ${
-                            trans.status === 'completed'
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                          }`}
+                          className={`px-2 py-1 text-xs font-medium rounded ${trans.status === 'completed'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+                            }`}
                         >
                           {trans.status}
                         </span>

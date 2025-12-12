@@ -1,7 +1,7 @@
+import { useState, useEffect } from 'react'
 import { mockUsers } from '../../data/mockUsers'
-import { mockGigs } from '../../data/mockGigs'
-import { mockApplications } from '../../data/mockApplications'
 import { mockTransactions } from '../../data/mockTransactions'
+import { getGigs, getApplications } from '../../utils/localStorage'
 import Card from '../../components/UI/Card'
 import {
   BarChart,
@@ -25,7 +25,26 @@ import {
   Download,
   Calendar
 } from 'lucide-react'
-import { useState } from 'react'
+
+// Helper to get all users (mock + registered from both storage keys)
+const getAllUsers = () => {
+  try {
+    const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+    const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+    const allUsers = [...mockUsers]
+    const seenEmails = new Set(mockUsers.map(u => u.email))
+
+    for (const user of [...registeredUsers, ...additionalUsers]) {
+      if (!seenEmails.has(user.email)) {
+        allUsers.push(user)
+        seenEmails.add(user.email)
+      }
+    }
+    return allUsers
+  } catch (error) {
+    return mockUsers
+  }
+}
 
 const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => {
   const colorStyles = {
@@ -62,6 +81,28 @@ const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => {
 
 export default function Reports() {
   const [dateRange] = useState('2/11/20 - 2/11/20')
+  const [allUsers, setAllUsers] = useState(getAllUsers())
+  const [allGigs, setAllGigs] = useState([])
+  const [allApplications, setAllApplications] = useState([])
+
+  // Load data from localStorage and update periodically
+  useEffect(() => {
+    const updateData = () => {
+      setAllUsers(getAllUsers())
+      setAllGigs(getGigs())
+      setAllApplications(getApplications())
+    }
+
+    updateData()
+
+    window.addEventListener('storage', updateData)
+    const interval = setInterval(updateData, 2000)
+
+    return () => {
+      window.removeEventListener('storage', updateData)
+      clearInterval(interval)
+    }
+  }, [])
 
   const gigData = [
     { month: 'Jan', gigs: 5, sales: 3 },
@@ -69,16 +110,16 @@ export default function Reports() {
     { month: 'Mar', gigs: 12, sales: 8 },
     { month: 'Apr', gigs: 15, sales: 12 },
     { month: 'May', gigs: 18, sales: 10 },
-    { month: 'Jun', gigs: mockGigs.length, sales: 14 },
+    { month: 'Jun', gigs: allGigs.length, sales: 14 },
     { month: 'Jul', gigs: 25, sales: 20 },
     { month: 'Aug', gigs: 28, sales: 24 },
   ]
 
   const applicationData = [
-    { status: 'Pending', count: mockApplications.filter(a => a.status === 'pending').length },
-    { status: 'Hired', count: mockApplications.filter(a => a.status === 'hired').length },
-    { status: 'Completed', count: mockApplications.filter(a => a.status === 'completed').length },
-    { status: 'Rejected', count: mockApplications.filter(a => a.status === 'rejected').length },
+    { status: 'Pending', count: allApplications.filter(a => a.status === 'pending').length },
+    { status: 'Hired', count: allApplications.filter(a => a.status === 'hired').length },
+    { status: 'Completed', count: allApplications.filter(a => a.status === 'completed').length },
+    { status: 'Rejected', count: allApplications.filter(a => a.status === 'rejected').length },
   ]
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -126,7 +167,7 @@ export default function Reports() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Users"
-          value={mockUsers.length}
+          value={allUsers.length}
           icon={Users}
           color="blue"
           trend="up"
@@ -134,7 +175,7 @@ export default function Reports() {
         />
         <StatCard
           title="Total Gigs"
-          value={mockGigs.length}
+          value={allGigs.length}
           icon={ShoppingBag}
           color="violet"
           trend="up"
@@ -150,7 +191,7 @@ export default function Reports() {
         />
         <StatCard
           title="Total Applications"
-          value={mockApplications.length}
+          value={allApplications.length}
           icon={FileText}
           color="emerald"
           trend="up"
@@ -268,54 +309,56 @@ export default function Reports() {
                     Gig Title
                   </div>
                 </th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">SKU</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Job ID</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Apps</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Applicants</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Pay</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {mockGigs.slice(0, 5).map((gig) => (
-                <tr key={gig.id} className="hover:bg-gray-50/80 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
-                        <ShoppingBag size={20} className="text-gray-400" />
+              {allGigs.slice(0, 5).map((gig) => {
+                const applicantCount = allApplications.filter(app => app.gigId === gig.id).length
+                return (
+                  <tr key={gig.id} className="hover:bg-gray-50/80 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
+                          <ShoppingBag size={20} className="text-gray-400" />
+                        </div>
+                        <span className="font-semibold text-gray-900">{gig.title}</span>
                       </div>
-                      <span className="font-semibold text-gray-900">{gig.title}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-gray-600 font-medium">{gig.id.toUpperCase().replace('_', '#')}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-gray-900 font-medium">{gig.category}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-gray-900 font-medium">
-                      {Math.floor(Math.random() * 50) + 5}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold capitalize
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-600 font-mono">#{gig.id.substring(gig.id.length - 6).toUpperCase()}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-900 font-medium">{gig.category}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-900 font-semibold">{applicantCount}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold capitalize
                       ${gig.status === 'open' ? 'bg-emerald-50 text-emerald-600' :
-                        gig.status === 'hired' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'}`}>
-                      {gig.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-bold text-gray-900">₱{gig.pay}</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600">
-                      <MoreHorizontal size={18} />
-                    </button>
+                          gig.status === 'hired' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'}`}>
+                        {gig.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-bold text-gray-900">₱{(gig.pay || 0).toLocaleString()}</span>
+                    </td>
+                  </tr>
+                )
+              })}
+              {allGigs.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                    No gigs posted yet
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

@@ -1,11 +1,9 @@
-import { useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { mockGigs } from '../../data/mockGigs'
-import { mockApplications } from '../../data/mockApplications'
+import { getGigs, getApplications } from '../../utils/localStorage'
 import { mockNotifications } from '../../data/mockNotifications'
-import { mockTransactions } from '../../data/mockTransactions'
 import StatCard from '../../components/Shared/StatCard'
 import GigCard from '../../components/Shared/GigCard'
 import NotificationItem from '../../components/Shared/NotificationItem'
@@ -27,18 +25,40 @@ import {
 export default function StudentDashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [allGigs, setAllGigs] = useState([])
+  const [allApplications, setAllApplications] = useState([])
 
-  const myApplications = mockApplications.filter(app => app.userId === user?.id)
+  // Load data from localStorage and update periodically
+  useEffect(() => {
+    const updateData = () => {
+      setAllGigs(getGigs())
+      setAllApplications(getApplications())
+    }
+
+    updateData()
+
+    window.addEventListener('storage', updateData)
+    const interval = setInterval(updateData, 2000)
+
+    return () => {
+      window.removeEventListener('storage', updateData)
+      clearInterval(interval)
+    }
+  }, [])
+
+  const myApplications = allApplications.filter(app => app.userId === user?.id)
   const pendingApps = myApplications.filter(app => app.status === 'pending').length
   const hiredApps = myApplications.filter(app => app.status === 'hired').length
   const completedApps = myApplications.filter(app => app.status === 'completed').length
 
-  const myEarnings = mockTransactions
-    .filter(t => t.toUserId === user?.id && t.status === 'completed')
-    .reduce((sum, t) => sum + t.amount, 0)
+  // Earnings: Only count if there are completed gigs (for now, always 0 since no transactions yet)
+  const myEarnings = 0
 
-  const recentGigs = mockGigs.filter(g => g.status === 'open').slice(0, 3)
+  const recentGigs = allGigs.filter(g => g.status === 'open').slice(0, 3)
   const myNotifications = mockNotifications.filter(n => n.userId === user?.id).slice(0, 5)
+
+  // Rating: Show '—' if no completed gigs (no ratings to show)
+  const displayRating = completedApps > 0 ? (user?.rating || '—') : '—'
 
   const completionRate = useMemo(() => {
     if (!myApplications.length) return 0
@@ -125,7 +145,7 @@ export default function StudentDashboard() {
         />
         <StatCard
           title="Your Rating"
-          value={user?.rating || '—'}
+          value={displayRating}
           icon={Star}
           color="violet"
           linkText="Improve profile"
@@ -155,7 +175,7 @@ export default function StudentDashboard() {
             </div>
             <div className="space-y-3">
               {myApplications.slice(0, 4).map((app) => {
-                const gig = mockGigs.find(g => g.id === app.gigId)
+                const gig = allGigs.find(g => g.id === app.gigId)
                 const badgeClasses = app.status === 'hired'
                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200'
                   : app.status === 'pending'
@@ -258,7 +278,7 @@ export default function StudentDashboard() {
               </div>
               <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 px-3 py-3">
                 <p className="text-xs text-gray-500 dark:text-gray-400">Avg rating</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{user?.rating || '—'}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">{displayRating}</p>
               </div>
               <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 px-3 py-3">
                 <p className="text-xs text-gray-500 dark:text-gray-400">Earnings</p>
