@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getGigs, getApplications, deleteGig, updateGig, updateApplication, initializeLocalStorage } from '../../utils/localStorage'
+import { getGigs, getApplications, deleteGig, updateGig, updateApplication, initializeLocalStorage, saveTransaction } from '../../utils/localStorage'
 import { triggerNotification } from '../../utils/notificationManager'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
@@ -66,6 +66,16 @@ export default function ManageGigs() {
         const hiredApp = applications.find(app => app.gigId === gig.id && app.status === 'hired')
         if (hiredApp) {
           updateApplication(hiredApp.id, { status: 'completed' })
+          
+          // Create pending transaction for payment
+          saveTransaction({
+            gigId: gig.id,
+            fromUserId: user.id,
+            toUserId: hiredApp.userId,
+            amount: gig.pay,
+            status: 'pending',
+            paymentMethod: null
+          })
         }
 
         // Notify the student

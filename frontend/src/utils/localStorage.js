@@ -228,7 +228,7 @@ export const saveTransaction = (transactionData) => {
     const newTransaction = {
       id: `trans_${Date.now()}`,
       ...transactionData,
-      status: 'completed',
+      status: transactionData.status || 'completed',
       createdAt: new Date().toISOString()
     }
 
@@ -240,6 +240,30 @@ export const saveTransaction = (transactionData) => {
   } catch (error) {
     console.error('Error saving transaction to localStorage:', error)
     return { success: false, error: 'Failed to save transaction' }
+  }
+}
+
+export const updateTransaction = (transactionId, updates) => {
+  try {
+    const transactions = getTransactions()
+    const index = transactions.findIndex(t => t.id === transactionId)
+    
+    if (index === -1) {
+      return { success: false, error: 'Transaction not found' }
+    }
+    
+    transactions[index] = {
+      ...transactions[index],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    }
+    
+    localStorage.setItem(localStorageKeys.TRANSACTIONS, JSON.stringify(transactions))
+    window.dispatchEvent(new Event('storage'))
+    return { success: true, transaction: transactions[index] }
+  } catch (error) {
+    console.error('Error updating transaction:', error)
+    return { success: false, error: 'Failed to update transaction' }
   }
 }
 

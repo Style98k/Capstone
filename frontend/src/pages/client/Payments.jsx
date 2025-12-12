@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { triggerNotification } from '../../utils/notificationManager'
-import { getTransactions, saveTransaction, getGigs, getApplications } from '../../utils/localStorage'
+import { getTransactions, saveTransaction, updateTransaction, getGigs, getApplications } from '../../utils/localStorage'
 import { mockUsers } from '../../data/mockUsers'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
@@ -65,7 +65,7 @@ export default function Payments() {
     }))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
-  // Get completed gigs that need payment
+  // Get completed gigs that need payment (includes pending transactions)
   const completedGigs = allApplications
     .filter(app => {
       const gig = allGigs.find(g => g.id === app.gigId)
@@ -75,33 +75,50 @@ export default function Payments() {
       ...app,
       gig: allGigs.find(g => g.id === app.gigId),
       student: allUsers.find(u => u.id === app.userId),
+      transaction: allTransactions.find(
+        t => t.gigId === app.gigId && t.fromUserId === user?.id
+      )
     }))
     .filter(app => {
-      // Only show if payment hasn't been made yet
-      return !allTransactions.some(
-        t => t.gigId === app.gigId && t.fromUserId === user?.id && t.status === 'completed'
-      )
+      // Only show if no completed payment exists
+      return !app.transaction || app.transaction.status !== 'completed'
     })
 
   const totalPaid = myPayments
     .filter(p => p.status === 'completed')
     .reduce((sum, p) => sum + p.amount, 0)
 
-  const pendingPayments = myPayments
-    .filter(p => p.status === 'pending')
-    .reduce((sum, p) => sum + p.amount, 0)
+  const pendingPayments = completedGigs
+    .reduce((sum, app) => sum + (app.gig?.pay || 0), 0)
 
   const handlePaymentSuccess = (paymentData) => {
-    // Save transaction to localStorage
-    const transactionData = {
-      gigId: paymentModal.gigId,
-      fromUserId: user?.id,
-      toUserId: paymentModal.studentId,
-      amount: paymentModal.amount,
-      paymentMethod: paymentData.paymentMethod || 'GCash'
-    }
+    // Find existing pending transaction
+    const existingTransaction = allTransactions.find(
+      t => t.gigId === paymentModal.gigId && 
+           t.fromUserId === user?.id && 
+           t.toUserId === paymentModal.studentId &&
+           t.status === 'pending'
+    )
 
-    const result = saveTransaction(transactionData)
+    let result
+    if (existingTransaction) {
+      // Update existing pending transaction
+      result = updateTransaction(existingTransaction.id, {
+        status: 'completed',
+        paymentMethod: paymentData.paymentMethod || 'GCash'
+      })
+    } else {
+      // Create new transaction if none exists (fallback)
+      const transactionData = {
+        gigId: paymentModal.gigId,
+        fromUserId: user?.id,
+        toUserId: paymentModal.studentId,
+        amount: paymentModal.amount,
+        paymentMethod: paymentData.paymentMethod || 'GCash',
+        status: 'completed'
+      }
+      result = saveTransaction(transactionData)
+    }
 
     if (result.success) {
       // Trigger notification to student
