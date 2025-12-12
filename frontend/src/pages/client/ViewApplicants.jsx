@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Eye, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
@@ -6,6 +6,7 @@ import Button from '../../components/UI/Button'
 import ApplicantDetailsModal from '../../components/applicants/ApplicantDetailsModal'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { getApplications, getGigs, updateApplication, updateGig, initializeLocalStorage } from '../../utils/localStorage'
+import { triggerNotification } from '../../utils/notificationManager'
 import { mockUsers } from '../../data/mockUsers'
 
 export default function ViewApplicants() {
@@ -16,68 +17,100 @@ export default function ViewApplicants() {
     const [searchTerm, setSearchTerm] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
     const [isLoading, setIsLoading] = useState(false)
-    
-    // Get data from localStorage
-    const gigs = useMemo(() => {
-      initializeLocalStorage()
-      return getGigs()
+    const [gigs, setGigs] = useState([])
+    const [applications, setApplications] = useState([])
+
+    // Get all users from localStorage and mockUsers
+    const getAllUsers = () => {
+        try {
+            const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+            const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+            const allUsers = [...mockUsers]
+            const seenEmails = new Set(mockUsers.map(u => u.email))
+            for (const u of [...registeredUsers, ...additionalUsers]) {
+                if (!seenEmails.has(u.email)) {
+                    allUsers.push(u)
+                    seenEmails.add(u.email)
+                }
+            }
+            return allUsers
+        } catch {
+            return mockUsers
+        }
+    }
+
+    // Load data from localStorage and update periodically
+    useEffect(() => {
+        initializeLocalStorage()
+
+        const updateData = () => {
+            setGigs(getGigs())
+            setApplications(getApplications())
+        }
+
+        updateData()
+
+        window.addEventListener('storage', updateData)
+        const interval = setInterval(updateData, 2000)
+
+        return () => {
+            window.removeEventListener('storage', updateData)
+            clearInterval(interval)
+        }
     }, [])
-    
-    const applications = useMemo(() => {
-      return getApplications()
-    }, [])
-    
+
+    const allUsers = getAllUsers()
     const myGigs = gigs.filter(g => g.ownerId === user?.id)
     const selectedGigId = selectedGig || myGigs[0]?.id
-    
+
     // Map applications with user and gig data
     const applicants = useMemo(() => {
-      return applications
-        .filter(app => app.gigId === selectedGigId)
-        .map(app => {
-          const user = mockUsers.find(u => u.id === app.userId)
-          return {
-            ...app,
-            id: app.id,
-            userId: app.userId,
-            gigId: app.gigId,
-            proposal: app.proposal,
-            attachments: app.attachments || [],
-            appliedAt: app.appliedAt,
-            status: app.status,
-            name: user?.name || 'Unknown',
-            email: user?.email || '',
-            phone: user?.phone || '',
-            title: user?.title || '',
-            location: user?.location || '',
-            skills: user?.skills || [],
-            rating: user?.rating || 'New',
-            totalRatings: user?.totalRatings || 0,
-            experience: user?.experience || '',
-            availability: user?.availability || '',
-            schoolIdVerified: user?.schoolIdVerified || 'unverified',
-            assessmentVerified: user?.assessmentVerified || 'unverified',
-            appliedFor: gigs.find(g => g.id === app.gigId)?.title || '',
-          }
-        })
-    }, [applications, selectedGigId, gigs])
+        return applications
+            .filter(app => app.gigId === selectedGigId)
+            .map(app => {
+                const userData = allUsers.find(u => u.id === app.userId)
+                return {
+                    ...app,
+                    id: app.id,
+                    userId: app.userId,
+                    gigId: app.gigId,
+                    proposal: app.proposal,
+                    attachments: app.attachments || [],
+                    appliedAt: app.appliedAt,
+                    status: app.status,
+                    name: userData?.name || 'Unknown',
+                    email: userData?.email || '',
+                    phone: userData?.phone || '',
+                    title: userData?.title || '',
+                    location: userData?.location || '',
+                    skills: userData?.skills || [],
+                    rating: userData?.rating || 'New',
+                    totalRatings: userData?.totalRatings || 0,
+                    experience: userData?.experience || '',
+                    availability: userData?.availability || '',
+                    schoolIdVerified: userData?.schoolIdVerified || 'unverified',
+                    assessmentVerified: userData?.assessmentVerified || 'unverified',
+                    appliedFor: gigs.find(g => g.id === app.gigId)?.title || '',
+                }
+            })
+    }, [applications, selectedGigId, gigs, allUsers])
 
     // Filter applicants based on search and status
     const filteredApplicants = useMemo(() => {
-      return applicants.filter(app => {
-        const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          app.email.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesStatus = statusFilter === 'all' || app.status === statusFilter
-        return matchesSearch && matchesStatus
-      })
+        return applicants.filter(app => {
+            const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                app.email.toLowerCase().includes(searchTerm.toLowerCase())
+            const matchesStatus = statusFilter === 'all' || app.status === statusFilter
+            return matchesSearch && matchesStatus
+        })
     }, [applicants, searchTerm, statusFilter])
 
     // Count applicants by status
     const statusCounts = useMemo(() => ({
-      all: applicants.length,
-      pending: applicants.filter(a => a.status === 'pending').length,
-      hired: applicants.filter(a => a.status === 'hired').length,
-      rejected: applicants.filter(a => a.status === 'rejected').length
+        all: applicants.length,
+        pending: applicants.filter(a => a.status === 'pending').length,
+        hired: applicants.filter(a => a.status === 'hired').length,
+        rejected: applicants.filter(a => a.status === 'rejected').length
     }), [applicants])
 
     const getStatusColor = (status) => {
@@ -107,45 +140,54 @@ export default function ViewApplicants() {
     }
 
     const handleViewDetails = (applicant) => {
-      setSelectedApplicant(applicant)
-      setIsDetailsModalOpen(true)
+        setSelectedApplicant(applicant)
+        setIsDetailsModalOpen(true)
     }
 
     const handleHireApplicant = async () => {
-      if (selectedApplicant) {
-        const result = updateApplication(selectedApplicant.id, { status: 'hired' })
-        if (result.success) {
-          updateGig(selectedApplicant.gigId, { status: 'hired' })
-          setIsLoading(false)
-          setIsDetailsModalOpen(false)
-          window.location.reload()
+        if (selectedApplicant) {
+            const gigTitle = selectedApplicant.appliedFor
+            const result = updateApplication(selectedApplicant.id, { status: 'hired' })
+            if (result.success) {
+                updateGig(selectedApplicant.gigId, { status: 'hired' })
+
+                // Trigger notification to student
+                triggerNotification('student', 'Application Accepted! 🎉', `Congratulations! You've been hired for "${gigTitle}". Check your applications.`, 'application')
+
+                setIsLoading(false)
+                setIsDetailsModalOpen(false)
+                window.location.reload()
+            }
         }
-      }
     }
 
     const handleRejectApplicant = async () => {
-      if (selectedApplicant) {
-        const result = updateApplication(selectedApplicant.id, { status: 'rejected' })
-        if (result.success) {
-          setIsLoading(false)
-          setIsDetailsModalOpen(false)
-          window.location.reload()
+        if (selectedApplicant) {
+            const gigTitle = selectedApplicant.appliedFor
+            const result = updateApplication(selectedApplicant.id, { status: 'rejected' })
+            if (result.success) {
+                // Trigger notification to student
+                triggerNotification('student', 'Application Update', `Your application for "${gigTitle}" was not selected. Keep applying!`, 'application')
+
+                setIsLoading(false)
+                setIsDetailsModalOpen(false)
+                window.location.reload()
+            }
         }
-      }
     }
 
     // Show message if no gigs
     if (myGigs.length === 0) {
-      return (
-        <div className="space-y-6 max-w-7xl mx-auto pb-12">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Applicants</h1>
-          <Card className="p-12 text-center">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              You haven't posted any gigs yet. Create a gig to receive applications.
-            </p>
-          </Card>
-        </div>
-      )
+        return (
+            <div className="space-y-6 max-w-7xl mx-auto pb-12">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Applicants</h1>
+                <Card className="p-12 text-center">
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                        You haven't posted any gigs yet. Create a gig to receive applications.
+                    </p>
+                </Card>
+            </div>
+        )
     }
 
     return (
@@ -168,19 +210,19 @@ export default function ViewApplicants() {
 
             {/* Gig Selector */}
             {myGigs.length > 1 && (
-              <Card className="p-4">
-                <select
-                  value={selectedGig}
-                  onChange={(e) => setSelectedGig(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white"
-                >
-                  {myGigs.map(gig => (
-                    <option key={gig.id} value={gig.id}>
-                      {gig.title}
-                    </option>
-                  ))}
-                </select>
-              </Card>
+                <Card className="p-4">
+                    <select
+                        value={selectedGig}
+                        onChange={(e) => setSelectedGig(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white"
+                    >
+                        {myGigs.map(gig => (
+                            <option key={gig.id} value={gig.id}>
+                                {gig.title}
+                            </option>
+                        ))}
+                    </select>
+                </Card>
             )}
 
             {/* Stats Cards */}

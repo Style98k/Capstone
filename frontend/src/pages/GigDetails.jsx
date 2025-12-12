@@ -65,7 +65,7 @@ export default function GigDetails() {
 
       if (result.success) {
         // Trigger notification to client (gig owner)
-        triggerNotification('client', 'New Applicant', 'A student applied for your gig. Click to view details.', 'application');
+        triggerNotification('client', 'New Applicant! 📩', `A student applied for "${gig.title}". Review their application now.`, 'application');
 
         setShowApplyModal(false)
         setProposal('')
