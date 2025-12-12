@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getGigs, getApplications } from '../../utils/localStorage'
+import { getGigs, getApplications, getTransactions } from '../../utils/localStorage'
 import { mockNotifications } from '../../data/mockNotifications'
 import StatCard from '../../components/Shared/StatCard'
 import GigCard from '../../components/Shared/GigCard'
@@ -27,12 +27,14 @@ export default function StudentDashboard() {
   const navigate = useNavigate()
   const [allGigs, setAllGigs] = useState([])
   const [allApplications, setAllApplications] = useState([])
+  const [allTransactions, setAllTransactions] = useState([])
 
   // Load data from localStorage and update periodically
   useEffect(() => {
     const updateData = () => {
       setAllGigs(getGigs())
       setAllApplications(getApplications())
+      setAllTransactions(getTransactions())
     }
 
     updateData()
@@ -46,13 +48,18 @@ export default function StudentDashboard() {
     }
   }, [])
 
-  const myApplications = allApplications.filter(app => app.userId === user?.id)
+  // Filter out orphaned applications (where gig was deleted)
+  const myApplications = allApplications
+    .filter(app => app.userId === user?.id)
+    .filter(app => allGigs.some(g => g.id === app.gigId))
   const pendingApps = myApplications.filter(app => app.status === 'pending').length
   const hiredApps = myApplications.filter(app => app.status === 'hired').length
   const completedApps = myApplications.filter(app => app.status === 'completed').length
 
-  // Earnings: Only count if there are completed gigs (for now, always 0 since no transactions yet)
-  const myEarnings = 0
+  // Earnings: Calculate from completed transactions for this user
+  const myEarnings = allTransactions
+    .filter(t => t.toUserId === user?.id && t.status === 'completed')
+    .reduce((sum, t) => sum + t.amount, 0)
 
   const recentGigs = allGigs.filter(g => g.status === 'open').slice(0, 3)
   const myNotifications = mockNotifications.filter(n => n.userId === user?.id).slice(0, 5)
@@ -127,7 +134,7 @@ export default function StudentDashboard() {
         />
         <StatCard
           title="Active Applications"
-          value={pendingApps}
+          value={pendingApps + hiredApps}
           icon={Briefcase}
           color="blue"
           linkText="Manage applications"
@@ -192,7 +199,7 @@ export default function StudentDashboard() {
                         <p className="font-semibold text-gray-900 dark:text-white">{gig?.title}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                           <CalendarDays className="w-4 h-4" />
-                          Applied on {new Date(app.createdAt).toLocaleDateString()}
+                          Applied on {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${badgeClasses}`}>
@@ -202,7 +209,7 @@ export default function StudentDashboard() {
                     <div className="mt-3 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-2">
                         <Clock3 className="w-4 h-4" />
-                        <span>{app.hours || '4-6h'} expected</span>
+                        <span>{gig?.duration || 'N/A'} expected</span>
                       </div>
                       <span className="text-sky-600 dark:text-sky-400 font-medium inline-flex items-center gap-1">
                         Track status

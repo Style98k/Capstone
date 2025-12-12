@@ -1,109 +1,90 @@
-import { useMemo, useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
-import { Send, Search, CircleDot, PhoneCall, Video, MoreHorizontal } from 'lucide-react'
-
-const seedConversations = [
-  {
-    id: 'conv_1',
-    partnerId: 'user_3',
-    name: 'Maria Student',
-    lastMessage: 'Thank you for accepting my application!',
-    timestamp: '2024-01-20T10:00:00Z',
-    unread: true,
-    typing: false
-  },
-  {
-    id: 'conv_2',
-    partnerId: 'user_6',
-    name: 'Evan Torres',
-    lastMessage: 'Can we adjust the schedule?',
-    timestamp: '2024-01-19T15:30:00Z',
-    unread: false,
-    typing: true
-  }
-]
-
-const seedChats = {
-  user_3: [
-    { id: 'm1', senderId: 'user_3', senderName: 'Maria Student', message: 'Thanks for accepting!', timestamp: '2024-01-20T10:00:00Z' },
-    { id: 'm2', senderId: 'me', senderName: 'You', message: 'Happy to have you on board. Let’s discuss start date.', timestamp: '2024-01-20T10:03:00Z' }
-  ],
-  user_6: [
-    { id: 'm3', senderId: 'user_6', senderName: 'Evan Torres', message: 'Can we adjust the schedule?', timestamp: '2024-01-19T15:30:00Z' }
-  ]
-}
+import { Send, Search, CircleDot, PhoneCall, Video, MoreHorizontal, MessageSquare } from 'lucide-react'
+import { useAuth } from '../../hooks/useLocalAuth'
+import { getConversationsByUser, getMessagesByConversation, saveMessage } from '../../utils/localStorage'
 
 export default function Messages() {
-  const [conversations, setConversations] = useState(seedConversations)
-  const [chats, setChats] = useState(seedChats)
-  const [selectedPartnerId, setSelectedPartnerId] = useState(seedConversations[0]?.partnerId ?? null)
+  const { user } = useAuth()
+  const [conversations, setConversations] = useState([])
+  const [allMessages, setAllMessages] = useState({})
+  const [selectedConversationId, setSelectedConversationId] = useState(null)
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const filtered = useMemo(
-    () => conversations.filter(c => c.name.toLowerCase().includes(search.toLowerCase())),
-    [search, conversations]
-  )
+  // Load conversations from localStorage
+  useEffect(() => {
+    const loadData = () => {
+      if (user?.id) {
+        const userConversations = getConversationsByUser(user.id)
+        setConversations(userConversations)
 
-  const activeConversation = filtered.find(c => c.partnerId === selectedPartnerId) || filtered[0]
-  const chat = activeConversation ? chats[activeConversation.partnerId] ?? [] : []
+        // Load messages for each conversation
+        const messagesMap = {}
+        userConversations.forEach(conv => {
+          messagesMap[conv.id] = getMessagesByConversation(conv.id)
+        })
+        setAllMessages(messagesMap)
+
+        // Select first conversation if none selected
+        if (!selectedConversationId && userConversations.length > 0) {
+          setSelectedConversationId(userConversations[0].id)
+        }
+      }
+    }
+
+    loadData()
+
+    window.addEventListener('storage', loadData)
+    const interval = setInterval(loadData, 2000)
+
+    return () => {
+      window.removeEventListener('storage', loadData)
+      clearInterval(interval)
+    }
+  }, [user?.id, selectedConversationId])
+
+  const filtered = useMemo(() => {
+    return conversations.filter(c => {
+      const partnerName = getPartnerName(c)
+      return partnerName.toLowerCase().includes(search.toLowerCase())
+    })
+  }, [search, conversations])
+
+  // Get the partner's name (the other participant)
+  const getPartnerName = (conv) => {
+    if (!conv.participantNames) return 'Unknown'
+    const partnerId = conv.participants.find(p => p !== user?.id)
+    return conv.participantNames[partnerId] || 'Unknown'
+  }
+
+  const activeConversation = filtered.find(c => c.id === selectedConversationId) || filtered[0]
+  const chat = activeConversation ? allMessages[activeConversation.id] || [] : []
 
   const handleSend = () => {
     if (!message.trim() || !activeConversation) return
 
     const newMessage = {
-      id: `local_${Date.now()}`,
-      senderId: 'me',
-      senderName: 'You',
-      message,
-      timestamp: new Date().toISOString()
+      conversationId: activeConversation.id,
+      senderId: user?.id,
+      senderName: user?.name || 'You',
+      content: message
     }
 
-    setChats((prev) => ({
-      ...prev,
-      [activeConversation.partnerId]: [...(prev[activeConversation.partnerId] || []), newMessage]
-    }))
-
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.partnerId === activeConversation.partnerId
-          ? { ...c, lastMessage: message, timestamp: newMessage.timestamp, unread: false, typing: false }
-          : c
-      )
-    )
-
-    setMessage('')
-    setMenuOpen(false)
+    const result = saveMessage(newMessage)
+    if (result.success) {
+      setMessage('')
+      setMenuOpen(false)
+    }
   }
 
   const markUnread = () => {
-    if (!activeConversation) return
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.partnerId === activeConversation.partnerId ? { ...c, unread: true, typing: false } : c
-      )
-    )
     setMenuOpen(false)
   }
 
   const archiveConversation = () => {
-    if (!activeConversation) return
-    setConversations((prev) => {
-      const filteredList = prev.filter((c) => c.partnerId !== activeConversation.partnerId)
-      if (filteredList.length === 0) {
-        setSelectedPartnerId(null)
-      } else if (activeConversation.partnerId === selectedPartnerId) {
-        setSelectedPartnerId(filteredList[0].partnerId)
-      }
-      return filteredList
-    })
-    setChats((prev) => {
-      const next = { ...prev }
-      delete next[activeConversation.partnerId]
-      return next
-    })
     setMenuOpen(false)
   }
 
@@ -118,6 +99,7 @@ export default function Messages() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
+        {/* Conversations List */}
         <Card className="lg:col-span-1 overflow-hidden flex flex-col">
           <div className="p-4 border-b border-slate-100 dark:border-slate-800">
             <div className="relative">
@@ -132,55 +114,58 @@ export default function Messages() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {conversations.map((conv) => {
-              const active = activeConversation?.partnerId === conv.partnerId
-              return (
-                <button
-                  key={conv.id}
-                  onClick={() => {
-                    setSelectedPartnerId(conv.partnerId)
-                    setMenuOpen(false)
-                  }}
-                  className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors ${
-                    active ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                  }`}
-                >
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white font-semibold flex items-center justify-center">
-                    {conv.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold text-gray-900 dark:text-white truncate">{conv.name}</p>
-                      <span className="text-xs text-slate-500">{new Date(conv.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            {filtered.length > 0 ? (
+              filtered.map((conv) => {
+                const active = activeConversation?.id === conv.id
+                const partnerName = getPartnerName(conv)
+                return (
+                  <button
+                    key={conv.id}
+                    onClick={() => {
+                      setSelectedConversationId(conv.id)
+                      setMenuOpen(false)
+                    }}
+                    className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors ${active ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                      }`}
+                  >
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white font-semibold flex items-center justify-center">
+                      {partnerName.slice(0, 2).toUpperCase()}
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{conv.lastMessage}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      {conv.typing && <span className="text-xs text-emerald-600">Typing…</span>}
-                      {conv.unread && <span className="h-2 w-2 rounded-full bg-primary-600" />}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-semibold text-gray-900 dark:text-white truncate">{partnerName}</p>
+                        <span className="text-xs text-slate-500">{new Date(conv.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <p className="text-xs text-primary-600 truncate">{conv.gigTitle}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{conv.lastMessage}</p>
                     </div>
-                  </div>
-                </button>
-              )
-            })}
-            {conversations.length === 0 && (
-              <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                No conversations found
+                  </button>
+                )
+              })
+            ) : (
+              <div className="p-8 text-center">
+                <MessageSquare className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">No conversations yet</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                  When you hire a student, you'll be able to chat with them here.
+                </p>
               </div>
             )}
           </div>
         </Card>
 
+        {/* Chat Window */}
         <Card className="lg:col-span-2 flex flex-col">
           {activeConversation ? (
             <>
               <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white font-semibold flex items-center justify-center">
-                    {activeConversation.name.slice(0, 2).toUpperCase()}
+                    {getPartnerName(activeConversation).slice(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{activeConversation.name}</p>
-                    <p className="text-xs text-emerald-600">Online</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{getPartnerName(activeConversation)}</p>
+                    <p className="text-xs text-primary-600">{activeConversation.gigTitle}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 relative">
@@ -217,26 +202,34 @@ export default function Messages() {
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-4 px-4 py-4">
-                {chat.map((msg) => {
-                  const isMe = msg.senderId === 'me'
-                  return (
-                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div
-                        className={`max-w-xl px-4 py-3 rounded-2xl shadow-sm border ${
-                          isMe
-                            ? 'bg-primary-600 text-white border-primary-500'
-                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100'
-                        }`}
-                      >
-                        <p className="text-sm leading-relaxed">{msg.message}</p>
-                        <div className={`flex items-center gap-1 text-[11px] mt-1 ${isMe ? 'text-primary-100' : 'text-slate-500'}`}>
-                          <CircleDot className="w-3 h-3" />
-                          <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                {chat.length > 0 ? (
+                  chat.map((msg) => {
+                    const isMe = msg.senderId === user?.id
+                    return (
+                      <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        <div
+                          className={`max-w-xl px-4 py-3 rounded-2xl shadow-sm border ${isMe
+                              ? 'bg-primary-600 text-white border-primary-500'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100'
+                            }`}
+                        >
+                          <p className="text-sm leading-relaxed">{msg.content}</p>
+                          <div className={`flex items-center gap-1 text-[11px] mt-1 ${isMe ? 'text-primary-100' : 'text-slate-500'}`}>
+                            <CircleDot className="w-3 h-3" />
+                            <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
                         </div>
                       </div>
+                    )
+                  })
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400 py-12">
+                    <div className="text-center">
+                      <MessageSquare className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                      <p>No messages yet. Start the conversation!</p>
                     </div>
-                  )
-                })}
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-slate-100 dark:border-slate-800 px-4 py-3 flex gap-2">
@@ -256,7 +249,11 @@ export default function Messages() {
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
-              Select a conversation to start messaging
+              <div className="text-center">
+                <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-200 dark:text-gray-700" />
+                <p className="text-lg font-medium">No conversations yet</p>
+                <p className="text-sm mt-1">Hire a student to start messaging!</p>
+              </div>
             </div>
           )}
         </Card>
@@ -264,4 +261,3 @@ export default function Messages() {
     </div>
   )
 }
-

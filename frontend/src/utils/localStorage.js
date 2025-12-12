@@ -6,24 +6,36 @@ export const localStorageKeys = {
   GIGS: 'quickgig_gigs_v2',
   APPLICATIONS: 'quickgig_applications_v2',
   USERS: 'quickgig_users_v2',
-  TRANSACTIONS: 'quickgig_transactions_v2'
+  TRANSACTIONS: 'quickgig_transactions_v2',
+  CONVERSATIONS: 'quickgig_conversations_v2',
+  MESSAGES: 'quickgig_messages_v2'
 }
 
-// Initialize localStorage with mock data if empty
+// Initialize localStorage with empty data if not present (clean start for testing)
 export const initializeLocalStorage = () => {
-  // Initialize gigs if empty
+  // Initialize gigs if empty - start with empty array for clean testing
   if (!localStorage.getItem(localStorageKeys.GIGS)) {
-    localStorage.setItem(localStorageKeys.GIGS, JSON.stringify(mockGigs))
+    localStorage.setItem(localStorageKeys.GIGS, JSON.stringify([]))
   }
 
-  // Initialize applications if empty
+  // Initialize applications if empty - start with empty array
   if (!localStorage.getItem(localStorageKeys.APPLICATIONS)) {
-    localStorage.setItem(localStorageKeys.APPLICATIONS, JSON.stringify(mockApplications))
+    localStorage.setItem(localStorageKeys.APPLICATIONS, JSON.stringify([]))
   }
 
   // Initialize transactions if empty
   if (!localStorage.getItem(localStorageKeys.TRANSACTIONS)) {
     localStorage.setItem(localStorageKeys.TRANSACTIONS, JSON.stringify([]))
+  }
+
+  // Initialize conversations if empty
+  if (!localStorage.getItem(localStorageKeys.CONVERSATIONS)) {
+    localStorage.setItem(localStorageKeys.CONVERSATIONS, JSON.stringify([]))
+  }
+
+  // Initialize messages if empty
+  if (!localStorage.getItem(localStorageKeys.MESSAGES)) {
+    localStorage.setItem(localStorageKeys.MESSAGES, JSON.stringify([]))
   }
 }
 
@@ -78,6 +90,7 @@ export const updateGig = (gigId, updates) => {
 
 export const deleteGig = (gigId) => {
   try {
+    // Delete the gig
     const gigs = getGigs()
     const filteredGigs = gigs.filter(gig => gig.id !== gigId)
 
@@ -86,6 +99,28 @@ export const deleteGig = (gigId) => {
     }
 
     localStorage.setItem(localStorageKeys.GIGS, JSON.stringify(filteredGigs))
+
+    // CASCADE DELETE: Remove all related applications
+    const applications = JSON.parse(localStorage.getItem(localStorageKeys.APPLICATIONS) || '[]')
+    const filteredApps = applications.filter(app => app.gigId !== gigId)
+    localStorage.setItem(localStorageKeys.APPLICATIONS, JSON.stringify(filteredApps))
+
+    // CASCADE DELETE: Remove all related conversations
+    const conversations = JSON.parse(localStorage.getItem(localStorageKeys.CONVERSATIONS) || '[]')
+    const relatedConvIds = conversations.filter(c => c.gigId === gigId).map(c => c.id)
+    const filteredConvs = conversations.filter(c => c.gigId !== gigId)
+    localStorage.setItem(localStorageKeys.CONVERSATIONS, JSON.stringify(filteredConvs))
+
+    // CASCADE DELETE: Remove all messages from deleted conversations
+    if (relatedConvIds.length > 0) {
+      const messages = JSON.parse(localStorage.getItem(localStorageKeys.MESSAGES) || '[]')
+      const filteredMsgs = messages.filter(m => !relatedConvIds.includes(m.conversationId))
+      localStorage.setItem(localStorageKeys.MESSAGES, JSON.stringify(filteredMsgs))
+    }
+
+    // Dispatch storage event for UI updates
+    window.dispatchEvent(new Event('storage'))
+
     return { success: true }
   } catch (error) {
     console.error('Error deleting gig from localStorage:', error)
@@ -149,6 +184,7 @@ export const updateApplication = (applicationId, updates) => {
     }
 
     localStorage.setItem(localStorageKeys.APPLICATIONS, JSON.stringify(applications))
+    window.dispatchEvent(new Event('storage'))
     return { success: true, application: applications[appIndex] }
   } catch (error) {
     console.error('Error updating application in localStorage:', error)
@@ -210,5 +246,97 @@ export const saveTransaction = (transactionData) => {
 export const getTransactionsByUser = (userId) => {
   const transactions = getTransactions()
   return transactions.filter(t => t.fromUserId === userId || t.toUserId === userId)
+}
+
+// CONVERSATION MANAGEMENT
+export const getConversations = () => {
+  try {
+    return JSON.parse(localStorage.getItem(localStorageKeys.CONVERSATIONS) || '[]')
+  } catch (error) {
+    console.error('Error reading conversations from localStorage:', error)
+    return []
+  }
+}
+
+export const getConversationsByUser = (userId) => {
+  const conversations = getConversations()
+  return conversations.filter(c => c.participants.includes(userId))
+}
+
+export const saveConversation = (conversationData) => {
+  try {
+    const conversations = getConversations()
+
+    // Check if conversation already exists between these participants for this gig
+    const existing = conversations.find(c =>
+      c.gigId === conversationData.gigId &&
+      c.participants.includes(conversationData.participants[0]) &&
+      c.participants.includes(conversationData.participants[1])
+    )
+
+    if (existing) {
+      return { success: true, conversation: existing, isNew: false }
+    }
+
+    const newConversation = {
+      id: `conv_${Date.now()}`,
+      ...conversationData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    conversations.push(newConversation)
+    localStorage.setItem(localStorageKeys.CONVERSATIONS, JSON.stringify(conversations))
+    window.dispatchEvent(new Event('storage'))
+    return { success: true, conversation: newConversation, isNew: true }
+  } catch (error) {
+    console.error('Error saving conversation to localStorage:', error)
+    return { success: false, error: 'Failed to save conversation' }
+  }
+}
+
+// MESSAGE MANAGEMENT
+export const getMessages = () => {
+  try {
+    return JSON.parse(localStorage.getItem(localStorageKeys.MESSAGES) || '[]')
+  } catch (error) {
+    console.error('Error reading messages from localStorage:', error)
+    return []
+  }
+}
+
+export const getMessagesByConversation = (conversationId) => {
+  const messages = getMessages()
+  return messages.filter(m => m.conversationId === conversationId)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+}
+
+export const saveMessage = (messageData) => {
+  try {
+    const messages = getMessages()
+    const newMessage = {
+      id: `msg_${Date.now()}`,
+      ...messageData,
+      timestamp: new Date().toISOString()
+    }
+
+    messages.push(newMessage)
+    localStorage.setItem(localStorageKeys.MESSAGES, JSON.stringify(messages))
+
+    // Update conversation's last message
+    const conversations = getConversations()
+    const convIndex = conversations.findIndex(c => c.id === messageData.conversationId)
+    if (convIndex !== -1) {
+      conversations[convIndex].lastMessage = messageData.content
+      conversations[convIndex].updatedAt = newMessage.timestamp
+      localStorage.setItem(localStorageKeys.CONVERSATIONS, JSON.stringify(conversations))
+    }
+
+    window.dispatchEvent(new Event('storage'))
+    return { success: true, message: newMessage }
+  } catch (error) {
+    console.error('Error saving message to localStorage:', error)
+    return { success: false, error: 'Failed to save message' }
+  }
 }
 

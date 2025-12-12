@@ -5,7 +5,7 @@ import Input from '../../components/UI/Input'
 import Button from '../../components/UI/Button'
 import ApplicantDetailsModal from '../../components/applicants/ApplicantDetailsModal'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getApplications, getGigs, updateApplication, updateGig, initializeLocalStorage } from '../../utils/localStorage'
+import { getApplications, getGigs, updateApplication, updateGig, initializeLocalStorage, saveConversation } from '../../utils/localStorage'
 import { triggerNotification } from '../../utils/notificationManager'
 import { mockUsers } from '../../data/mockUsers'
 
@@ -19,21 +19,22 @@ export default function ViewApplicants() {
     const [isLoading, setIsLoading] = useState(false)
     const [gigs, setGigs] = useState([])
     const [applications, setApplications] = useState([])
+    const [allUsers, setAllUsers] = useState([])
 
     // Get all users from localStorage and mockUsers
     const getAllUsers = () => {
         try {
             const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
             const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
-            const allUsers = [...mockUsers]
+            const users = [...mockUsers]
             const seenEmails = new Set(mockUsers.map(u => u.email))
             for (const u of [...registeredUsers, ...additionalUsers]) {
                 if (!seenEmails.has(u.email)) {
-                    allUsers.push(u)
+                    users.push(u)
                     seenEmails.add(u.email)
                 }
             }
-            return allUsers
+            return users
         } catch {
             return mockUsers
         }
@@ -46,6 +47,7 @@ export default function ViewApplicants() {
         const updateData = () => {
             setGigs(getGigs())
             setApplications(getApplications())
+            setAllUsers(getAllUsers())
         }
 
         updateData()
@@ -59,7 +61,6 @@ export default function ViewApplicants() {
         }
     }, [])
 
-    const allUsers = getAllUsers()
     const myGigs = gigs.filter(g => g.ownerId === user?.id)
     const selectedGigId = selectedGig || myGigs[0]?.id
 
@@ -151,8 +152,20 @@ export default function ViewApplicants() {
             if (result.success) {
                 updateGig(selectedApplicant.gigId, { status: 'hired' })
 
+                // Create conversation between client and student
+                saveConversation({
+                    gigId: selectedApplicant.gigId,
+                    gigTitle: gigTitle,
+                    participants: [user?.id, selectedApplicant.userId],
+                    participantNames: {
+                        [user?.id]: user?.name || 'Client',
+                        [selectedApplicant.userId]: selectedApplicant.name
+                    },
+                    lastMessage: 'Conversation started'
+                })
+
                 // Trigger notification to student
-                triggerNotification('student', 'Application Accepted! 🎉', `Congratulations! You've been hired for "${gigTitle}". Check your applications.`, 'application')
+                triggerNotification('student', 'Application Accepted! 🎉', `Congratulations! You've been hired for "${gigTitle}". You can now message the client!`, 'application')
 
                 setIsLoading(false)
                 setIsDetailsModalOpen(false)
@@ -208,22 +221,23 @@ export default function ViewApplicants() {
                 </div>
             </div>
 
-            {/* Gig Selector */}
-            {myGigs.length > 1 && (
-                <Card className="p-4">
-                    <select
-                        value={selectedGig}
-                        onChange={(e) => setSelectedGig(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white"
-                    >
-                        {myGigs.map(gig => (
-                            <option key={gig.id} value={gig.id}>
-                                {gig.title}
-                            </option>
-                        ))}
-                    </select>
-                </Card>
-            )}
+            {/* Gig Selector - Always show so user knows which gig they're viewing */}
+            <Card className="p-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Select a gig to view applicants:
+                </label>
+                <select
+                    value={selectedGig || selectedGigId}
+                    onChange={(e) => setSelectedGig(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white"
+                >
+                    {myGigs.map(gig => (
+                        <option key={gig.id} value={gig.id}>
+                            {gig.title} ({applications.filter(a => a.gigId === gig.id).length} applicants)
+                        </option>
+                    ))}
+                </select>
+            </Card>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

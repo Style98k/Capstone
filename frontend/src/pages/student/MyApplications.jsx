@@ -46,10 +46,15 @@ export default function MyApplications() {
   const myApplications = allApplications
     .filter(app => app.userId === user?.id)
     .filter(app => !statusFilter || app.status === statusFilter)
+    // Filter out applications for deleted gigs (orphaned data)
+    .filter(app => allGigs.some(g => g.id === app.gigId))
     .sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt))
 
   const stats = useMemo(() => {
-    const all = allApplications.filter(app => app.userId === user?.id)
+    // Only count applications where the gig still exists
+    const all = allApplications
+      .filter(app => app.userId === user?.id)
+      .filter(app => allGigs.some(g => g.id === app.gigId))
     return {
       total: all.length,
       pending: all.filter(a => a.status === 'pending').length,
@@ -57,7 +62,7 @@ export default function MyApplications() {
       completed: all.filter(a => a.status === 'completed').length,
       rejected: all.filter(a => a.status === 'rejected').length
     }
-  }, [allApplications, user?.id])
+  }, [allApplications, allGigs, user?.id])
 
   const getStatusBadge = (status) => {
     const styles = {

@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getGigs, getApplications, deleteGig, updateGig, initializeLocalStorage } from '../../utils/localStorage'
+import { getGigs, getApplications, deleteGig, updateGig, updateApplication, initializeLocalStorage } from '../../utils/localStorage'
+import { triggerNotification } from '../../utils/notificationManager'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
-import { Edit, Pause, Play, Trash2, Eye, Briefcase, MapPin, Clock, DollarSign, Users, Calendar } from 'lucide-react'
+import { Edit, Pause, Play, Trash2, Eye, Briefcase, MapPin, Clock, DollarSign, Users, Calendar, CheckCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
@@ -55,6 +56,29 @@ export default function ManageGigs() {
     }
   }
 
+  const handleMarkComplete = (gig) => {
+    if (window.confirm('Mark this gig as completed? This will notify the student and allow you to make a payment.')) {
+      // Update gig status
+      const gigResult = updateGig(gig.id, { status: 'completed' })
+
+      if (gigResult.success) {
+        // Find and update the hired application
+        const hiredApp = applications.find(app => app.gigId === gig.id && app.status === 'hired')
+        if (hiredApp) {
+          updateApplication(hiredApp.id, { status: 'completed' })
+        }
+
+        // Notify the student
+        triggerNotification('student', 'Job Completed! \uD83C\uDF89', `The job "${gig.title}" has been marked as completed. Expect your payment soon!`, 'payment')
+
+        alert('Gig marked as completed! You can now process payment in the Payments page.')
+        setRefreshKey(prev => prev + 1)
+      } else {
+        alert('Failed to mark gig as completed. Please try again.')
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -99,6 +123,8 @@ export default function ManageGigs() {
               <option value="">All Status</option>
               <option value="open">Open</option>
               <option value="paused">Paused</option>
+              <option value="hired">Hired</option>
+              <option value="completed">Completed</option>
               <option value="closed">Closed</option>
             </select>
           </div>
@@ -124,7 +150,11 @@ export default function ManageGigs() {
                       ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                       : gig.status === 'paused'
                         ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                        : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                        : gig.status === 'hired'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                          : gig.status === 'completed'
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                            : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                     }`}
                 >
                   {gig.status}
@@ -171,7 +201,7 @@ export default function ManageGigs() {
                         </Button>
                       </motion.div>
                     </Link>
-                    {gig.status === 'open' ? (
+                    {gig.status === 'open' && (
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -181,7 +211,8 @@ export default function ManageGigs() {
                           Pause
                         </Button>
                       </motion.div>
-                    ) : (
+                    )}
+                    {gig.status === 'paused' && (
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -189,6 +220,17 @@ export default function ManageGigs() {
                         <Button variant="secondary" size="sm" onClick={() => handleToggleGigStatus(gig.id, gig.status)} className="hover:bg-green-100 hover:text-green-700 hover:border-green-300 transition-all duration-200 min-w-[80px] flex items-center justify-center">
                           <Play className="w-4 h-4 mr-1" />
                           Resume
+                        </Button>
+                      </motion.div>
+                    )}
+                    {gig.status === 'hired' && (
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button size="sm" onClick={() => handleMarkComplete(gig)} className="bg-purple-600 hover:bg-purple-700 text-white hover:shadow-md transition-all duration-200 min-w-[120px] flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Mark Complete
                         </Button>
                       </motion.div>
                     )}
