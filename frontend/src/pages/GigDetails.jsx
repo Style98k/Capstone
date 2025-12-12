@@ -57,7 +57,8 @@ export default function GigDetails() {
         attachments: attachments.map(f => ({
           name: f.name,
           size: f.size,
-          type: f.type
+          type: f.type,
+          data: f.data // Include base64 data
         }))
       }
 
@@ -215,14 +216,25 @@ export default function GigDetails() {
               const files = Array.from(e.target.files || [])
               if (files.length === 0) return
 
-              setAttachments(prev => {
-                const existingKeys = new Set(
-                  prev.map(f => `${f.name}-${f.size}-${f.lastModified}`)
-                )
-                const toAdd = files.filter(
-                  f => !existingKeys.has(`${f.name}-${f.size}-${f.lastModified}`)
-                )
-                return [...prev, ...toAdd]
+              // Convert files to base64 and store with metadata
+              files.forEach(file => {
+                const reader = new FileReader()
+                reader.onload = (event) => {
+                  setAttachments(prev => {
+                    // Check if already added
+                    const key = `${file.name}-${file.size}`
+                    if (prev.some(f => `${f.name}-${f.size}` === key)) {
+                      return prev
+                    }
+                    return [...prev, {
+                      name: file.name,
+                      size: Math.round(file.size / 1024), // KB
+                      type: file.type,
+                      data: event.target.result // base64 data
+                    }]
+                  })
+                }
+                reader.readAsDataURL(file)
               })
 
               setIsManagingAttachments(false)
