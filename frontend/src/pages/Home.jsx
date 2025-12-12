@@ -1,18 +1,72 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useLocalAuth'
-import { initializeLocalStorage, getOpenGigs } from '../utils/localStorage'
+import { initializeLocalStorage, getOpenGigs, getGigs } from '../utils/localStorage'
+import { mockUsers } from '../data/mockUsers'
 import GigCard from '../components/Shared/GigCard'
 import Button from '../components/UI/Button'
 import { Briefcase, Users, Shield, TrendingUp, CheckCircle, GraduationCap, Star } from 'lucide-react'
 
+// Helper to get all users (mock + registered)
+const getAllUsers = () => {
+  try {
+    const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users') || '[]')
+    return [...mockUsers, ...registeredUsers]
+  } catch (error) {
+    console.error('Error reading users:', error)
+    return mockUsers
+  }
+}
+
+// Helper to get statistics
+const getStatistics = () => {
+  const allUsers = getAllUsers()
+  const gigs = getGigs()
+  
+  const activeStudents = allUsers.filter(user => user.role === 'student').length
+  const registeredClients = allUsers.filter(user => user.role === 'client').length
+  const completedGigs = gigs.filter(gig => gig.status === 'completed').length
+  
+  return {
+    activeStudents: activeStudents > 0 ? activeStudents : '10+',
+    registeredClients: registeredClients > 0 ? registeredClients : '5+',
+    completedGigs: completedGigs > 0 ? completedGigs : '0'
+  }
+}
+
 export default function Home() {
   const { user } = useAuth()
+  const [stats, setStats] = useState({ activeStudents: '10+', registeredClients: '5+', completedGigs: '0' })
 
   // Get gigs from localStorage so newly posted jobs appear
   const recentGigs = useMemo(() => {
     initializeLocalStorage()
     return getOpenGigs().slice(0, 6)
+  }, [])
+
+  // Update statistics when component mounts or when localStorage changes
+  useEffect(() => {
+    const updateStats = () => {
+      const newStats = getStatistics()
+      setStats(newStats)
+    }
+    
+    updateStats()
+    
+    // Listen for storage changes to update stats in real-time
+    const handleStorageChange = () => {
+      updateStats()
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    
+    // Also update periodically for same-tab changes
+    const interval = setInterval(updateStats, 2000)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      clearInterval(interval)
+    }
   }, [])
 
   return (
@@ -133,16 +187,16 @@ export default function Home() {
                     Active Students
                   </span>
                 </div>
-                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">0</div>
+                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">{stats.activeStudents}</div>
               </div>
               <div className="transition-transform duration-300 hover:-translate-y-1">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Briefcase className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                   <span className="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                    Verified Clients
+                    Registered Clients
                   </span>
                 </div>
-                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">0</div>
+                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">{stats.registeredClients}</div>
               </div>
               <div className="transition-transform duration-300 hover:-translate-y-1">
                 <div className="flex items-center justify-center gap-2 mb-1">
@@ -151,7 +205,7 @@ export default function Home() {
                     Completed Gigs
                   </span>
                 </div>
-                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">0</div>
+                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">{stats.completedGigs}</div>
               </div>
             </div>
           </div>
