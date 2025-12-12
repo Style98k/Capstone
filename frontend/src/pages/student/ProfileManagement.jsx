@@ -107,15 +107,29 @@ export default function ProfileManagement() {
     })
 
     const handlePhotoClick = () => {
-        if (isEditing) fileInputRef.current?.click()
+        fileInputRef.current?.click()
     }
 
     const handleFileChange = (e) => {
         const file = e.target.files?.[0]
         if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setNotification({ type: 'error', message: 'Please select an image file' })
+                return
+            }
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                setNotification({ type: 'error', message: 'Image must be less than 2MB' })
+                return
+            }
+
             const reader = new FileReader()
             reader.onloadend = () => {
+                // Save directly to user profile for syncing across the site
+                updateUser({ profilePhoto: reader.result })
                 setFormData(prev => ({ ...prev, photo: reader.result }))
+                setNotification({ type: 'success', message: 'Profile photo updated!' })
             }
             reader.readAsDataURL(file)
         }
@@ -342,13 +356,11 @@ export default function ProfileManagement() {
                 {/* Left Column: Avatar & Quick Stats */}
                 <div className="lg:col-span-1 space-y-6">
                     <Card className="flex flex-col items-center text-center p-8">
-                        <div className="relative group">
-                            <div className={`w-40 h-40 rounded-full overflow-hidden border-4 ${isEditing ? 'border-primary-400 cursor-pointer' : 'border-white dark:border-gray-700'} shadow-2xl bg-gray-200 flex items-center justify-center transition-all duration-300`}
-                                onClick={handlePhotoClick}
-                            >
-                                {formData.photo || user?.avatar ? (
+                        <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
+                            <div className={`w-40 h-40 rounded-full overflow-hidden border-4 border-white dark:border-gray-700 shadow-2xl bg-gray-200 flex items-center justify-center transition-all duration-300`}>
+                                {formData.photo || user?.profilePhoto ? (
                                     <img
-                                        src={formData.photo || user.avatar}
+                                        src={formData.photo || user.profilePhoto}
                                         alt="Profile"
                                         className="w-full h-full object-cover"
                                     />
@@ -357,19 +369,17 @@ export default function ProfileManagement() {
                                         {user?.name?.charAt(0).toUpperCase()}
                                     </span>
                                 )}
-
-                                {/* Overlay for Edit Mode */}
-                                {isEditing && (
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Camera className="w-8 h-8 text-white" />
-                                    </div>
-                                )}
                             </div>
-                            {isEditing && (
-                                <div className="absolute bottom-2 right-2 p-2 bg-primary-600 text-white rounded-full shadow-lg cursor-pointer hover:bg-primary-700 transition-transform hover:scale-110" onClick={handlePhotoClick}>
-                                    <Upload className="w-4 h-4" />
-                                </div>
-                            )}
+
+                            {/* Camera overlay - always show on hover */}
+                            <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Camera className="w-8 h-8 text-white" />
+                            </div>
+
+                            {/* Upload badge */}
+                            <div className="absolute bottom-2 right-2 p-2 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-transform hover:scale-110">
+                                <Camera className="w-4 h-4" />
+                            </div>
                         </div>
 
                         <input

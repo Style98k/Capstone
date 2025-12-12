@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../hooks/useLocalAuth'
+import { getGigs, getApplications } from '../../utils/localStorage'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
 import CommentRating from '../../components/Shared/CommentRating'
 import {
     User, Mail, Phone, Building2, Save, X, Edit3,
-    CheckCircle2, Sparkles, Briefcase, Star
+    CheckCircle2, Sparkles, Briefcase, Star, Camera
 } from 'lucide-react'
 
 export default function ClientProfile() {
@@ -14,12 +15,40 @@ export default function ClientProfile() {
     const [isEditing, setIsEditing] = useState(false)
     const [loading, setLoading] = useState(false)
     const [notification, setNotification] = useState(null)
+    const [stats, setStats] = useState({ jobsPosted: 0, studentsHired: 0 })
+    const fileInputRef = useRef(null)
 
     const [formData, setFormData] = useState({
         name: user?.name || '',
         email: user?.email || '',
         phone: user?.phone || '',
     })
+
+    // Fetch real stats from localStorage
+    useEffect(() => {
+        const updateStats = () => {
+            const allGigs = getGigs()
+            const allApplications = getApplications()
+
+            const myGigs = allGigs.filter(g => g.ownerId === user?.id)
+            const jobsPosted = myGigs.length
+            const studentsHired = allApplications.filter(app =>
+                myGigs.some(g => g.id === app.gigId) && (app.status === 'hired' || app.status === 'completed')
+            ).length
+
+            setStats({ jobsPosted, studentsHired })
+        }
+
+        updateStats()
+
+        window.addEventListener('storage', updateStats)
+        const interval = setInterval(updateStats, 2000)
+
+        return () => {
+            window.removeEventListener('storage', updateStats)
+            clearInterval(interval)
+        }
+    }, [user?.id])
 
     const handleChange = (e) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -42,6 +71,33 @@ export default function ClientProfile() {
             phone: user?.phone || '',
         })
         setIsEditing(false)
+    }
+
+    const handlePhotoUpload = (e) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setNotification({ type: 'error', message: 'Please select an image file' })
+                setTimeout(() => setNotification(null), 3000)
+                return
+            }
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                setNotification({ type: 'error', message: 'Image must be less than 2MB' })
+                setTimeout(() => setNotification(null), 3000)
+                return
+            }
+
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                // Save to user profile
+                updateUser({ profilePhoto: reader.result })
+                setNotification({ type: 'success', message: 'Profile photo updated!' })
+                setTimeout(() => setNotification(null), 3000)
+            }
+            reader.readAsDataURL(file)
+        }
     }
 
     if (!user) return null
@@ -107,15 +163,40 @@ export default function ClientProfile() {
 
                 <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
-                        {/* Avatar */}
+                        {/* Avatar with Photo Upload */}
                         <motion.div
-                            className="relative"
+                            className="relative group cursor-pointer"
                             whileHover={{ scale: 1.05 }}
                             transition={{ type: "spring", stiffness: 300 }}
+                            onClick={() => fileInputRef.current?.click()}
                         >
-                            <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-4xl font-bold shadow-2xl ring-4 ring-white/30">
-                                {user.name.charAt(0).toUpperCase()}
+                            {/* Hidden file input */}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handlePhotoUpload}
+                                className="hidden"
+                            />
+
+                            {user.profilePhoto ? (
+                                <img
+                                    src={user.profilePhoto}
+                                    alt={user.name}
+                                    className="w-24 h-24 rounded-full object-cover shadow-2xl ring-4 ring-white/30"
+                                />
+                            ) : (
+                                <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-4xl font-bold shadow-2xl ring-4 ring-white/30">
+                                    {user.name.charAt(0).toUpperCase()}
+                                </div>
+                            )}
+
+                            {/* Camera overlay on hover */}
+                            <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                <Camera className="w-8 h-8 text-white" />
                             </div>
+
+                            {/* Role badge */}
                             <motion.div
                                 className="absolute -bottom-1 -right-1 p-2 bg-violet-500 rounded-full shadow-lg"
                                 animate={{ scale: [1, 1.1, 1] }}
@@ -261,7 +342,7 @@ export default function ClientProfile() {
                             </div>
                             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Jobs Posted</span>
                         </div>
-                        <p className="text-3xl font-bold text-gray-900 dark:text-white">{user?.jobsPosted || 0}</p>
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.jobsPosted}</p>
                     </motion.div>
 
                     <motion.div
@@ -275,7 +356,7 @@ export default function ClientProfile() {
                             </div>
                             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Students Hired</span>
                         </div>
-                        <p className="text-3xl font-bold text-gray-900 dark:text-white">{user?.studentsHired || 0}</p>
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.studentsHired}</p>
                     </motion.div>
 
                     <motion.div

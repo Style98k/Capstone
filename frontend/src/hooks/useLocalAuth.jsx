@@ -59,6 +59,25 @@ export function AuthProvider({ children }) {
   }, [])
 
 
+  // Helper to get saved user updates from localStorage
+  const getSavedUserUpdates = (userId) => {
+    try {
+      // Check quickgig_users_v2 for any updates
+      const users = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+      const savedUser = users.find(u => u.id === userId)
+      if (savedUser) return savedUser
+
+      // Also check registered users
+      const registeredUsers = getRegisteredUsers()
+      const regUser = registeredUsers.find(u => u.id === userId)
+      if (regUser) return regUser
+
+      return null
+    } catch {
+      return null
+    }
+  }
+
   const login = (email, password) => {
     // First check mockUsers (pre-defined users)
     let foundUser = mockUsers.find(
@@ -74,7 +93,15 @@ export function AuthProvider({ children }) {
     }
 
     if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser
+      // Check for any saved updates (like profile photo) in localStorage
+      const savedUpdates = getSavedUserUpdates(foundUser.id)
+
+      // Merge saved updates with the found user (saved updates take precedence)
+      const mergedUser = savedUpdates
+        ? { ...foundUser, ...savedUpdates, password: foundUser.password }
+        : foundUser
+
+      const { password: _, ...userWithoutPassword } = mergedUser
       setUser(userWithoutPassword)
       localStorage.setItem('quickgig_user', JSON.stringify(userWithoutPassword))
       return { success: true, user: userWithoutPassword }
@@ -140,6 +167,29 @@ export function AuthProvider({ children }) {
     const updatedUser = { ...user, ...updates }
     setUser(updatedUser)
     localStorage.setItem('quickgig_user', JSON.stringify(updatedUser))
+
+    // Also update in registered users array for sync across the site
+    const registeredUsers = getRegisteredUsers()
+    const regIndex = registeredUsers.findIndex(u => u.id === user.id)
+    if (regIndex !== -1) {
+      registeredUsers[regIndex] = { ...registeredUsers[regIndex], ...updates }
+      localStorage.setItem('quickgig_registered_users_v2', JSON.stringify(registeredUsers))
+    }
+
+    // Also update in quickgig_users_v2 for admin user management
+    const users = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+    const userIndex = users.findIndex(u => u.id === user.id)
+    if (userIndex !== -1) {
+      // User exists, update them
+      users[userIndex] = { ...users[userIndex], ...updates }
+    } else {
+      // User doesn't exist in localStorage (mock user), add them with updates
+      users.push({ ...user, ...updates })
+    }
+    localStorage.setItem('quickgig_users_v2', JSON.stringify(users))
+
+    // Dispatch storage event for immediate UI updates
+    window.dispatchEvent(new Event('storage'))
   }
 
   return (

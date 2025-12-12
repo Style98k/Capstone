@@ -77,18 +77,24 @@ export default function ManageUsers() {
     const registeredUsers = getRegisteredUsers()
     const allUsers = [...mockUsers, ...registeredUsers]
 
+    // Get saved user updates (like profile photos) from quickgig_users_v2
+    const savedUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+
     // Remove duplicates based on email
     const uniqueUsers = allUsers.filter((user, index, self) =>
       index === self.findIndex(u => u.email === user.email)
     )
 
-    // Map users with their verification status from localStorage
+    // Map users with their verification status and merge any saved updates
     return uniqueUsers.map(u => {
       const storedStatus = getUserVerificationStatus(u.id)
 
+      // Find any saved updates for this user (like profile photo)
+      const savedUpdates = savedUsers.find(su => su.id === u.id)
+
       // Special case for Maria (demo user with pending status)
       if (u.name === 'Maria Student') {
-        return { ...u, verificationStatus: 'pending', verified: false }
+        return { ...u, ...savedUpdates, verificationStatus: 'pending', verified: false }
       }
 
       // For other users, use stored status or computed default
@@ -97,6 +103,7 @@ export default function ManageUsers() {
 
       return {
         ...u,
+        ...savedUpdates, // Merge saved updates (profile photo, etc.)
         verificationStatus,
         assessmentStatus,
         verified: verificationStatus === 'verified' && assessmentStatus === 'verified'
@@ -118,11 +125,14 @@ export default function ManageUsers() {
   const [storedID, setStoredID] = useState(null)
   const [storedAssessment, setStoredAssessment] = useState(null)
 
-  // Refresh users list periodically to catch new registrations
+  // Refresh users list periodically to catch new registrations and profile updates
   useEffect(() => {
     const refreshUsers = () => {
       const registeredUsers = getRegisteredUsers()
       const allUsers = [...mockUsers, ...registeredUsers]
+
+      // Get saved user updates (like profile photos) from quickgig_users_v2
+      const savedUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
 
       // Remove duplicates based on email
       const uniqueUsers = allUsers.filter((user, index, self) =>
@@ -134,22 +144,31 @@ export default function ManageUsers() {
         const existingIds = new Set(prev.map(u => u.id))
         const newUsers = uniqueUsers.filter(u => !existingIds.has(u.id)).map(u => {
           const storedStatus = getUserVerificationStatus(u.id)
+          const savedUpdates = savedUsers.find(su => su.id === u.id)
           return {
             ...u,
+            ...savedUpdates,
             verificationStatus: storedStatus.verificationStatus || 'unverified',
             assessmentStatus: storedStatus.assessmentStatus || 'unverified',
             verified: false
           }
         })
 
-        // Update existing users with latest verification statuses
+        // Update existing users with latest verification statuses AND profile updates
         const updatedExisting = prev.map(u => {
           const storedStatus = getUserVerificationStatus(u.id)
-          if (storedStatus.verificationStatus && storedStatus.verificationStatus !== u.verificationStatus) {
+          const savedUpdates = savedUsers.find(su => su.id === u.id)
+
+          // Check if there are any updates to apply
+          const hasVerificationChange = storedStatus.verificationStatus && storedStatus.verificationStatus !== u.verificationStatus
+          const hasProfilePhotoChange = savedUpdates?.profilePhoto && savedUpdates.profilePhoto !== u.profilePhoto
+
+          if (hasVerificationChange || hasProfilePhotoChange) {
             return {
               ...u,
-              verificationStatus: storedStatus.verificationStatus,
-              assessmentStatus: storedStatus.assessmentStatus,
+              ...savedUpdates, // Merge profile updates
+              verificationStatus: storedStatus.verificationStatus || u.verificationStatus,
+              assessmentStatus: storedStatus.assessmentStatus || u.assessmentStatus,
               verified: storedStatus.verificationStatus === 'verified' && storedStatus.assessmentStatus === 'verified'
             }
           }
@@ -492,11 +511,20 @@ export default function ManageUsers() {
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user.name)} 
-                              flex items-center justify-center text-white font-semibold text-sm shadow-lg
-                              group-hover:scale-110 transition-transform duration-200`}>
-                              {user.name.charAt(0).toUpperCase()}
-                            </div>
+                            {user.profilePhoto ? (
+                              <img
+                                src={user.profilePhoto}
+                                alt={user.name}
+                                className="w-10 h-10 rounded-full object-cover shadow-lg
+                                  group-hover:scale-110 transition-transform duration-200"
+                              />
+                            ) : (
+                              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user.name)} 
+                                flex items-center justify-center text-white font-semibold text-sm shadow-lg
+                                group-hover:scale-110 transition-transform duration-200`}>
+                                {user.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
                             <span className="font-medium text-gray-900">{user.name}</span>
                           </div>
                         </td>
@@ -730,11 +758,20 @@ export default function ManageUsers() {
 
                   {/* Avatar */}
                   <div className="flex flex-col items-center text-center mb-4">
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getAvatarColor(user.name)} 
-                      flex items-center justify-center text-white font-bold text-xl shadow-lg
-                      group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
-                      {user.name.charAt(0).toUpperCase()}
-                    </div>
+                    {user.profilePhoto ? (
+                      <img
+                        src={user.profilePhoto}
+                        alt={user.name}
+                        className="w-16 h-16 rounded-2xl object-cover shadow-lg
+                          group-hover:scale-110 group-hover:rotate-3 transition-all duration-300"
+                      />
+                    ) : (
+                      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getAvatarColor(user.name)} 
+                        flex items-center justify-center text-white font-bold text-xl shadow-lg
+                        group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <h3 className="mt-3 font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
                       {user.name}
                     </h3>
@@ -920,11 +957,20 @@ export default function ManageUsers() {
                   >
                     {/* Left side - User info */}
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarColor(user.name)} 
-                        flex items-center justify-center text-white font-bold text-lg shadow-md
-                        group-hover:scale-105 group-hover:rotate-2 transition-all duration-300`}>
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
+                      {user.profilePhoto ? (
+                        <img
+                          src={user.profilePhoto}
+                          alt={user.name}
+                          className="w-12 h-12 rounded-xl object-cover shadow-md
+                            group-hover:scale-105 group-hover:rotate-2 transition-all duration-300"
+                        />
+                      ) : (
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarColor(user.name)} 
+                          flex items-center justify-center text-white font-bold text-lg shadow-md
+                          group-hover:scale-105 group-hover:rotate-2 transition-all duration-300`}>
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3">
                           <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">

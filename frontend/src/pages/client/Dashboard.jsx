@@ -36,7 +36,7 @@ export default function ClientDashboard() {
     myGigs.some(g => g.id === app.gigId)
   ).length
   const hiredCount = allApplications.filter(app =>
-    myGigs.some(g => g.id === app.gigId) && app.status === 'hired'
+    myGigs.some(g => g.id === app.gigId) && (app.status === 'hired' || app.status === 'completed')
   ).length
   const completedCount = allApplications.filter(app =>
     myGigs.some(g => g.id === app.gigId) && app.status === 'completed'

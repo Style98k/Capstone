@@ -2,7 +2,7 @@ import { X, Star, MapPin, Mail, Phone, Award, CheckCircle, Clock, Briefcase, Shi
 import Modal from '../UI/Modal'
 import Button from '../UI/Button'
 
-export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHire, onReject, isLoading }) {
+export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHire, onReject, isLoading, status }) {
     if (!applicant) return null
 
     const verificationBadges = [
@@ -70,7 +70,7 @@ export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHi
                             {applicant.name}
                         </h3>
                         <p className="text-primary-600 font-medium mt-1">{applicant.title || 'Student Freelancer'}</p>
-                        
+
                         <div className="flex flex-wrap gap-3 mt-4">
                             <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
                                 <MapPin className="w-4 h-4" />
@@ -277,21 +277,36 @@ export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHi
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <Button
-                        variant="outline"
-                        onClick={onReject}
-                        disabled={isLoading}
-                        className="flex-1"
-                    >
-                        Reject
-                    </Button>
-                    <Button
-                        onClick={onHire}
-                        disabled={isLoading}
-                        className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                        {isLoading ? 'Processing...' : 'Hire'}
-                    </Button>
+                    {status === 'pending' ? (
+                        <>
+                            <Button
+                                variant="outline"
+                                onClick={onReject}
+                                disabled={isLoading}
+                                className="flex-1"
+                            >
+                                Reject
+                            </Button>
+                            <Button
+                                onClick={onHire}
+                                disabled={isLoading}
+                                className="flex-1 bg-green-600 hover:bg-green-700"
+                            >
+                                {isLoading ? 'Processing...' : 'Hire'}
+                            </Button>
+                        </>
+                    ) : (
+                        <div className={`flex-1 text-center py-3 rounded-lg font-semibold ${status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                                status === 'hired' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                                    status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                                        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                            }`}>
+                            {status === 'completed' ? '✓ Gig Completed' :
+                                status === 'hired' ? '✓ Hired for this Gig' :
+                                    status === 'rejected' ? '✗ Application Rejected' :
+                                        status?.charAt(0).toUpperCase() + status?.slice(1)}
+                        </div>
+                    )}
                 </div>
             </div>
         </Modal>
