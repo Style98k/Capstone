@@ -46,19 +46,19 @@ export default function Messages() {
     }
   }, [user?.id, selectedConversationId])
 
-  const filtered = useMemo(() => {
-    return conversations.filter(c => {
-      const partnerName = getPartnerName(c)
-      return partnerName.toLowerCase().includes(search.toLowerCase())
-    })
-  }, [search, conversations])
-
   // Get the partner's name (the other participant)
   const getPartnerName = (conv) => {
     if (!conv.participantNames) return 'Unknown'
     const partnerId = conv.participants.find(p => p !== user?.id)
     return conv.participantNames[partnerId] || 'Unknown'
   }
+
+  const filtered = useMemo(() => {
+    return conversations.filter(c => {
+      const partnerName = getPartnerName(c)
+      return partnerName.toLowerCase().includes(search.toLowerCase())
+    })
+  }, [search, conversations])
 
   const activeConversation = filtered.find(c => c.id === selectedConversationId) || filtered[0]
   const chat = activeConversation ? allMessages[activeConversation.id] || [] : []
@@ -209,8 +209,8 @@ export default function Messages() {
                       <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                         <div
                           className={`max-w-xl px-4 py-3 rounded-2xl shadow-sm border ${isMe
-                              ? 'bg-primary-600 text-white border-primary-500'
-                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100'
+                            ? 'bg-primary-600 text-white border-primary-500'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100'
                             }`}
                         >
                           <p className="text-sm leading-relaxed">{msg.content}</p>
