@@ -202,11 +202,19 @@ export default function Sidebar({ items = [], onExpandChange }) {
                   {/* Avatar with gradient ring */}
                   <div className="relative flex-shrink-0">
                     <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-0.5 shadow-lg">
-                      <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-                        <span className="text-sm font-bold bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                          {userInitial}
-                        </span>
-                      </div>
+                      {user?.profilePhoto ? (
+                        <img
+                          src={user.profilePhoto}
+                          alt={user.name}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
+                          <span className="text-sm font-bold bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            {userInitial}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-gray-800 rounded-full animate-pulse" />
                   </div>
@@ -239,11 +247,19 @@ export default function Sidebar({ items = [], onExpandChange }) {
                 {/* Avatar */}
                 <div className="relative group cursor-pointer">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-0.5 shadow-lg group-hover:shadow-indigo-500/40 transition-all duration-300 group-hover:scale-105">
-                    <div className="w-full h-full rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center">
-                      <span className="text-sm font-bold bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                        {userInitial}
-                      </span>
-                    </div>
+                    {user?.profilePhoto ? (
+                      <img
+                        src={user.profilePhoto}
+                        alt={user.name}
+                        className="w-full h-full rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center">
+                        <span className="text-sm font-bold bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                          {userInitial}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-gray-800 rounded-full animate-pulse" />
                 </div>

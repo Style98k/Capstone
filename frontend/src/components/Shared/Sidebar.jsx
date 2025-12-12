@@ -129,11 +129,19 @@ export function Sidebar({ navigation = [] }) {
             {/* Avatar with gradient ring */}
             <div className="relative">
               <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-0.5 shadow-lg group-hover:shadow-indigo-500/40 transition-all duration-300 group-hover:scale-105">
-                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                  <span className="text-sm font-bold bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                    {userInitial}
-                  </span>
-                </div>
+                {user?.profilePhoto ? (
+                  <img
+                    src={user.profilePhoto}
+                    alt={user.name}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                    <span className="text-sm font-bold bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                      {userInitial}
+                    </span>
+                  </div>
+                )}
               </div>
               {/* Online indicator */}
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
