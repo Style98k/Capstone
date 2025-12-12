@@ -111,7 +111,7 @@ export default function Home() {
               </h1>
 
               <p className="max-w-xl mx-auto text-base sm:text-lg text-sky-50/90">
-                Connect students with short-term freelance opportunitiesflexible, verified, and right in your community.
+                Connect students with short-term freelance opportunities flexible, verified, and right in your community.
               </p>
 
               <div className="flex flex-wrap items-center justify-center gap-4">
@@ -243,7 +243,7 @@ export default function Home() {
               Whether you want to earn around your class schedule or get trusted help fast, we make it simple to connect.
             </p>
             <p className="text-lg text-slate-700 dark:text-slate-200 leading-relaxed">
-              Every student is verified through school ID, and payments are handled securely with transparent ratingsso both sides can
+              Every student is verified through school ID and Assesment form, and payments are handled securely with transparent ratings so both sides can
               focus on great work, not logistics.
             </p>
           </div>
