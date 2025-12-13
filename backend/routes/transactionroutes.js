@@ -7,5 +7,6 @@ router.get("/", TransactionController.getAll);
 router.get("/user/:userId", TransactionController.getByUser);
 router.get("/gig/:gigId", TransactionController.getByGig);
 router.post("/", TransactionController.create);
+router.put("/:id", TransactionController.update);
 
 export default router;

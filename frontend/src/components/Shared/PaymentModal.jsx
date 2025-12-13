@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle, Loader } from 'lucide-react'
+import { CheckCircle, Loader, XCircle } from 'lucide-react'
 import Modal from '../UI/Modal'
 import Button from '../UI/Button'
 import Card from '../UI/Card'
@@ -7,31 +7,39 @@ import Card from '../UI/Card'
 export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studentName, onSuccess }) {
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState(null)
 
   const handleMockPayment = async () => {
     setProcessing(true)
+    setError(null)
     
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      // Call the actual payment callback and wait for it
+      if (onSuccess) {
+        await onSuccess({
+          paymentMethod: 'GCash',
+          amount,
+        })
+      }
+      
+      // Only show success if the callback succeeded
       setProcessing(false)
       setSuccess(true)
       
-      // Call success callback after showing success
+      // Close modal after showing success
       setTimeout(() => {
-        if (onSuccess) {
-          onSuccess({
-            paymentMethod: 'GCash',
-            amount,
-          })
-        }
         handleClose()
       }, 2000)
-    }, 1500)
+    } catch (err) {
+      setProcessing(false)
+      setError(err.message || 'Payment failed. Please try again.')
+    }
   }
 
   const handleClose = () => {
     setProcessing(false)
     setSuccess(false)
+    setError(null)
     onClose()
   }
 
@@ -130,6 +138,25 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
                 Your payment of ₱{amount?.toLocaleString()} has been processed successfully.
               </p>
             </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center space-y-4 py-4">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto">
+              <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Payment Failed
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {error}
+              </p>
+            </div>
+            <Button onClick={handleClose} variant="outline">
+              Close
+            </Button>
           </div>
         )}
       </div>

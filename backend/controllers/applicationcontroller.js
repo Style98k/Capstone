@@ -177,22 +177,13 @@ const ApplicationController = {
             if (!err3 && gigResults && gigResults.length > 0) {
               const gig = gigResults[0];
               
-              // Notify student that job is completed
+              // Notify student that job is completed (client doesn't need notification since they triggered this)
               Notifications.create({
                 user_id: app.student_id,
                 title: 'Job Completed! 🎉',
                 message: `Great work! "${gig.title}" has been marked as completed. Payment will be processed soon.`,
                 type: 'job_completed',
                 link: '/student/applications'
-              }, () => {});
-
-              // Notify client that job is completed
-              Notifications.create({
-                user_id: gig.client_id,
-                title: 'Job Completed',
-                message: `"${gig.title}" has been marked as completed. You can now process the payment.`,
-                type: 'job_completed',
-                link: '/client/payments'
               }, () => {});
             }
           });

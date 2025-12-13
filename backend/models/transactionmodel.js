@@ -40,6 +40,37 @@ const Transactions = {
       ],
       callback
     );
+  },
+
+  // update transaction
+  update: (id, data, callback) => {
+    const fields = [];
+    const values = [];
+    
+    if (data.status !== undefined) {
+      fields.push('status = ?');
+      values.push(data.status);
+    }
+    if (data.payment_method !== undefined) {
+      fields.push('payment_method = ?');
+      values.push(data.payment_method);
+    }
+    
+    if (fields.length === 0) {
+      return callback(null, { affectedRows: 0 });
+    }
+    
+    values.push(id);
+    db.query(
+      `UPDATE transactions SET ${fields.join(', ')} WHERE id = ?`,
+      values,
+      callback
+    );
+  },
+
+  // get by id
+  getById: (id, callback) => {
+    db.query("SELECT * FROM transactions WHERE id = ?", [id], callback);
   }
 };
 

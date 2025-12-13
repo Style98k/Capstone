@@ -168,7 +168,7 @@ export default function Reports() {
         />
         <StatCard
           title="Total Revenue"
-          value={`₱${allTransactions.reduce((acc, t) => acc + (t.amount || 0), 0).toLocaleString()}`}
+          value={`₱${allTransactions.reduce((acc, t) => acc + (Number(t.amount) || 0), 0).toLocaleString()}`}
           icon={CreditCard}
           color="amber"
           trend="up"
@@ -316,7 +316,7 @@ export default function Reports() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600 font-mono">#{gig.id.substring(gig.id.length - 6).toUpperCase()}</span>
+                      <span className="text-sm text-gray-600 font-mono">#{String(gig.id).padStart(6, '0')}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-gray-900 font-medium">{gig.category}</span>

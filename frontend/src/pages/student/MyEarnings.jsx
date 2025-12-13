@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { transactionsAPI, gigsAPI } from '../../utils/api'
+import { transactionsAPI, gigsAPI, applicationsAPI } from '../../utils/api'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
 import { Coins, TrendingUp, Clock, CheckCircle } from 'lucide-react'
@@ -21,6 +21,7 @@ export default function MyEarnings() {
   const { user } = useAuth()
   const [allTransactions, setAllTransactions] = useState([])
   const [allGigs, setAllGigs] = useState([])
+  const [allApplications, setAllApplications] = useState([])
   const [loading, setLoading] = useState(true)
 
   // Load data from API
@@ -28,12 +29,14 @@ export default function MyEarnings() {
     const fetchData = async () => {
       if (!user?.id) return
       try {
-        const [transactions, gigs] = await Promise.all([
+        const [transactions, gigs, applications] = await Promise.all([
           transactionsAPI.getByUser(user.id),
-          gigsAPI.getAll()
+          gigsAPI.getAll(),
+          applicationsAPI.getByStudent(user.id)
         ])
         setAllTransactions(transactions || [])
         setAllGigs(gigs || [])
+        setAllApplications(applications || [])
       } catch (error) {
         console.error('Error fetching earnings:', error)
       } finally {
@@ -43,19 +46,40 @@ export default function MyEarnings() {
     fetchData()
   }, [user?.id])
 
+  // Filter transactions where student is the recipient (student_id matches)
   const myTransactions = allTransactions
-    .filter(t => t.to_user_id === user?.id || t.toUserId === user?.id)
+    .filter(t => (t.student_id || t.to_user_id || t.toUserId) === user?.id)
     .sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt))
 
+  // Total earnings from completed transactions (money actually received)
   const totalEarnings = myTransactions
     .filter(t => t.status === 'completed')
-    .reduce((sum, t) => sum + t.amount, 0)
+    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
 
-  const pendingEarnings = myTransactions
-    .filter(t => t.status === 'pending')
-    .reduce((sum, t) => sum + t.amount, 0)
+  // Pending earnings: completed gigs where client hasn't paid yet
+  // Find completed applications where no completed transaction exists
+  const completedAppsWithoutPayment = allApplications
+    .filter(app => app.status === 'completed')
+    .filter(app => {
+      const gigId = app.gig_id || app.gigId
+      // Check if there's a completed transaction for this gig to this student
+      const hasPaidTransaction = myTransactions.some(t => 
+        (t.gig_id || t.gigId) === gigId && t.status === 'completed'
+      )
+      return !hasPaidTransaction
+    })
 
+  const pendingEarnings = completedAppsWithoutPayment.reduce((sum, app) => {
+    const gigId = app.gig_id || app.gigId
+    const gig = allGigs.find(g => g.id === gigId)
+    return sum + (Number(gig?.budget) || Number(gig?.pay) || 0)
+  }, 0)
+
+  // Completed count: number of gigs where payment was received
   const completedCount = myTransactions.filter(t => t.status === 'completed').length
+  
+  // Total completed gigs (hired + completed applications)
+  const totalCompletedGigs = allApplications.filter(app => app.status === 'completed').length
 
   // Chart data
   const monthlyData = [
@@ -82,8 +106,8 @@ export default function MyEarnings() {
           title="Total Earnings"
           value={`₱${totalEarnings.toLocaleString()}`}
           icon={Coins}
-          trend="up"
-          trendValue="15%"
+          trend={totalEarnings > 0 ? "up" : undefined}
+          trendValue={totalEarnings > 0 ? "15%" : undefined}
         />
         <StatCard
           title="Pending Payments"
@@ -92,14 +116,14 @@ export default function MyEarnings() {
         />
         <StatCard
           title="Completed Gigs"
-          value={completedCount}
+          value={totalCompletedGigs}
           icon={CheckCircle}
         />
         <StatCard
           title="Average per Gig"
           value={
-            completedCount > 0
-              ? `₱${Math.round(totalEarnings / completedCount).toLocaleString()}`
+            totalCompletedGigs > 0
+              ? `₱${Math.round((totalEarnings + pendingEarnings) / totalCompletedGigs).toLocaleString()}`
               : '₱0'
           }
           icon={TrendingUp}
@@ -176,7 +200,10 @@ export default function MyEarnings() {
               </thead>
               <tbody>
                 {myTransactions.map((trans) => {
-                  const gig = allGigs.find(g => g.id === trans.gigId)
+                  const gigId = trans.gig_id || trans.gigId
+                  const gig = allGigs.find(g => g.id === gigId)
+                  const transDate = trans.created_at || trans.createdAt
+                  const amount = Number(trans.amount) || 0
                   return (
                     <tr
                       key={trans.id}
@@ -184,16 +211,16 @@ export default function MyEarnings() {
                     >
                       <td className="py-3 px-4">
                         <p className="font-medium text-gray-900 dark:text-white">
-                          {gig?.title || 'Unknown'}
+                          {gig?.title || trans.description || 'Unknown'}
                         </p>
                       </td>
                       <td className="py-3 px-4">
                         <span className="font-semibold text-primary-600 dark:text-primary-400">
-                          ₱{trans.amount.toLocaleString()}
+                          ₱{amount.toLocaleString()}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
-                        {trans.paymentMethod}
+                        {trans.payment_method || trans.paymentMethod || 'GCash'}
                       </td>
                       <td className="py-3 px-4">
                         <span
@@ -206,7 +233,7 @@ export default function MyEarnings() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
-                        {new Date(trans.createdAt).toLocaleDateString()}
+                        {transDate ? new Date(transDate).toLocaleDateString() : 'N/A'}
                       </td>
                     </tr>
                   )

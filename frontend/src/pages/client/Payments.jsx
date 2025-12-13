@@ -41,17 +41,17 @@ export default function Payments() {
     }
   }, [user?.id])
 
-  // Get all transactions where user is the payer
+  // Get all transactions where user is the payer (client)
   const myPayments = allTransactions
-    .filter(t => (t.from_user_id || t.fromUserId) === user?.id)
+    .filter(t => (t.client_id || t.from_user_id || t.fromUserId) === user?.id)
     .map(trans => ({
       ...trans,
       gigId: trans.gig_id || trans.gigId,
-      toUserId: trans.to_user_id || trans.toUserId,
-      fromUserId: trans.from_user_id || trans.fromUserId,
+      toUserId: trans.student_id || trans.to_user_id || trans.toUserId,
+      fromUserId: trans.client_id || trans.from_user_id || trans.fromUserId,
       createdAt: trans.created_at || trans.createdAt,
       gig: allGigs.find(g => g.id === (trans.gig_id || trans.gigId)),
-      student: allUsers.find(u => u.id === (trans.to_user_id || trans.toUserId)),
+      student: allUsers.find(u => u.id === (trans.student_id || trans.to_user_id || trans.toUserId)),
     }))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
@@ -72,7 +72,7 @@ export default function Payments() {
         gig: allGigs.find(g => g.id === gigId),
         student: allUsers.find(u => u.id === studentId),
         transaction: allTransactions.find(
-          t => (t.gig_id || t.gigId) === gigId && (t.from_user_id || t.fromUserId) === user?.id
+          t => (t.gig_id || t.gigId) === gigId && (t.client_id || t.from_user_id || t.fromUserId) === user?.id
         )
       }
     })
@@ -83,57 +83,54 @@ export default function Payments() {
 
   const totalPaid = myPayments
     .filter(p => p.status === 'completed')
-    .reduce((sum, p) => sum + p.amount, 0)
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
 
   const pendingPayments = completedGigs
-    .reduce((sum, app) => sum + (app.gig?.pay || 0), 0)
+    .reduce((sum, app) => sum + (Number(app.gig?.budget) || Number(app.gig?.pay) || 0), 0)
 
   const handlePaymentSuccess = async (paymentData) => {
-    try {
-      // Find existing pending transaction
-      const existingTransaction = allTransactions.find(
-        t => t.gigId === paymentModal.gigId && 
-             t.fromUserId === user?.id && 
-             t.toUserId === paymentModal.studentId &&
-             t.status === 'pending'
-      )
+    // Find existing pending transaction
+    const existingTransaction = allTransactions.find(
+      t => (t.gig_id || t.gigId) === paymentModal.gigId && 
+           (t.client_id || t.fromUserId) === user?.id && 
+           (t.student_id || t.toUserId) === paymentModal.studentId &&
+           t.status === 'pending'
+    )
 
-      if (existingTransaction) {
-        // Update existing pending transaction
-        await transactionsAPI.update(existingTransaction.id, {
-          status: 'completed',
-          paymentMethod: paymentData.paymentMethod || 'GCash'
-        })
-      } else {
-        // Create new transaction if none exists
-        await transactionsAPI.create({
-          gigId: paymentModal.gigId,
-          fromUserId: user?.id,
-          toUserId: paymentModal.studentId,
-          amount: paymentModal.amount,
-          paymentMethod: paymentData.paymentMethod || 'GCash',
-          status: 'completed'
-        })
-      }
-
-      // Refresh transactions data
-      const updatedTransactions = await transactionsAPI.getByUser(user?.id)
-      setAllTransactions(updatedTransactions || [])
-
-      alert('Payment processed successfully!')
-      setPaymentModal(null)
-    } catch (error) {
-      console.error('Payment failed:', error)
-      alert('Payment failed. Please try again.')
+    if (existingTransaction) {
+      // Update existing pending transaction
+      await transactionsAPI.update(existingTransaction.id, {
+        status: 'completed',
+        payment_method: paymentData.paymentMethod || 'GCash'
+      })
+    } else {
+      // Create new transaction if none exists
+      // Use snake_case to match backend expectations
+      await transactionsAPI.create({
+        gig_id: paymentModal.gigId,
+        client_id: user?.id,
+        student_id: paymentModal.studentId,
+        amount: paymentModal.amount,
+        type: 'payment',
+        status: 'completed',
+        description: `Payment for ${paymentModal.gigTitle}`
+      })
     }
+
+    // Refresh transactions data
+    const updatedTransactions = await transactionsAPI.getByUser(user?.id)
+    setAllTransactions(updatedTransactions || [])
+    
+    // Close modal (modal handles success UI)
+    setPaymentModal(null)
   }
 
   const handleMakePayment = (gig, student) => {
     setPaymentModal({
-      amount: gig.pay,
-      gigTitle: gig.title,
-      studentName: student?.name,
-      gigId: gig.id,
+      amount: Number(gig?.budget) || Number(gig?.pay) || 0,
+      gigTitle: gig?.title || 'Unknown Gig',
+      studentName: student?.name || 'Unknown',
+      gigId: gig?.id,
       studentId: student?.id,
     })
   }
@@ -208,13 +205,13 @@ export default function Payments() {
               >
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {app.gig?.title}
+                    {app.gig?.title || 'Unknown Gig'}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Student: {app.student?.name}
+                    Student: {app.student?.name || 'Unknown'}
                   </p>
                   <p className="text-lg font-bold text-primary-600 dark:text-primary-400 mt-1">
-                    ₱{app.gig?.pay.toLocaleString()}
+                    ₱{Number(app.gig?.budget || app.gig?.pay || 0).toLocaleString()}
                   </p>
                 </div>
                 <Button

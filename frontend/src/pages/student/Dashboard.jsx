@@ -69,10 +69,10 @@ export default function StudentDashboard() {
   const hiredApps = myApplications.filter(app => app.status === 'hired').length
   const completedApps = myApplications.filter(app => app.status === 'completed').length
 
-  // Earnings: Calculate from completed transactions for this user
+  // Earnings: Calculate from completed transactions where student is the recipient
   const myEarnings = allTransactions
-    .filter(t => (t.toUserId === user?.id || t.to_user_id === user?.id) && t.status === 'completed')
-    .reduce((sum, t) => sum + (t.amount || 0), 0)
+    .filter(t => (t.student_id === user?.id || t.toUserId === user?.id || t.to_user_id === user?.id) && t.status === 'completed')
+    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
 
   const recentGigs = allGigs.filter(g => g.status === 'open').slice(0, 3)
 
