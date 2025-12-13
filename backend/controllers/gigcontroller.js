@@ -1,4 +1,5 @@
 import Gig from "../models/gigmodel.js";
+import Notifications from "../models/notificationmodel.js";
 
 const GigController = {
   // Get all gigs with owner details
@@ -40,10 +41,33 @@ const GigController = {
       // Get the created gig with full details
       Gig.getById(result.insertId, (err2, results) => {
         if (err2) return res.status(500).json({ error: err2.message });
+        
+        const newGig = results[0];
+        
+        // Send notification to all admins
+        Notifications.createForRole('admin', {
+          title: 'New Job Posted',
+          message: `New job "${newGig?.title || gigData.title}" needs review. Click to manage gigs.`,
+          type: 'gig_review',
+          link: '/admin/manage-gigs'
+        }, (notifErr) => {
+          if (notifErr) console.error('Error sending admin notification:', notifErr);
+        });
+        
+        // Send notification to all students about new opportunity
+        Notifications.createForRole('student', {
+          title: 'New Opportunity! 🎉',
+          message: `A new ${gigData.category || 'gig'} job is available: "${newGig?.title || gigData.title}". Apply now!`,
+          type: 'new_gig',
+          link: `/gigs/${result.insertId}`
+        }, (notifErr) => {
+          if (notifErr) console.error('Error sending student notification:', notifErr);
+        });
+        
         res.status(201).json({ 
           message: "Gig created!", 
           id: result.insertId,
-          gig: results[0]
+          gig: newGig
         });
       });
     });

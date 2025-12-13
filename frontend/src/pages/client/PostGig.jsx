@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { categories } from '../../data/mockGigs'
-import { saveGig, initializeLocalStorage } from '../../utils/localStorage'
-import { triggerNotification } from '../../utils/notificationManager'
+import { gigsAPI, notificationsAPI } from '../../utils/api'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
 import Select from '../../components/UI/Select'
@@ -20,6 +18,17 @@ import {
   Send,
   XCircle,
 } from 'lucide-react'
+
+// Categories for gig selection
+const categories = [
+  'Tutoring',
+  'Household',
+  'Administrative',
+  'Delivery',
+  'Event Help',
+  'Tech Support',
+  'Other',
+]
 
 export default function PostGig() {
   const { user } = useAuth()
@@ -45,36 +54,28 @@ export default function PostGig() {
     e.preventDefault()
     setLoading(true)
 
-    // Initialize localStorage if needed
-    initializeLocalStorage()
-
-    // Prepare gig data
+    // Prepare gig data for API
     const gigData = {
       title: formData.title,
       category: formData.category,
       location: formData.location,
       duration: formData.duration,
-      pay: parseFloat(formData.pay),
-      shortDesc: formData.fullDesc.substring(0, 100) + '...',
-      fullDesc: formData.fullDesc,
-      requirements: formData.requirements ? formData.requirements.split(',').map(r => r.trim()) : [],
-      ownerId: user.id
+      budget: parseFloat(formData.pay),
+      description: formData.fullDesc,
+      requirements: formData.requirements || '',
+      client_id: user.id
     }
 
-    // Save gig to localStorage
-    const result = saveGig(gigData)
-
-    if (result.success) {
-      // GLOBAL NOTIFICATION: Send to both admin and students with job title
-      triggerNotification('admin', 'Job Review Needed', `A client posted a new job: ${formData.title}`, 'moderation');
-      triggerNotification('student', 'New Job Alert', `New gig posted: ${formData.title}. Check it out!`, 'gig');
-
+    try {
+      // Save gig to database via API
+      await gigsAPI.create(gigData)
+      
       setLoading(false)
       navigate('/client/manage-gigs')
-    } else {
-      console.error('Failed to save gig:', result.error)
+    } catch (error) {
+      console.error('Failed to save gig:', error)
       setLoading(false)
-      // You could show an error message here
+      alert('Failed to post gig. Please try again.')
     }
   }
 

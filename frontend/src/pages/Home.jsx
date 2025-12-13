@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useLocalAuth'
 import { authAPI, gigsAPI } from '../utils/api'
-import { initializeLocalStorage } from '../utils/localStorage'
 import GigCard from '../components/Shared/GigCard'
 import Button from '../components/UI/Button'
 import { Briefcase, Users, Shield, TrendingUp, CheckCircle, GraduationCap, Star } from 'lucide-react'
@@ -12,11 +11,6 @@ export default function Home() {
   const [stats, setStats] = useState({ activeStudents: 0, registeredClients: 0, activeGigs: 0 })
   const [recentGigs, setRecentGigs] = useState([])
   const [loading, setLoading] = useState(true)
-
-  // Initialize localStorage for backward compatibility
-  useEffect(() => {
-    initializeLocalStorage()
-  }, [])
 
   // Fetch statistics and recent gigs from backend
   useEffect(() => {

@@ -242,14 +242,30 @@ export const notificationsAPI = {
     const response = await api.post('/notifications', notificationData);
     return response.data;
   },
+
+  // Create notification for all users of a role
+  createForRole: async (role, title, message, type, link) => {
+    const response = await api.post('/notifications/role', { role, title, message, type, link });
+    return response.data;
+  },
   
   markAsRead: async (id) => {
     const response = await api.put(`/notifications/${id}/read`);
     return response.data;
   },
+
+  markAllAsRead: async (userId) => {
+    const response = await api.put(`/notifications/user/${userId}/read-all`);
+    return response.data;
+  },
   
   delete: async (id) => {
     const response = await api.delete(`/notifications/${id}`);
+    return response.data;
+  },
+
+  getUnreadCount: async (userId) => {
+    const response = await api.get(`/notifications/user/${userId}/unread-count`);
     return response.data;
   }
 };

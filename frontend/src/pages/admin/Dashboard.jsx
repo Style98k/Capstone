@@ -64,7 +64,16 @@ export default function AdminDashboard() {
     const totalTransactions = transactions.length
     const totalEarnings = transactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0)
 
-    const pendingVerifications = allUsers.filter(u => !u.verified && u.role !== 'admin').length
+    // Count users with pending verification (students with school_id or assessment pending/unverified)
+    const pendingVerifications = allUsers.filter(u => {
+        if (u.role === 'admin') return false
+        if (u.role === 'student') {
+            // Student has pending verification if school_id_verified or assessment_verified is 'pending'
+            return u.school_id_verified === 'pending' || u.assessment_verified === 'pending'
+        }
+        // For clients, we can add verification logic here if needed in the future
+        return false
+    }).length
 
     // Calculate percentages for progress bars
     const studentPercentage = totalUsers > 0 ? (students / totalUsers) * 100 : 0

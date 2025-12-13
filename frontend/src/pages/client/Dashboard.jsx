@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getGigs, getApplications } from '../../utils/localStorage'
+import { gigsAPI, applicationsAPI } from '../../utils/api'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
 import CommentRating from '../../components/Shared/CommentRating'
@@ -9,42 +9,44 @@ import { Link } from 'react-router-dom'
 
 export default function ClientDashboard() {
   const { user } = useAuth()
-  const [allGigs, setAllGigs] = useState([])
+  const [myGigs, setMyGigs] = useState([])
   const [allApplications, setAllApplications] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Load data from localStorage and update periodically
+  // Load data from API
   useEffect(() => {
-    const updateData = () => {
-      setAllGigs(getGigs())
-      setAllApplications(getApplications())
+    const fetchData = async () => {
+      if (!user?.id) return
+      try {
+        const [gigs, apps] = await Promise.all([
+          gigsAPI.getByClient(user.id),
+          applicationsAPI.getAll()
+        ])
+        setMyGigs(gigs || [])
+        setAllApplications(apps || [])
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
+    fetchData()
+  }, [user?.id])
 
-    updateData()
-
-    window.addEventListener('storage', updateData)
-    const interval = setInterval(updateData, 2000)
-
-    return () => {
-      window.removeEventListener('storage', updateData)
-      clearInterval(interval)
-    }
-  }, [])
-
-  const myGigs = allGigs.filter(g => g.ownerId === user?.id)
   const activeGigs = myGigs.filter(g => g.status === 'open').length
   const totalApplications = allApplications.filter(app =>
-    myGigs.some(g => g.id === app.gigId)
+    myGigs.some(g => g.id === (app.gig_id || app.gigId))
   ).length
   const hiredCount = allApplications.filter(app =>
-    myGigs.some(g => g.id === app.gigId) && (app.status === 'hired' || app.status === 'completed')
+    myGigs.some(g => g.id === (app.gig_id || app.gigId)) && (app.status === 'hired' || app.status === 'completed')
   ).length
   const completedCount = allApplications.filter(app =>
-    myGigs.some(g => g.id === app.gigId) && app.status === 'completed'
+    myGigs.some(g => g.id === (app.gig_id || app.gigId)) && app.status === 'completed'
   ).length
 
   const recentGigs = myGigs.slice(0, 3)
   const pendingApps = allApplications
-    .filter(app => myGigs.some(g => g.id === app.gigId) && app.status === 'pending')
+    .filter(app => myGigs.some(g => g.id === (app.gig_id || app.gigId)) && app.status === 'pending')
     .slice(0, 5)
 
   return (

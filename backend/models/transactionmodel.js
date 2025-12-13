@@ -9,7 +9,7 @@ const Transactions = {
   // get transactions for a user (incoming + outgoing)
   getByUser: (userId, callback) => {
     db.query(
-      "SELECT * FROM transactions WHERE from_user = ? OR to_user = ?",
+      "SELECT * FROM transactions WHERE student_id = ? OR client_id = ?",
       [userId, userId],
       callback
     );
@@ -27,13 +27,16 @@ const Transactions = {
   // create transaction (payment record)
   create: (data, callback) => {
     db.query(
-      `INSERT INTO transactions (gig_id, from_user, to_user, amount)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO transactions (gig_id, student_id, client_id, amount, status, type, description)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         data.gig_id,
-        data.from_user,
-        data.to_user,
-        data.amount
+        data.student_id,
+        data.client_id,
+        data.amount,
+        data.status || 'pending',
+        data.type || 'payment',
+        data.description || null
       ],
       callback
     );

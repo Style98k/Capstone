@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { initializeLocalStorage, getGigs, deleteGig, updateGig } from '../../utils/localStorage'
+import { gigsAPI } from '../../utils/api'
 import { triggerNotification, triggerUserNotification } from '../../utils/notificationManager'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
@@ -56,24 +56,37 @@ export default function ManageGigs() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteMode, setDeleteMode] = useState('immediate')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [gigs, setGigs] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Get gigs from localStorage so all client-posted jobs are visible
-  const gigs = useMemo(() => {
-    initializeLocalStorage()
-    const stored = getGigs()
+  // Fetch gigs from database
+  useEffect(() => {
+    const fetchGigs = async () => {
+      try {
+        const stored = await gigsAPI.getAll()
+        
+        // Auto-remove anything that passed a scheduled removal window
+        const now = Date.now()
+        const expiredIds = (stored || [])
+          .filter(g => g.scheduledRemovalAt && new Date(g.scheduledRemovalAt).getTime() <= now)
+          .map(g => g.id)
 
-    // Auto-remove anything that passed a scheduled removal window
-    const now = Date.now()
-    const expiredIds = stored
-      .filter(g => g.scheduledRemovalAt && new Date(g.scheduledRemovalAt).getTime() <= now)
-      .map(g => g.id)
-
-    if (expiredIds.length) {
-      expiredIds.forEach(id => deleteGig(id))
-      return getGigs()
+        if (expiredIds.length) {
+          for (const id of expiredIds) {
+            await gigsAPI.delete(id)
+          }
+          const refreshed = await gigsAPI.getAll()
+          setGigs(refreshed || [])
+        } else {
+          setGigs(stored || [])
+        }
+      } catch (error) {
+        console.error('Error fetching gigs:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-
-    return stored
+    fetchGigs()
   }, [refreshKey])
 
   // Get unique categories for filter
@@ -83,9 +96,14 @@ export default function ManageGigs() {
   }, [gigs])
 
   const filteredGigs = gigs.filter(g => {
-    const matchesSearch = g.title.toLowerCase().includes(filter.toLowerCase()) ||
-      g.category.toLowerCase().includes(filter.toLowerCase()) ||
-      g.shortDesc.toLowerCase().includes(filter.toLowerCase())
+    const searchText = filter.toLowerCase()
+    const title = (g.title || '').toLowerCase()
+    const category = (g.category || '').toLowerCase()
+    const shortDesc = (g.short_description || g.shortDesc || '').toLowerCase()
+    
+    const matchesSearch = title.includes(searchText) ||
+      category.includes(searchText) ||
+      shortDesc.includes(searchText)
     const matchesCategory = selectedCategory === 'all' || g.category === selectedCategory
     const matchesStatus = selectedStatus === 'all' || g.status === selectedStatus
     return matchesSearch && matchesCategory && matchesStatus
@@ -99,25 +117,30 @@ export default function ManageGigs() {
 
   const handleWarningClick = (gig) => {
     // Send warning only to the specific client (job poster)
-    triggerUserNotification(gig.ownerId, 'Job Review Warning', `Your job posting "${gig.title}" has been flagged for review. Please update your listing.`, 'warning');
+    const ownerId = gig.client_id || gig.ownerId
+    triggerUserNotification(ownerId, 'Job Review Warning', `Your job posting "${gig.title}" has been flagged for review. Please update your listing.`, 'warning');
     alert('Warning notification sent to the client');
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTarget) return
 
-    if (deleteMode === 'scheduled') {
-      updateGig(deleteTarget.id, {
-        scheduledRemovalAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        moderationNote: 'Scheduled for removal after 24h review window',
-      })
-    } else {
-      deleteGig(deleteTarget.id)
-    }
+    try {
+      if (deleteMode === 'scheduled') {
+        await gigsAPI.update(deleteTarget.id, {
+          scheduledRemovalAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          moderationNote: 'Scheduled for removal after 24h review window',
+        })
+      } else {
+        await gigsAPI.delete(deleteTarget.id)
+      }
 
-    setRefreshKey(prev => prev + 1)
-    setShowDeleteModal(false)
-    setDeleteTarget(null)
+      setRefreshKey(prev => prev + 1)
+      setShowDeleteModal(false)
+      setDeleteTarget(null)
+    } catch (error) {
+      console.error('Error deleting gig:', error)
+    }
   }
 
   // Animation variants

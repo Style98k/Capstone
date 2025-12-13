@@ -1,14 +1,13 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useLocalAuth'
-import { getGigs, getApplications, saveApplication, initializeLocalStorage } from '../utils/localStorage'
-import { triggerNotification, triggerUserNotification } from '../utils/notificationManager'
+import { gigsAPI, applicationsAPI } from '../utils/api'
 import Card from '../components/UI/Card'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import Textarea from '../components/UI/Textarea'
 import GigCommentRating from '../components/Shared/GigCommentRating'
 import { MapPin, Clock, Coins, User, FileText, Sparkles } from 'lucide-react'
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 
 export default function GigDetails() {
   const { id } = useParams()
@@ -19,22 +18,39 @@ export default function GigDetails() {
   const [attachments, setAttachments] = useState([])
   const [isManagingAttachments, setIsManagingAttachments] = useState(false)
   const [attachmentsToRemove, setAttachmentsToRemove] = useState([])
+  const [gig, setGig] = useState(null)
+  const [hasApplied, setHasApplied] = useState(false)
+  const [loading, setLoading] = useState(true)
   const fileInputRef = useRef(null)
 
-  // Get gigs and applications from localStorage
-  const gigs = useMemo(() => {
-    initializeLocalStorage()
-    return getGigs()
-  }, [])
+  // Fetch gig and check application status from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const gigData = await gigsAPI.getById(id)
+        setGig(gigData)
+        
+        if (user) {
+          const applications = await applicationsAPI.getByStudent(user.id)
+          const applied = applications.some(app => app.gig_id === parseInt(id))
+          setHasApplied(applied)
+        }
+      } catch (error) {
+        console.error('Error fetching gig:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [id, user])
 
-  const applications = useMemo(() => {
-    return getApplications()
-  }, [])
-
-  const gig = gigs.find(g => g.id === id)
-  const hasApplied = user && applications.some(
-    app => app.gigId === id && app.userId === user.id
-  )
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+      </div>
+    )
+  }
 
   if (!gig) {
     return (
@@ -47,34 +63,28 @@ export default function GigDetails() {
     )
   }
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (proposal.trim()) {
-      // Save application to localStorage
-      const applicationData = {
-        gigId: id,
-        userId: user.id,
-        proposal: proposal,
-        attachments: attachments.map(f => ({
-          name: f.name,
-          size: f.size,
-          type: f.type,
-          data: f.data // Include base64 data
-        }))
-      }
-
-      const result = saveApplication(applicationData)
-
-      if (result.success) {
-        // Send user-specific notification to the gig owner (client)
-        triggerUserNotification(gig.ownerId, 'New Applicant! 📩', `A student applied for "${gig.title}". Review their application now.`, 'application');
+      try {
+        // Save application to database via API
+        await applicationsAPI.create({
+          gig_id: parseInt(id),
+          student_id: user.id,
+          proposal: proposal,
+          attachments: JSON.stringify(attachments.map(f => ({
+            name: f.name,
+            size: f.size,
+            type: f.type
+          })))
+        })
 
         setShowApplyModal(false)
         setProposal('')
         setAttachments([])
         alert('Application submitted successfully!')
-        // You could navigate or refresh the page here
-        window.location.reload()
-      } else {
+        setHasApplied(true)
+      } catch (error) {
+        console.error('Failed to submit application:', error)
         alert('Failed to submit application. Please try again.')
       }
     }
@@ -100,7 +110,7 @@ export default function GigDetails() {
               <div className="flex items-center gap-1">
                 <Coins className="w-4 h-4" />
                 <span className="font-semibold text-primary-600 dark:text-primary-400">
-                  ₱{(gig.pay || 0).toLocaleString()}
+                  ₱{(gig.budget || gig.pay || 0).toLocaleString()}
                 </span>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getApplications } from '../../utils/localStorage'
+import { applicationsAPI } from '../../utils/api'
 import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Save, Camera, Star, Briefcase, TrendingUp,
@@ -42,15 +42,21 @@ export default function ProfileManagement() {
     // Sync with Admin and Check Notifications
     useEffect(() => {
         // Fetch completed jobs count
-        const updateCompletedJobs = () => {
-            const apps = getApplications()
-            const completed = apps.filter(app => app.userId === user?.id && app.status === 'completed').length
-            setCompletedJobs(completed)
+        const updateCompletedJobs = async () => {
+            try {
+                const apps = await applicationsAPI.getByStudent(user?.id)
+                const completed = (apps || []).filter(app => app.status === 'completed').length
+                setCompletedJobs(completed)
+            } catch (error) {
+                console.error('Error fetching applications:', error)
+            }
         }
-        updateCompletedJobs()
+        if (user?.id) updateCompletedJobs()
 
         // Update periodically
-        const interval = setInterval(updateCompletedJobs, 2000)
+        const interval = setInterval(() => {
+            if (user?.id) updateCompletedJobs()
+        }, 5000)
 
         // Sync Status (double check on mount)
         const storedStatus = localStorage.getItem('verificationStatus')

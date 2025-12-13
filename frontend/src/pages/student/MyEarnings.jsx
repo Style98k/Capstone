@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getTransactions, getGigs } from '../../utils/localStorage'
+import { transactionsAPI, gigsAPI } from '../../utils/api'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
 import { Coins, TrendingUp, Clock, CheckCircle } from 'lucide-react'
@@ -21,28 +21,31 @@ export default function MyEarnings() {
   const { user } = useAuth()
   const [allTransactions, setAllTransactions] = useState([])
   const [allGigs, setAllGigs] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Load data from localStorage and update periodically
+  // Load data from API
   useEffect(() => {
-    const updateData = () => {
-      setAllTransactions(getTransactions())
-      setAllGigs(getGigs())
+    const fetchData = async () => {
+      if (!user?.id) return
+      try {
+        const [transactions, gigs] = await Promise.all([
+          transactionsAPI.getByUser(user.id),
+          gigsAPI.getAll()
+        ])
+        setAllTransactions(transactions || [])
+        setAllGigs(gigs || [])
+      } catch (error) {
+        console.error('Error fetching earnings:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-
-    updateData()
-
-    window.addEventListener('storage', updateData)
-    const interval = setInterval(updateData, 2000)
-
-    return () => {
-      window.removeEventListener('storage', updateData)
-      clearInterval(interval)
-    }
-  }, [])
+    fetchData()
+  }, [user?.id])
 
   const myTransactions = allTransactions
-    .filter(t => t.toUserId === user?.id)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .filter(t => t.to_user_id === user?.id || t.toUserId === user?.id)
+    .sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt))
 
   const totalEarnings = myTransactions
     .filter(t => t.status === 'completed')

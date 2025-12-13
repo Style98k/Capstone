@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getGigs, initializeLocalStorage } from '../../utils/localStorage'
+import { gigsAPI } from '../../utils/api'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
 import Select from '../../components/UI/Select'
@@ -14,13 +14,26 @@ export default function BrowseGigs() {
     const [categoryFilter, setCategoryFilter] = useState('')
     const [locationFilter, setLocationFilter] = useState('')
     const [sortBy, setSortBy] = useState('newest')
+    const [allGigs, setAllGigs] = useState([])
+    const [loading, setLoading] = useState(true)
 
-    // Initialize localStorage and get all gigs
-    const allGigs = useMemo(() => {
-        initializeLocalStorage()
-        const gigs = getGigs()
-        // Only show gigs that are not occupied/hired/closed
-        return gigs.filter(gig => gig.status !== 'closed' && gig.status !== 'occupied' && gig.status !== 'hired')
+    // Fetch gigs from API
+    useEffect(() => {
+        const fetchGigs = async () => {
+            try {
+                const gigs = await gigsAPI.getAll()
+                // Only show gigs that are not occupied/hired/closed
+                const openGigs = gigs.filter(gig => 
+                    gig.status !== 'closed' && gig.status !== 'occupied' && gig.status !== 'hired'
+                )
+                setAllGigs(openGigs)
+            } catch (error) {
+                console.error('Error fetching gigs:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchGigs()
     }, [])
 
     // Get unique categories and locations
@@ -47,11 +60,11 @@ export default function BrowseGigs() {
 
         // Sort
         if (sortBy === 'newest') {
-            filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            filtered.sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt))
         } else if (sortBy === 'highest-pay') {
-            filtered.sort((a, b) => b.pay - a.pay)
+            filtered.sort((a, b) => (b.budget || b.pay || 0) - (a.budget || a.pay || 0))
         } else if (sortBy === 'lowest-pay') {
-            filtered.sort((a, b) => a.pay - b.pay)
+            filtered.sort((a, b) => (a.budget || a.pay || 0) - (b.budget || b.pay || 0))
         }
 
         return filtered
@@ -132,7 +145,7 @@ export default function BrowseGigs() {
                                         {gig.category}
                                     </span>
                                     <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                        ₱{(gig.pay || 0).toLocaleString()}
+                                        ₱{(gig.budget || gig.pay || 0).toLocaleString()}
                                     </span>
                                 </div>
 

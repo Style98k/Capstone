@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getGigs, getApplications, getTransactions } from '../../utils/localStorage'
-import { mockNotifications } from '../../data/mockNotifications'
+import { gigsAPI, applicationsAPI, transactionsAPI, notificationsAPI } from '../../utils/api'
 import StatCard from '../../components/Shared/StatCard'
 import GigCard from '../../components/Shared/GigCard'
 import NotificationItem from '../../components/Shared/NotificationItem'
@@ -28,41 +27,54 @@ export default function StudentDashboard() {
   const [allGigs, setAllGigs] = useState([])
   const [allApplications, setAllApplications] = useState([])
   const [allTransactions, setAllTransactions] = useState([])
+  const [myNotifications, setMyNotifications] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Load data from localStorage and update periodically
+  // Load data from API
   useEffect(() => {
-    const updateData = () => {
-      setAllGigs(getGigs())
-      setAllApplications(getApplications())
-      setAllTransactions(getTransactions())
+    const fetchData = async () => {
+      if (!user?.id) return
+      try {
+        const [gigs, apps, transactions, notifications] = await Promise.all([
+          gigsAPI.getAll(),
+          applicationsAPI.getByStudent(user.id),
+          transactionsAPI.getByUser(user.id),
+          notificationsAPI.getByUser(user.id)
+        ])
+        setAllGigs(gigs || [])
+        setAllApplications(apps || [])
+        setAllTransactions(transactions || [])
+        // Format notifications for NotificationItem component
+        setMyNotifications((notifications || []).slice(0, 5).map(n => ({
+          ...n,
+          isUnread: !n.is_read,
+          timestamp: n.created_at
+        })))
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
+    fetchData()
+  }, [user?.id])
 
-    updateData()
-
-    window.addEventListener('storage', updateData)
-    const interval = setInterval(updateData, 2000)
-
-    return () => {
-      window.removeEventListener('storage', updateData)
-      clearInterval(interval)
-    }
-  }, [])
-
-  // Filter out orphaned applications (where gig was deleted)
-  const myApplications = allApplications
-    .filter(app => app.userId === user?.id)
-    .filter(app => allGigs.some(g => g.id === app.gigId))
+  // Map applications to use consistent field names
+  const myApplications = allApplications.map(app => ({
+    ...app,
+    gigId: app.gig_id || app.gigId,
+    userId: app.student_id || app.userId
+  }))
   const pendingApps = myApplications.filter(app => app.status === 'pending').length
   const hiredApps = myApplications.filter(app => app.status === 'hired').length
   const completedApps = myApplications.filter(app => app.status === 'completed').length
 
   // Earnings: Calculate from completed transactions for this user
   const myEarnings = allTransactions
-    .filter(t => t.toUserId === user?.id && t.status === 'completed')
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter(t => (t.toUserId === user?.id || t.to_user_id === user?.id) && t.status === 'completed')
+    .reduce((sum, t) => sum + (t.amount || 0), 0)
 
   const recentGigs = allGigs.filter(g => g.status === 'open').slice(0, 3)
-  const myNotifications = mockNotifications.filter(n => n.userId === user?.id).slice(0, 5)
 
   // Rating: Show '—' if no completed gigs (no ratings to show)
   const displayRating = completedApps > 0 ? (user?.rating || '—') : '—'

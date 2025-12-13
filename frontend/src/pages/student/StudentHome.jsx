@@ -1,20 +1,32 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, MapPin, Clock, Coins, TrendingUp } from 'lucide-react'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
-import { getGigs, initializeLocalStorage } from '../../utils/localStorage'
+import { gigsAPI } from '../../utils/api'
 
 export default function StudentHome() {
-    // Initialize localStorage and get all gigs
-    const featuredGigs = useMemo(() => {
-        initializeLocalStorage()
-        const allGigs = getGigs()
-        // Get gigs that are available (not occupied/closed) and sort by newest
-        return allGigs
-            .filter(gig => gig.status !== 'closed' && gig.status !== 'occupied' && gig.status !== 'hired')
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .slice(0, 6) // Show top 6
+    const [featuredGigs, setFeaturedGigs] = useState([])
+    const [loading, setLoading] = useState(true)
+
+    // Fetch gigs from database
+    useEffect(() => {
+        const fetchGigs = async () => {
+            try {
+                const allGigs = await gigsAPI.getAll()
+                // Get gigs that are available (not occupied/closed) and sort by newest
+                const available = (allGigs || [])
+                    .filter(gig => gig.status !== 'closed' && gig.status !== 'occupied' && gig.status !== 'hired')
+                    .sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt))
+                    .slice(0, 6) // Show top 6
+                setFeaturedGigs(available)
+            } catch (error) {
+                console.error('Error fetching gigs:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchGigs()
     }, [])
 
     return (
@@ -66,7 +78,7 @@ export default function StudentHome() {
                                         {gig.category}
                                     </span>
                                     <span className="text-sm font-bold text-primary-600">
-                                        ₱{(gig.pay || 0).toLocaleString()}
+                                        ₱{(gig.budget || gig.pay || 0).toLocaleString()}
                                     </span>
                                 </div>
 

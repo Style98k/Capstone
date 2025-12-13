@@ -15,7 +15,7 @@ export default function CommentRating({ userId, userRole = 'student' }) {
       try {
         // Note: This assumes the API will filter by targetUserId when we call it
         // You may need to adjust based on your backend implementation
-        const data = await ratingsAPI.getByUserId(userId)
+        const data = await ratingsAPI.getByUser(userId)
         setUserRatings(data || [])
       } catch (error) {
         console.error('Error fetching ratings:', error)
@@ -29,10 +29,6 @@ export default function CommentRating({ userId, userRole = 'student' }) {
       fetchRatings()
     }
   }, [userId])
-      rater: mockUsers.find(u => u.id === rating.raterId),
-      gig: mockGigs.find(g => g.id === rating.gigId),
-    }))
-    .filter(rating => rating.rater) // Only show ratings where we have rater info
 
   // Calculate average rating
   const averageRating = userRatings.length > 0

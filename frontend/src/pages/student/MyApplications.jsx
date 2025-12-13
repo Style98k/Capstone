@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getApplications, getGigs } from '../../utils/localStorage'
+import { applicationsAPI, gigsAPI } from '../../utils/api'
 import Card from '../../components/UI/Card'
 import Select from '../../components/UI/Select'
 import {
@@ -24,37 +24,34 @@ export default function MyApplications() {
   const [statusFilter, setStatusFilter] = useState('')
   const [allApplications, setAllApplications] = useState([])
   const [allGigs, setAllGigs] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Load data from localStorage and update periodically
+  // Load data from API
   useEffect(() => {
-    const updateData = () => {
-      setAllApplications(getApplications())
-      setAllGigs(getGigs())
+    const fetchData = async () => {
+      if (!user?.id) return
+      try {
+        const [apps, gigs] = await Promise.all([
+          applicationsAPI.getByStudent(user.id),
+          gigsAPI.getAll()
+        ])
+        setAllApplications(apps || [])
+        setAllGigs(gigs || [])
+      } catch (error) {
+        console.error('Error fetching applications:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-
-    updateData()
-
-    window.addEventListener('storage', updateData)
-    const interval = setInterval(updateData, 2000)
-
-    return () => {
-      window.removeEventListener('storage', updateData)
-      clearInterval(interval)
-    }
-  }, [])
+    fetchData()
+  }, [user?.id])
 
   const myApplications = allApplications
-    .filter(app => app.userId === user?.id)
     .filter(app => !statusFilter || app.status === statusFilter)
-    // Filter out applications for deleted gigs (orphaned data)
-    .filter(app => allGigs.some(g => g.id === app.gigId))
-    .sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt))
+    .sort((a, b) => new Date(b.created_at || b.appliedAt) - new Date(a.created_at || a.appliedAt))
 
   const stats = useMemo(() => {
-    // Only count applications where the gig still exists
     const all = allApplications
-      .filter(app => app.userId === user?.id)
-      .filter(app => allGigs.some(g => g.id === app.gigId))
     return {
       total: all.length,
       pending: all.filter(a => a.status === 'pending').length,
@@ -62,7 +59,7 @@ export default function MyApplications() {
       completed: all.filter(a => a.status === 'completed').length,
       rejected: all.filter(a => a.status === 'rejected').length
     }
-  }, [allApplications, allGigs, user?.id])
+  }, [allApplications])
 
   const getStatusBadge = (status) => {
     const styles = {

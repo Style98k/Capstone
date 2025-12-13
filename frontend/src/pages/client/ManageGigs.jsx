@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getGigs, getApplications, deleteGig, updateGig, updateApplication, initializeLocalStorage, saveTransaction } from '../../utils/localStorage'
-import { triggerNotification, triggerUserNotification } from '../../utils/notificationManager'
+import { gigsAPI, applicationsAPI, transactionsAPI } from '../../utils/api'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import { Edit, Pause, Play, Trash2, Eye, Briefcase, MapPin, Clock, DollarSign, Users, Calendar, CheckCircle } from 'lucide-react'
@@ -11,81 +10,91 @@ import { motion } from 'framer-motion'
 export default function ManageGigs() {
   const { user } = useAuth()
   const [statusFilter, setStatusFilter] = useState('')
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [gigs, setGigs] = useState([])
+  const [applications, setApplications] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Get data from localStorage
-  const gigs = useMemo(() => {
-    initializeLocalStorage()
-    return getGigs()
-  }, [refreshKey])
-
-  const applications = useMemo(() => {
-    return getApplications()
-  }, [refreshKey])
-
-  const myGigs = gigs
-    .filter(g => g.ownerId === user?.id)
-    .filter(g => !statusFilter || g.status === statusFilter)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-
-  const getApplicationCount = (gigId) => {
-    return applications.filter(app => app.gigId === gigId).length
+  // Fetch data from API
+  const fetchData = async () => {
+    try {
+      const [gigsData, appsData] = await Promise.all([
+        gigsAPI.getByClient(user?.id),
+        applicationsAPI.getAll()
+      ])
+      setGigs(gigsData || [])
+      setApplications(appsData || [])
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDeleteGig = (gigId) => {
+  useEffect(() => {
+    if (user?.id) {
+      fetchData()
+    }
+  }, [user?.id])
+
+  const myGigs = gigs
+    .filter(g => !statusFilter || g.status === statusFilter)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+  const getApplicationCount = (gigId) => {
+    return applications.filter(app => app.gig_id === gigId).length
+  }
+
+  const handleDeleteGig = async (gigId) => {
     if (window.confirm('Are you sure you want to delete this gig? This action cannot be undone.')) {
-      const result = deleteGig(gigId)
-      if (result.success) {
+      try {
+        await gigsAPI.delete(gigId)
         alert('Gig deleted successfully!')
-        setRefreshKey(prev => prev + 1) // Refresh the data
-      } else {
+        fetchData()
+      } catch (error) {
+        console.error('Failed to delete gig:', error)
         alert('Failed to delete gig. Please try again.')
       }
     }
   }
 
-  const handleToggleGigStatus = (gigId, currentStatus) => {
+  const handleToggleGigStatus = async (gigId, currentStatus) => {
     const newStatus = currentStatus === 'open' ? 'paused' : 'open'
-    const result = updateGig(gigId, { status: newStatus })
-
-    if (result.success) {
+    try {
+      await gigsAPI.update(gigId, { status: newStatus })
       alert(`Gig ${newStatus === 'open' ? 'resumed' : 'paused'} successfully!`)
-      setRefreshKey(prev => prev + 1) // Refresh the data
-    } else {
+      fetchData()
+    } catch (error) {
+      console.error('Failed to update gig status:', error)
       alert('Failed to update gig status. Please try again.')
     }
   }
 
-  const handleMarkComplete = (gig) => {
+  const handleMarkComplete = async (gig) => {
     if (window.confirm('Mark this gig as completed? This will notify the student and allow you to make a payment.')) {
-      // Update gig status
-      const gigResult = updateGig(gig.id, { status: 'completed' })
+      try {
+        // Update gig status
+        await gigsAPI.update(gig.id, { status: 'completed' })
 
-      if (gigResult.success) {
         // Find and update the hired application
-        const hiredApp = applications.find(app => app.gigId === gig.id && app.status === 'hired')
+        const hiredApp = applications.find(app => app.gig_id === gig.id && app.status === 'hired')
         if (hiredApp) {
-          updateApplication(hiredApp.id, { status: 'completed' })
+          await applicationsAPI.updateStatus(hiredApp.id, 'completed')
           
           // Create pending transaction for payment
-          saveTransaction({
+          await transactionsAPI.create({
             gigId: gig.id,
             fromUserId: user.id,
-            toUserId: hiredApp.userId,
-            amount: gig.pay,
+            toUserId: hiredApp.student_id,
+            amount: gig.budget || gig.pay,
             status: 'pending',
             paymentMethod: null
           })
         }
 
-        // Notify the specific student who was hired
-        if (hiredApp) {
-          triggerUserNotification(hiredApp.userId, 'Job Completed! 🎉', `The job "${gig.title}" has been marked as completed. Expect your payment soon!`, 'payment')
-        }
-
         alert('Gig marked as completed! You can now process payment in the Payments page.')
-        setRefreshKey(prev => prev + 1)
-      } else {
+        fetchData()
+      } catch (error) {
+        console.error('Failed to mark gig as completed:', error)
         alert('Failed to mark gig as completed. Please try again.')
       }
     }
@@ -180,13 +189,13 @@ export default function ManageGigs() {
                     </div>
 
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                      {gig.shortDesc}
+                      {gig.description || gig.shortDesc}
                     </p>
 
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
                       <span>{gig.category}</span>
                       <span>{gig.location}</span>
-                      <span>₱{(gig.pay || 0).toLocaleString()}</span>
+                      <span>₱{(gig.budget || gig.pay || 0).toLocaleString()}</span>
                       <span>{getApplicationCount(gig.id)} applications</span>
                     </div>
                   </div>

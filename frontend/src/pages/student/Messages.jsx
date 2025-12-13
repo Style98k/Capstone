@@ -3,7 +3,7 @@ import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import { Send, Search, CircleDot, PhoneCall, Video, MoreHorizontal, MessageSquare } from 'lucide-react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getConversationsByUser, getMessagesByConversation, saveMessage } from '../../utils/localStorage'
+import { conversationsAPI, messagesAPI } from '../../utils/api'
 
 export default function Messages() {
   const { user } = useAuth()
@@ -13,44 +13,66 @@ export default function Messages() {
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  // Load conversations from localStorage
+  // Load conversations from database
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       if (user?.id) {
-        const userConversations = getConversationsByUser(user.id)
-        setConversations(userConversations)
+        try {
+          const userConversations = await conversationsAPI.getByUser(user.id)
+          setConversations(userConversations || [])
 
-        // Load messages for each conversation
-        const messagesMap = {}
-        userConversations.forEach(conv => {
-          messagesMap[conv.id] = getMessagesByConversation(conv.id)
-        })
-        setAllMessages(messagesMap)
+          // Load messages for each conversation
+          const messagesMap = {}
+          for (const conv of (userConversations || [])) {
+            // Get the partner ID to fetch messages between these users
+            const partnerId = conv.participant1_id === user.id ? conv.participant2_id : conv.participant1_id
+            try {
+              const result = await messagesAPI.getConversation(user.id, partnerId)
+              messagesMap[conv.id] = result.messages || []
+            } catch {
+              messagesMap[conv.id] = []
+            }
+          }
+          setAllMessages(messagesMap)
 
-        // Select first conversation if none selected
-        if (!selectedConversationId && userConversations.length > 0) {
-          setSelectedConversationId(userConversations[0].id)
+          // Select first conversation if none selected
+          if (!selectedConversationId && userConversations?.length > 0) {
+            setSelectedConversationId(userConversations[0].id)
+          }
+        } catch (error) {
+          console.error('Error loading conversations:', error)
+        } finally {
+          setLoading(false)
         }
+      } else {
+        setLoading(false)
       }
     }
 
     loadData()
 
-    window.addEventListener('storage', loadData)
-    const interval = setInterval(loadData, 2000)
+    // Poll for new messages every 5 seconds
+    const interval = setInterval(loadData, 5000)
 
     return () => {
-      window.removeEventListener('storage', loadData)
       clearInterval(interval)
     }
   }, [user?.id, selectedConversationId])
 
   // Get the partner's name (the other participant)
   const getPartnerName = (conv) => {
-    if (!conv.participantNames) return 'Unknown'
-    const partnerId = conv.participants.find(p => p !== user?.id)
-    return conv.participantNames[partnerId] || 'Unknown'
+    // Database returns participant1_name and participant2_name
+    if (conv.participant1_id === user?.id) {
+      return conv.participant2_name || 'Unknown'
+    }
+    return conv.participant1_name || 'Unknown'
+  }
+
+  // Get the partner's ID
+  const getPartnerId = (conv) => {
+    return conv.participant1_id === user?.id ? conv.participant2_id : conv.participant1_id
   }
 
   const filtered = useMemo(() => {
@@ -63,20 +85,38 @@ export default function Messages() {
   const activeConversation = filtered.find(c => c.id === selectedConversationId) || filtered[0]
   const chat = activeConversation ? allMessages[activeConversation.id] || [] : []
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!message.trim() || !activeConversation) return
 
-    const newMessage = {
-      conversationId: activeConversation.id,
-      senderId: user?.id,
-      senderName: user?.name || 'You',
-      content: message
-    }
-
-    const result = saveMessage(newMessage)
-    if (result.success) {
+    const partnerId = getPartnerId(activeConversation)
+    
+    try {
+      await messagesAPI.send({
+        sender_id: user?.id,
+        receiver_id: partnerId,
+        content: message
+      })
+      
+      // Update local state immediately
+      const newMsg = {
+        id: Date.now(),
+        sender_id: user?.id,
+        receiver_id: partnerId,
+        content: message,
+        created_at: new Date().toISOString()
+      }
+      setAllMessages(prev => ({
+        ...prev,
+        [activeConversation.id]: [...(prev[activeConversation.id] || []), newMsg]
+      }))
+      
+      // Update conversation's last message
+      await conversationsAPI.updateLastMessage(activeConversation.id, message)
+      
       setMessage('')
       setMenuOpen(false)
+    } catch (error) {
+      console.error('Error sending message:', error)
     }
   }
 
@@ -134,10 +174,10 @@ export default function Messages() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-semibold text-gray-900 dark:text-white truncate">{partnerName}</p>
-                        <span className="text-xs text-slate-500">{new Date(conv.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="text-xs text-slate-500">{new Date(conv.updated_at || conv.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
-                      <p className="text-xs text-primary-600 truncate">{conv.gigTitle}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{conv.lastMessage}</p>
+                      <p className="text-xs text-primary-600 truncate">{conv.gig_title || conv.gigTitle}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{conv.last_message || conv.lastMessage}</p>
                     </div>
                   </button>
                 )
@@ -165,7 +205,7 @@ export default function Messages() {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-white">{getPartnerName(activeConversation)}</p>
-                    <p className="text-xs text-primary-600">{activeConversation.gigTitle}</p>
+                    <p className="text-xs text-primary-600">{activeConversation.gig_title || activeConversation.gigTitle}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 relative">
@@ -204,7 +244,7 @@ export default function Messages() {
               <div className="flex-1 overflow-y-auto space-y-4 px-4 py-4">
                 {chat.length > 0 ? (
                   chat.map((msg) => {
-                    const isMe = msg.senderId === user?.id
+                    const isMe = (msg.sender_id || msg.senderId) === user?.id
                     return (
                       <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                         <div
@@ -216,7 +256,7 @@ export default function Messages() {
                           <p className="text-sm leading-relaxed">{msg.content}</p>
                           <div className={`flex items-center gap-1 text-[11px] mt-1 ${isMe ? 'text-primary-100' : 'text-slate-500'}`}>
                             <CircleDot className="w-3 h-3" />
-                            <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>{new Date(msg.created_at || msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                         </div>
                       </div>

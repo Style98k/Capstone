@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getGigs, getApplications } from '../../utils/localStorage'
+import { gigsAPI, applicationsAPI } from '../../utils/api'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
 import CommentRating from '../../components/Shared/CommentRating'
@@ -24,28 +24,31 @@ export default function ClientProfile() {
         phone: user?.phone || '',
     })
 
-    // Fetch real stats from localStorage
+    // Fetch real stats from database
     useEffect(() => {
-        const updateStats = () => {
-            const allGigs = getGigs()
-            const allApplications = getApplications()
+        const updateStats = async () => {
+            if (!user?.id) return
+            try {
+                const myGigs = await gigsAPI.getByClient(user.id)
+                const allApplications = await applicationsAPI.getAll()
 
-            const myGigs = allGigs.filter(g => g.ownerId === user?.id)
-            const jobsPosted = myGigs.length
-            const studentsHired = allApplications.filter(app =>
-                myGigs.some(g => g.id === app.gigId) && (app.status === 'hired' || app.status === 'completed')
-            ).length
+                const jobsPosted = (myGigs || []).length
+                const studentsHired = (allApplications || []).filter(app =>
+                    (myGigs || []).some(g => g.id === (app.gig_id || app.gigId)) && 
+                    (app.status === 'hired' || app.status === 'completed')
+                ).length
 
-            setStats({ jobsPosted, studentsHired })
+                setStats({ jobsPosted, studentsHired })
+            } catch (error) {
+                console.error('Error fetching stats:', error)
+            }
         }
 
         updateStats()
 
-        window.addEventListener('storage', updateStats)
-        const interval = setInterval(updateStats, 2000)
+        const interval = setInterval(updateStats, 5000)
 
         return () => {
-            window.removeEventListener('storage', updateStats)
             clearInterval(interval)
         }
     }, [user?.id])
