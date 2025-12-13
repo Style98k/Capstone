@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { mockUsers } from '../../data/mockUsers'
-import { triggerNotification } from '../../utils/notificationManager'
+import { triggerNotification, triggerUserNotification } from '../../utils/notificationManager'
 import Card from '../../components/UI/Card'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -240,8 +240,8 @@ export default function ManageUsers() {
     localStorage.setItem('assessmentStatus', 'verified')
     localStorage.setItem('studentNotification', 'Your School ID and Assessment Form have been approved! You are now fully verified.')
 
-    // Trigger bell notification to student
-    triggerNotification('student', 'Verification Approved', 'Your documents are approved. You are verified!', 'system');
+    // Trigger user-specific notification to this student
+    triggerUserNotification(userToVerify.id, 'Verification Approved', 'Your documents are approved. You are verified!', 'system');
 
     setIsVerifyModalOpen(false)
     setUserToVerify(null)
@@ -269,8 +269,8 @@ export default function ManageUsers() {
     localStorage.setItem('assessmentStatus', 'unverified')
     localStorage.setItem('studentNotification', 'Your documents were rejected. Please upload clearer copies.')
 
-    // Trigger bell notification to student
-    triggerNotification('student', 'Verification Rejected', 'Your documents were rejected.', 'system');
+    // Trigger user-specific notification to this student
+    triggerUserNotification(userToVerify.id, 'Verification Rejected', 'Your documents were rejected.', 'system');
 
     setIsVerifyModalOpen(false)
     setUserToVerify(null)

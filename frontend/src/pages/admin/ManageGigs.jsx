@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { initializeLocalStorage, getGigs, deleteGig, updateGig } from '../../utils/localStorage'
-import { triggerNotification } from '../../utils/notificationManager'
+import { triggerNotification, triggerUserNotification } from '../../utils/notificationManager'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import Modal from '../../components/UI/Modal'
@@ -98,8 +98,8 @@ export default function ManageGigs() {
   }
 
   const handleWarningClick = (gig) => {
-    // LIMITED NOTIFICATION: Send warning only to the client (job poster)
-    triggerNotification('client', 'Job Review Warning', `Your job posting "${gig.title}" has been flagged for review. Please update your listing.`, 'warning');
+    // Send warning only to the specific client (job poster)
+    triggerUserNotification(gig.ownerId, 'Job Review Warning', `Your job posting "${gig.title}" has been flagged for review. Please update your listing.`, 'warning');
     alert('Warning notification sent to the client');
   }
 

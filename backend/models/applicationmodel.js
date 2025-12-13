@@ -40,6 +40,15 @@ const Applications = {
     );
   },
 
+  // Reject all pending applications for a gig except one
+  rejectOtherPending: (gigId, excludeAppId, callback) => {
+    db.query(
+      "UPDATE applications SET status=? WHERE gig_id=? AND id != ? AND status=?",
+      ["rejected", gigId, excludeAppId, "pending"],
+      callback
+    );
+  },
+
   // Delete (cancel application)
   delete: (id, callback) => {
     db.query("DELETE FROM applications WHERE id=?", [id], callback);

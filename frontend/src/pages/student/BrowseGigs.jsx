@@ -19,8 +19,8 @@ export default function BrowseGigs() {
     const allGigs = useMemo(() => {
         initializeLocalStorage()
         const gigs = getGigs()
-        // Only show gigs that are not hired/closed
-        return gigs.filter(gig => gig.status !== 'closed' && gig.status !== 'hired')
+        // Only show gigs that are not occupied/hired/closed
+        return gigs.filter(gig => gig.status !== 'closed' && gig.status !== 'occupied' && gig.status !== 'hired')
     }, [])
 
     // Get unique categories and locations

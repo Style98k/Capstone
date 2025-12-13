@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { getGigs, getApplications, deleteGig, updateGig, updateApplication, initializeLocalStorage, saveTransaction } from '../../utils/localStorage'
-import { triggerNotification } from '../../utils/notificationManager'
+import { triggerNotification, triggerUserNotification } from '../../utils/notificationManager'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import { Edit, Pause, Play, Trash2, Eye, Briefcase, MapPin, Clock, DollarSign, Users, Calendar, CheckCircle } from 'lucide-react'
@@ -78,8 +78,10 @@ export default function ManageGigs() {
           })
         }
 
-        // Notify the student
-        triggerNotification('student', 'Job Completed! \uD83C\uDF89', `The job "${gig.title}" has been marked as completed. Expect your payment soon!`, 'payment')
+        // Notify the specific student who was hired
+        if (hiredApp) {
+          triggerUserNotification(hiredApp.userId, 'Job Completed! 🎉', `The job "${gig.title}" has been marked as completed. Expect your payment soon!`, 'payment')
+        }
 
         alert('Gig marked as completed! You can now process payment in the Payments page.')
         setRefreshKey(prev => prev + 1)
@@ -160,7 +162,7 @@ export default function ManageGigs() {
                       ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                       : gig.status === 'paused'
                         ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                        : gig.status === 'hired'
+                        : gig.status === 'occupied' || gig.status === 'hired'
                           ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                           : gig.status === 'completed'
                             ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
@@ -233,7 +235,7 @@ export default function ManageGigs() {
                         </Button>
                       </motion.div>
                     )}
-                    {gig.status === 'hired' && (
+                    {(gig.status === 'hired' || gig.status === 'occupied') && (
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

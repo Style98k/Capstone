@@ -46,6 +46,11 @@ const Gig = {
     );
   },
 
+  // Get applications count by gig
+  getApplicationsByGig: (gigId, callback) => {
+    db.query("SELECT * FROM applications WHERE gig_id = ?", [gigId], callback);
+  },
+
   // Delete gig
   delete: (id, callback) => {
     db.query("DELETE FROM gigs WHERE id=?", [id], callback);

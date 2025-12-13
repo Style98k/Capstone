@@ -6,7 +6,7 @@ import Button from '../../components/UI/Button'
 import ApplicantDetailsModal from '../../components/applicants/ApplicantDetailsModal'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { getApplications, getGigs, updateApplication, updateGig, initializeLocalStorage, saveConversation } from '../../utils/localStorage'
-import { triggerNotification } from '../../utils/notificationManager'
+import { triggerNotification, triggerUserNotification } from '../../utils/notificationManager'
 import { mockUsers } from '../../data/mockUsers'
 
 export default function ViewApplicants() {
@@ -167,7 +167,19 @@ export default function ViewApplicants() {
             const gigTitle = selectedApplicant.appliedFor
             const result = updateApplication(selectedApplicant.id, { status: 'hired' })
             if (result.success) {
-                updateGig(selectedApplicant.gigId, { status: 'hired' })
+                // Update gig status to "occupied" instead of "hired"
+                updateGig(selectedApplicant.gigId, { status: 'occupied' })
+
+                // Auto-reject all other pending applications for this gig
+                const gigApplications = getApplications().filter(
+                    app => app.gigId === selectedApplicant.gigId && app.status === 'pending' && app.id !== selectedApplicant.id
+                )
+                // Send rejection notification to each rejected applicant
+                gigApplications.forEach(app => {
+                    updateApplication(app.id, { status: 'rejected' })
+                    // Send user-specific rejection notification
+                    triggerUserNotification(app.userId, 'Application Update', `Your application for "${gigTitle}" was not selected. Keep applying!`, 'application')
+                })
 
                 // Create conversation between client and student
                 saveConversation({
@@ -181,8 +193,8 @@ export default function ViewApplicants() {
                     lastMessage: 'Conversation started'
                 })
 
-                // Trigger notification to student
-                triggerNotification('student', 'Application Accepted! 🎉', `Congratulations! You've been hired for "${gigTitle}". You can now message the client!`, 'application')
+                // Send user-specific acceptance notification to hired student
+                triggerUserNotification(selectedApplicant.userId, 'Application Accepted! 🎉', `Congratulations! You've been hired for "${gigTitle}". You can now message the client!`, 'application')
 
                 setIsLoading(false)
                 setIsDetailsModalOpen(false)
@@ -196,8 +208,8 @@ export default function ViewApplicants() {
             const gigTitle = selectedApplicant.appliedFor
             const result = updateApplication(selectedApplicant.id, { status: 'rejected' })
             if (result.success) {
-                // Trigger notification to student
-                triggerNotification('student', 'Application Update', `Your application for "${gigTitle}" was not selected. Keep applying!`, 'application')
+                // Send user-specific rejection notification
+                triggerUserNotification(selectedApplicant.userId, 'Application Update', `Your application for "${gigTitle}" was not selected. Keep applying!`, 'application')
 
                 setIsLoading(false)
                 setIsDetailsModalOpen(false)

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useLocalAuth';
-import { getNotifications, markNotificationAsRead } from '../../utils/notificationManager';
+import { getNotifications, markNotificationAsRead, getUserNotifications, markUserNotificationAsRead } from '../../utils/notificationManager';
 
 export default function UniversalNotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,30 +13,47 @@ export default function UniversalNotificationBell() {
   // Get user role
   const userRole = user?.role;
 
-  // Initialize user role and notifications
+  // Initialize and load notifications
   useEffect(() => {
-    if (!userRole) {
+    if (!user?.id) {
       setNotifications([]);
       return;
     }
     
-    // Load notifications for current user's role (starts empty)
-    const roleNotifications = getNotifications(userRole);
-    setNotifications(roleNotifications);
-  }, [user?.id, userRole]);
+    // Load user-specific notifications for current user ID
+    const userNotifications = getUserNotifications(user.id);
+    
+    // For admin, also include role-based broadcast notifications (job reviews, etc.)
+    let allNotifications = userNotifications;
+    if (user.role === 'admin') {
+      const adminBroadcasts = getNotifications('admin');
+      // Combine and deduplicate by ID
+      allNotifications = [...adminBroadcasts, ...userNotifications];
+    }
+    
+    setNotifications(allNotifications);
+  }, [user?.id, user?.role]);
 
   // Listen for notification updates
   useEffect(() => {
     const handleNotificationUpdate = (event) => {
-      if (userRole) {
-        const updated = getNotifications(userRole);
-        setNotifications(updated);
+      if (user?.id) {
+        const userNotifications = getUserNotifications(user.id);
+        
+        // For admin, also include role-based broadcast notifications
+        let allNotifications = userNotifications;
+        if (user.role === 'admin') {
+          const adminBroadcasts = getNotifications('admin');
+          allNotifications = [...adminBroadcasts, ...userNotifications];
+        }
+        
+        setNotifications(allNotifications);
       }
     };
 
-    window.addEventListener('notificationUpdate', handleNotificationUpdate);
-    return () => window.removeEventListener('notificationUpdate', handleNotificationUpdate);
-  }, [userRole]);
+    window.addEventListener('storage', handleNotificationUpdate);
+    return () => window.removeEventListener('storage', handleNotificationUpdate);
+  }, [user?.id, user?.role]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -92,8 +109,8 @@ export default function UniversalNotificationBell() {
   };
 
   const handleNotificationClick = (notification) => {
-    // Mark as read using the notification manager
-    markNotificationAsRead(userRole, notification.id);
+    // Mark as read using user-specific notification manager
+    markUserNotificationAsRead(user.id, notification.id);
     
     // Navigate to the appropriate page
     const path = getNavigationPath(notification);

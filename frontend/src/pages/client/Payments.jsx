@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { triggerNotification } from '../../utils/notificationManager'
+import { triggerNotification, triggerUserNotification } from '../../utils/notificationManager'
 import { getTransactions, saveTransaction, updateTransaction, getGigs, getApplications } from '../../utils/localStorage'
 import { mockUsers } from '../../data/mockUsers'
 import Card from '../../components/UI/Card'
@@ -121,8 +121,8 @@ export default function Payments() {
     }
 
     if (result.success) {
-      // Trigger notification to student
-      triggerNotification('student', 'Payment Received', `You received ₱${paymentModal.amount.toLocaleString()} for "${paymentModal.gigTitle}"!`, 'payment')
+      // Send user-specific notification to the student
+      triggerUserNotification(paymentModal.studentId, 'Payment Received', `You received ₱${paymentModal.amount.toLocaleString()} for "${paymentModal.gigTitle}"!`, 'payment')
 
       alert('Payment processed successfully!')
       setPaymentModal(null)

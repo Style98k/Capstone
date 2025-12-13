@@ -342,7 +342,7 @@ export default function Reports() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold capitalize
                       ${gig.status === 'open' ? 'bg-emerald-50 text-emerald-600' :
-                          gig.status === 'hired' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'}`}>
+                          gig.status === 'occupied' || gig.status === 'hired' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'}`}>
                         {gig.status}
                       </span>
                     </td>

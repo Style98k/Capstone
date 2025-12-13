@@ -10,9 +10,9 @@ export default function StudentHome() {
     const featuredGigs = useMemo(() => {
         initializeLocalStorage()
         const allGigs = getGigs()
-        // Get gigs that are available (not hired/closed) and sort by newest
+        // Get gigs that are available (not occupied/closed) and sort by newest
         return allGigs
-            .filter(gig => gig.status !== 'closed' && gig.status !== 'hired')
+            .filter(gig => gig.status !== 'closed' && gig.status !== 'occupied' && gig.status !== 'hired')
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .slice(0, 6) // Show top 6
     }, [])

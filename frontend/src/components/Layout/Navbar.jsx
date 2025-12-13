@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { User, LogOut, Menu, X, LayoutDashboard, Briefcase, Search, LogIn, UserPlus, Sparkles } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getNotifications, markNotificationAsRead } from '../../utils/notificationManager'
+import { getNotifications, markNotificationAsRead, getUserNotifications, markUserNotificationAsRead } from '../../utils/notificationManager'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -18,32 +18,47 @@ export default function Navbar() {
     location.pathname.startsWith('/client/') ||
     location.pathname.startsWith('/admin/')
 
-  // Initialize notifications on mount or when user changes
+  // Initialize user-specific notifications on mount or when user changes
   useEffect(() => {
-    if (!user?.role) {
+    if (!user?.id) {
       setNotifications([]);
       return;
     }
     
-    // Load notifications for current user's role
-    const role = user.role;
-    const notifications = getNotifications(role);
-    setNotifications(notifications);
-  }, [user?.role]);
+    // Load user-specific notifications for current user ID
+    const userNotifications = getUserNotifications(user.id);
+    
+    // For admin, also include role-based broadcast notifications (job reviews, etc.)
+    let allNotifications = userNotifications;
+    if (user.role === 'admin') {
+      const adminBroadcasts = getNotifications('admin');
+      // Combine with admin broadcasts
+      allNotifications = [...adminBroadcasts, ...userNotifications];
+    }
+    
+    setNotifications(allNotifications);
+  }, [user?.id, user?.role]);
 
   // Listen for storage changes to update notifications in real-time
   useEffect(() => {
     const handleStorageChange = () => {
-      if (user?.role) {
-        const role = user.role;
-        const notifications = getNotifications(role);
-        setNotifications(notifications);
+      if (user?.id) {
+        const userNotifications = getUserNotifications(user.id);
+        
+        // For admin, also include role-based broadcast notifications
+        let allNotifications = userNotifications;
+        if (user.role === 'admin') {
+          const adminBroadcasts = getNotifications('admin');
+          allNotifications = [...adminBroadcasts, ...userNotifications];
+        }
+        
+        setNotifications(allNotifications);
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user?.role]);
+  }, [user?.id, user?.role]);
 
   // Close notification dropdown when clicking outside
   useEffect(() => {
@@ -121,8 +136,8 @@ export default function Navbar() {
   };
 
   const handleNotificationClick = (notification) => {
-    // Mark as read using the notification manager
-    markNotificationAsRead(user?.role, notification.id);
+    // Mark as read using user-specific notification manager
+    markUserNotificationAsRead(user?.id, notification.id);
     
     // Navigate to the appropriate page
     const path = getNavigationPath(notification);
