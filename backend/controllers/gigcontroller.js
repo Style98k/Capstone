@@ -44,14 +44,21 @@ const GigController = {
         
         const newGig = results[0];
         
+        console.log(`[GigController] Gig created with ID: ${result.insertId}, Title: "${newGig?.title || gigData.title}"`);
+        console.log(`[GigController] Sending notifications to admins and students...`);
+        
         // Send notification to all admins
         Notifications.createForRole('admin', {
           title: 'New Job Posted',
           message: `New job "${newGig?.title || gigData.title}" needs review. Click to manage gigs.`,
           type: 'gig_review',
-          link: '/admin/manage-gigs'
-        }, (notifErr) => {
-          if (notifErr) console.error('Error sending admin notification:', notifErr);
+          link: '/admin/gigs'
+        }, (notifErr, notifResult) => {
+          if (notifErr) {
+            console.error('[GigController] Error sending admin notification:', notifErr);
+          } else {
+            console.log('[GigController] Admin notification result:', notifResult);
+          }
         });
         
         // Send notification to all students about new opportunity
@@ -60,8 +67,12 @@ const GigController = {
           message: `A new ${gigData.category || 'gig'} job is available: "${newGig?.title || gigData.title}". Apply now!`,
           type: 'new_gig',
           link: `/gigs/${result.insertId}`
-        }, (notifErr) => {
-          if (notifErr) console.error('Error sending student notification:', notifErr);
+        }, (notifErr, notifResult) => {
+          if (notifErr) {
+            console.error('[GigController] Error sending student notification:', notifErr);
+          } else {
+            console.log('[GigController] Student notification result:', notifResult);
+          }
         });
         
         res.status(201).json({ 

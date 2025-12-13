@@ -41,14 +41,22 @@ const Notifications = {
 
   // create notification for all users of a specific role
   createForRole: (role, data, callback) => {
-    // Get all users with this role
+    // Get all users with this role (case-insensitive matching)
     db.query(
-      "SELECT id FROM users WHERE role = ?",
+      "SELECT id, role FROM users WHERE LOWER(role) = LOWER(?)",
       [role],
       (err, users) => {
-        if (err) return callback(err);
+        if (err) {
+          console.error(`[Notification] Error fetching users for role '${role}':`, err);
+          return callback(err);
+        }
         
-        if (users.length === 0) return callback(null, { insertId: 0 });
+        console.log(`[Notification] Found ${users.length} users with role '${role}':`, users.map(u => u.id));
+        
+        if (users.length === 0) {
+          console.warn(`[Notification] No users found with role '${role}' - notification not created`);
+          return callback(null, { insertId: 0, message: `No users with role ${role}` });
+        }
         
         // Create notification for each user
         const values = users.map(u => [
@@ -61,7 +69,14 @@ const Notifications = {
         ]);
         
         const sql = `INSERT INTO notifications (user_id, title, message, type, link, is_read) VALUES ?`;
-        db.query(sql, [values], callback);
+        db.query(sql, [values], (insertErr, result) => {
+          if (insertErr) {
+            console.error(`[Notification] Error inserting notifications:`, insertErr);
+            return callback(insertErr);
+          }
+          console.log(`[Notification] Successfully created ${users.length} notifications for role '${role}'`);
+          callback(null, result);
+        });
       }
     );
   },

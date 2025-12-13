@@ -29,9 +29,6 @@ export default function GigCommentRating({ gigId }) {
       fetchRatings()
     }
   }, [gigId])
-      targetUser: mockUsers.find(u => u.id === rating.targetUserId),
-    }))
-    .filter(rating => rating.rater && rating.targetUser) // Only show ratings where we have user info
 
   // Calculate average rating for this gig
   const averageRating = gigRatings.length > 0

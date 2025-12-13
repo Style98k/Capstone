@@ -33,7 +33,32 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// DEBUG: Check users and notifications in database
+app.get("/api/debug/users", (req, res) => {
+  db.query("SELECT id, name, email, role FROM users", (err, users) => {
+    if (err) return res.status(500).json({ error: err.message });
+    
+    db.query("SELECT id, user_id, title, type, created_at FROM notifications ORDER BY created_at DESC LIMIT 10", (err2, notifications) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      
+      res.json({
+        users: users,
+        recent_notifications: notifications,
+        summary: {
+          total_users: users.length,
+          admins: users.filter(u => u.role?.toLowerCase() === 'admin').map(u => ({ id: u.id, name: u.name })),
+          students: users.filter(u => u.role?.toLowerCase() === 'student').map(u => ({ id: u.id, name: u.name })),
+          clients: users.filter(u => u.role?.toLowerCase() === 'client').map(u => ({ id: u.id, name: u.name }))
+        }
+      });
+    });
+  });
+});
+
 // Start Server
 app.listen(5001, () => {
+  console.log("==========================================");
   console.log("Server running on port 5001");
+  console.log("Debug endpoint: http://localhost:5001/api/debug/users");
+  console.log("==========================================");
 });

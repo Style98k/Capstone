@@ -2,15 +2,27 @@ import Notifications from "../models/notificationmodel.js";
 
 const NotificationController = {
   getByUser: (req, res) => {
-    Notifications.getByUser(req.params.userId, (err, results) => {
-      if (err) return res.status(500).json({ error: err });
+    const userId = req.params.userId;
+    console.log(`[NotificationController] Fetching notifications for user ID: ${userId}`);
+    
+    Notifications.getByUser(userId, (err, results) => {
+      if (err) {
+        console.error(`[NotificationController] Error fetching notifications:`, err);
+        return res.status(500).json({ error: err });
+      }
+      console.log(`[NotificationController] Found ${results.length} notifications for user ${userId}`);
       res.json(results);
     });
   },
 
   create: (req, res) => {
+    console.log(`[NotificationController] Creating notification:`, req.body);
     Notifications.create(req.body, (err, result) => {
-      if (err) return res.status(500).json({ error: err });
+      if (err) {
+        console.error(`[NotificationController] Error creating notification:`, err);
+        return res.status(500).json({ error: err });
+      }
+      console.log(`[NotificationController] Notification created with ID: ${result.insertId}`);
       res.json({ message: "Notification sent!", id: result.insertId });
     });
   },

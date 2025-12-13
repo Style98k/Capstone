@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { User, LogOut, Menu, X, LayoutDashboard, Briefcase, Search, LogIn, UserPlus, Sparkles } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getNotifications, markNotificationAsRead, getUserNotifications, markUserNotificationAsRead } from '../../utils/notificationManager'
+import { notificationsAPI } from '../../utils/api'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -18,47 +18,43 @@ export default function Navbar() {
     location.pathname.startsWith('/client/') ||
     location.pathname.startsWith('/admin/')
 
-  // Initialize user-specific notifications on mount or when user changes
-  useEffect(() => {
+  // Fetch notifications from database API
+  const fetchNotifications = async () => {
     if (!user?.id) {
       setNotifications([]);
       return;
     }
     
-    // Load user-specific notifications for current user ID
-    const userNotifications = getUserNotifications(user.id);
-    
-    // For admin, also include role-based broadcast notifications (job reviews, etc.)
-    let allNotifications = userNotifications;
-    if (user.role === 'admin') {
-      const adminBroadcasts = getNotifications('admin');
-      // Combine with admin broadcasts
-      allNotifications = [...adminBroadcasts, ...userNotifications];
+    try {
+      console.log(`[Navbar] Fetching notifications for user ID: ${user.id}`);
+      const data = await notificationsAPI.getByUser(user.id);
+      console.log(`[Navbar] Received ${data?.length || 0} notifications`);
+      
+      // Map database fields to component format
+      const mapped = (data || []).map(n => ({
+        id: n.id,
+        title: n.title || 'Notification',
+        message: n.message,
+        type: n.type || 'general',
+        isUnread: !n.is_read,
+        link: n.link,
+        timestamp: n.created_at
+      }));
+      
+      setNotifications(mapped);
+    } catch (error) {
+      console.error('[Navbar] Error fetching notifications:', error);
     }
-    
-    setNotifications(allNotifications);
-  }, [user?.id, user?.role]);
+  };
 
-  // Listen for storage changes to update notifications in real-time
+  // Initialize notifications on mount or when user changes
   useEffect(() => {
-    const handleStorageChange = () => {
-      if (user?.id) {
-        const userNotifications = getUserNotifications(user.id);
-        
-        // For admin, also include role-based broadcast notifications
-        let allNotifications = userNotifications;
-        if (user.role === 'admin') {
-          const adminBroadcasts = getNotifications('admin');
-          allNotifications = [...adminBroadcasts, ...userNotifications];
-        }
-        
-        setNotifications(allNotifications);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user?.id, user?.role]);
+    fetchNotifications();
+    
+    // Poll for new notifications every 10 seconds
+    const interval = setInterval(fetchNotifications, 10000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
 
   // Close notification dropdown when clicking outside
   useEffect(() => {
@@ -125,6 +121,8 @@ export default function Navbar() {
         case 'report':
           return '/admin/gigs';
         case 'moderation':
+        case 'gig_review':
+        case 'new_gig':
           // Job review/moderation - go to manage gigs
           return '/admin/gigs';
         default:
@@ -135,29 +133,53 @@ export default function Navbar() {
     return null;
   };
 
-  const handleNotificationClick = (notification) => {
-    // Mark as read using user-specific notification manager
-    markUserNotificationAsRead(user?.id, notification.id);
+  const handleNotificationClick = async (notification) => {
+    console.log('[Navbar] Notification clicked:', notification);
+    console.log('[Navbar] notification.link:', notification.link);
+    console.log('[Navbar] notification.type:', notification.type);
+    console.log('[Navbar] user.role:', user?.role);
     
-    // Navigate to the appropriate page
-    const path = getNavigationPath(notification);
+    // Mark as read using database API
+    try {
+      await notificationsAPI.markAsRead(notification.id);
+      // Update local state
+      setNotifications(prev => 
+        prev.map(n => n.id === notification.id ? { ...n, isUnread: false } : n)
+      );
+    } catch (error) {
+      console.error('[Navbar] Error marking notification as read:', error);
+    }
+    
+    // Fix incorrect legacy links
+    let path = notification.link;
+    if (path === '/admin/manage-gigs') {
+      path = '/admin/gigs';
+    }
+    
+    // Fallback to type-based navigation if no link
+    if (!path) {
+      path = getNavigationPath(notification);
+    }
+    
+    console.log('[Navbar] Navigating to path:', path);
+    
     if (path) {
       navigate(path);
+    } else {
+      console.warn('[Navbar] No navigation path found for notification');
     }
     
     setNotificationsOpen(false);
   };
 
-  const handleDeleteNotification = (e, notificationId) => {
+  const handleDeleteNotification = async (e, notificationId) => {
     e.stopPropagation();
-    // Remove notification from state
-    const updated = notifications.filter(n => n.id !== notificationId);
-    setNotifications(updated);
-    // Update localStorage
-    const role = user?.role;
-    if (role) {
-      localStorage.setItem(`notifications_${role}`, JSON.stringify(updated));
-      window.dispatchEvent(new Event("storage"));
+    try {
+      await notificationsAPI.delete(notificationId);
+      // Remove notification from local state
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } catch (error) {
+      console.error('[Navbar] Error deleting notification:', error);
     }
   };
 

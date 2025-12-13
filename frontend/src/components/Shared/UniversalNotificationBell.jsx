@@ -14,14 +14,26 @@ export default function UniversalNotificationBell() {
   // Fetch notifications from database
   const fetchNotifications = async () => {
     if (!user?.id) {
+      console.log('[NotificationBell] No user ID available, skipping fetch');
       setNotifications([]);
       return;
     }
     
     try {
+      console.log(`[NotificationBell] Fetching notifications for user ID: ${user.id} (role: ${user.role})`);
       const data = await notificationsAPI.getByUser(user.id);
+      console.log(`[NotificationBell] RAW API response:`, data);
+      console.log(`[NotificationBell] Response type:`, typeof data);
+      console.log(`[NotificationBell] Is array:`, Array.isArray(data));
+      
+      if (!data || !Array.isArray(data)) {
+        console.warn('[NotificationBell] Invalid response - not an array:', data);
+        setNotifications([]);
+        return;
+      }
+      
       // Map database fields to component format
-      const mapped = (data || []).map(n => ({
+      const mapped = data.map(n => ({
         id: n.id,
         title: n.title || 'Notification',
         message: n.message,
@@ -31,9 +43,12 @@ export default function UniversalNotificationBell() {
         timestamp: n.created_at,
         time: formatTime(n.created_at)
       }));
+      
+      console.log(`[NotificationBell] Mapped ${mapped.length} notifications:`, mapped);
       setNotifications(mapped);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('[NotificationBell] Error fetching notifications:', error);
+      console.error('[NotificationBell] Error details:', error.response?.data || error.message);
     }
   };
 
@@ -115,7 +130,7 @@ export default function UniversalNotificationBell() {
     } else if (userRole === 'admin') {
       switch (type) {
         case 'gig_review':
-          return '/admin/manage-gigs';
+          return '/admin/gigs';
         case 'verification':
           return '/admin/users';
         case 'report':
