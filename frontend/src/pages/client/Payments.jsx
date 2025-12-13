@@ -43,28 +43,39 @@ export default function Payments() {
 
   // Get all transactions where user is the payer
   const myPayments = allTransactions
-    .filter(t => t.fromUserId === user?.id)
+    .filter(t => (t.from_user_id || t.fromUserId) === user?.id)
     .map(trans => ({
       ...trans,
-      gig: allGigs.find(g => g.id === trans.gigId),
-      student: allUsers.find(u => u.id === trans.toUserId),
+      gigId: trans.gig_id || trans.gigId,
+      toUserId: trans.to_user_id || trans.toUserId,
+      fromUserId: trans.from_user_id || trans.fromUserId,
+      createdAt: trans.created_at || trans.createdAt,
+      gig: allGigs.find(g => g.id === (trans.gig_id || trans.gigId)),
+      student: allUsers.find(u => u.id === (trans.to_user_id || trans.toUserId)),
     }))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
   // Get completed gigs that need payment (includes pending transactions)
   const completedGigs = allApplications
     .filter(app => {
-      const gig = allGigs.find(g => g.id === app.gigId)
-      return gig?.ownerId === user?.id && app.status === 'completed'
+      const gigId = app.gig_id || app.gigId
+      const gig = allGigs.find(g => g.id === gigId)
+      return (gig?.client_id === user?.id || gig?.ownerId === user?.id) && app.status === 'completed'
     })
-    .map(app => ({
-      ...app,
-      gig: allGigs.find(g => g.id === app.gigId),
-      student: allUsers.find(u => u.id === app.userId),
-      transaction: allTransactions.find(
-        t => t.gigId === app.gigId && t.fromUserId === user?.id
-      )
-    }))
+    .map(app => {
+      const gigId = app.gig_id || app.gigId
+      const studentId = app.student_id || app.userId
+      return {
+        ...app,
+        gigId: gigId,
+        userId: studentId,
+        gig: allGigs.find(g => g.id === gigId),
+        student: allUsers.find(u => u.id === studentId),
+        transaction: allTransactions.find(
+          t => (t.gig_id || t.gigId) === gigId && (t.from_user_id || t.fromUserId) === user?.id
+        )
+      }
+    })
     .filter(app => {
       // Only show if no completed payment exists
       return !app.transaction || app.transaction.status !== 'completed'

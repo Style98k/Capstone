@@ -239,6 +239,32 @@ export default function ViewApplicants() {
         }
     }
 
+    const handleMarkComplete = async (applicantToComplete = null) => {
+        const applicant = applicantToComplete || selectedApplicant
+        if (!applicant) return
+        
+        setIsLoading(true)
+        
+        try {
+            // Update application status to completed
+            await applicationsAPI.updateStatus(applicant.id, 'completed')
+            
+            // Backend automatically:
+            // - Updates gig status to 'completed'
+            // - Sends notifications to both client and student
+            
+            // Refresh data from backend
+            await fetchData()
+            
+            setIsDetailsModalOpen(false)
+        } catch (err) {
+            console.error('Failed to mark as complete:', err)
+            setError('Failed to mark as complete. Please try again.')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     const handleRejectApplicant = async () => {
         if (!selectedApplicant) return
         
@@ -451,6 +477,17 @@ export default function ViewApplicants() {
                                                 </Button>
                                             </>
                                         )}
+                                        {applicant.status === 'hired' && (
+                                            <Button
+                                                size="sm"
+                                                className="bg-emerald-600 hover:bg-emerald-700 whitespace-nowrap"
+                                                onClick={() => handleMarkComplete(applicant)}
+                                                disabled={isLoading}
+                                            >
+                                                <CheckCircle className="w-4 h-4 mr-1" />
+                                                {isLoading ? 'Processing...' : 'Mark Complete'}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -472,6 +509,7 @@ export default function ViewApplicants() {
                 applicant={selectedApplicant}
                 onHire={handleHireApplicant}
                 onReject={handleRejectApplicant}
+                onMarkComplete={handleMarkComplete}
                 isLoading={isLoading}
                 status={selectedApplicant?.status}
             />

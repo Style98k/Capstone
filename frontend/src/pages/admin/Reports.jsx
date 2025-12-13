@@ -303,7 +303,7 @@ export default function Reports() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {allGigs.slice(0, 5).map((gig) => {
-                const applicantCount = allApplications.filter(app => app.gigId === gig.id).length
+                const applicantCount = allApplications.filter(app => (app.gig_id || app.gigId) === gig.id).length
                 return (
                   <tr key={gig.id} className="hover:bg-gray-50/80 transition-colors group">
                     <td className="px-6 py-4">

@@ -2,7 +2,7 @@ import { X, Star, MapPin, Mail, Phone, Award, CheckCircle, Clock, Briefcase, Shi
 import Modal from '../UI/Modal'
 import Button from '../UI/Button'
 
-export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHire, onReject, isLoading, status }) {
+export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHire, onReject, onMarkComplete, isLoading, status }) {
     if (!applicant) return null
 
     const verificationBadges = [
@@ -295,16 +295,23 @@ export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHi
                                 {isLoading ? 'Processing...' : 'Hire'}
                             </Button>
                         </>
+                    ) : status === 'hired' ? (
+                        <Button
+                            onClick={onMarkComplete}
+                            disabled={isLoading}
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                        >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            {isLoading ? 'Processing...' : 'Mark as Complete'}
+                        </Button>
                     ) : (
                         <div className={`flex-1 text-center py-3 rounded-lg font-semibold ${status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                            status === 'hired' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
                                 status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
                                     'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
                             }`}>
                             {status === 'completed' ? '✓ Gig Completed' :
-                                status === 'hired' ? '✓ Hired for this Gig' :
-                                    status === 'rejected' ? '✗ Application Rejected' :
-                                        status?.charAt(0).toUpperCase() + status?.slice(1)}
+                                status === 'rejected' ? '✗ Application Rejected' :
+                                    status?.charAt(0).toUpperCase() + status?.slice(1)}
                         </div>
                     )}
                 </div>

@@ -152,7 +152,7 @@ export default function ClientDashboard() {
           </div>
           <div className="space-y-3">
             {pendingApps.map((app) => {
-              const gig = allGigs.find(g => g.id === app.gigId)
+              const gig = myGigs.find(g => g.id === (app.gig_id || app.gigId))
               return (
                 <div
                   key={app.id}

@@ -16,7 +16,8 @@ import {
   CheckCircle,
   Briefcase,
   Hourglass,
-  XCircle
+  XCircle,
+  MessageSquare
 } from 'lucide-react'
 
 export default function MyApplications() {
@@ -46,12 +47,20 @@ export default function MyApplications() {
     fetchData()
   }, [user?.id])
 
-  const myApplications = allApplications
+  // Normalize backend field names to frontend conventions
+  const normalizedApplications = allApplications.map(app => ({
+    ...app,
+    gigId: app.gig_id || app.gigId,
+    appliedAt: app.created_at || app.appliedAt,
+    proposal: app.proposal || app.message || app.cover_letter
+  }))
+
+  const myApplications = normalizedApplications
     .filter(app => !statusFilter || app.status === statusFilter)
-    .sort((a, b) => new Date(b.created_at || b.appliedAt) - new Date(a.created_at || a.appliedAt))
+    .sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt))
 
   const stats = useMemo(() => {
-    const all = allApplications
+    const all = normalizedApplications
     return {
       total: all.length,
       pending: all.filter(a => a.status === 'pending').length,
@@ -59,7 +68,7 @@ export default function MyApplications() {
       completed: all.filter(a => a.status === 'completed').length,
       rejected: all.filter(a => a.status === 'rejected').length
     }
-  }, [allApplications])
+  }, [normalizedApplications])
 
   const getStatusBadge = (status) => {
     const styles = {
@@ -248,6 +257,7 @@ export default function MyApplications() {
                             to="/student/messages"
                             className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 text-white px-4 py-2 text-sm font-semibold shadow-md shadow-primary-600/20 hover:bg-primary-700 transition-colors"
                           >
+                            <MessageSquare className="w-4 h-4" />
                             Message client
                           </Link>
                         )}
