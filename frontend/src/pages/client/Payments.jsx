@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { triggerNotification, triggerUserNotification } from '../../utils/notificationManager'
-import { getTransactions, saveTransaction, updateTransaction, getGigs, getApplications } from '../../utils/localStorage'
-import { mockUsers } from '../../data/mockUsers'
+import { transactionsAPI, gigsAPI, applicationsAPI, authAPI } from '../../utils/api'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
 import PaymentModal from '../../components/Shared/PaymentModal'
@@ -14,46 +12,34 @@ export default function Payments() {
   const [allTransactions, setAllTransactions] = useState([])
   const [allGigs, setAllGigs] = useState([])
   const [allApplications, setAllApplications] = useState([])
+  const [allUsers, setAllUsers] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Load data from localStorage and update periodically
+  // Load data from API
   useEffect(() => {
-    const updateData = () => {
-      setAllTransactions(getTransactions())
-      setAllGigs(getGigs())
-      setAllApplications(getApplications())
-    }
-
-    updateData()
-
-    window.addEventListener('storage', updateData)
-    const interval = setInterval(updateData, 2000)
-
-    return () => {
-      window.removeEventListener('storage', updateData)
-      clearInterval(interval)
-    }
-  }, [])
-
-  // Get all users from localStorage and mockUsers
-  const getAllUsers = () => {
-    try {
-      const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
-      const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
-      const allUsers = [...mockUsers]
-      const seenEmails = new Set(mockUsers.map(u => u.email))
-      for (const u of [...registeredUsers, ...additionalUsers]) {
-        if (!seenEmails.has(u.email)) {
-          allUsers.push(u)
-          seenEmails.add(u.email)
-        }
+    const fetchData = async () => {
+      try {
+        const [transactions, gigs, applications, users] = await Promise.all([
+          transactionsAPI.getByUser(user?.id),
+          gigsAPI.getByClient(user?.id),
+          applicationsAPI.getAll(),
+          authAPI.getAllUsers()
+        ])
+        setAllTransactions(transactions || [])
+        setAllGigs(gigs || [])
+        setAllApplications(applications || [])
+        setAllUsers(users || [])
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      } finally {
+        setLoading(false)
       }
-      return allUsers
-    } catch {
-      return mockUsers
     }
-  }
 
-  const allUsers = getAllUsers()
+    if (user?.id) {
+      fetchData()
+    }
+  }, [user?.id])
 
   // Get all transactions where user is the payer
   const myPayments = allTransactions
@@ -91,42 +77,42 @@ export default function Payments() {
   const pendingPayments = completedGigs
     .reduce((sum, app) => sum + (app.gig?.pay || 0), 0)
 
-  const handlePaymentSuccess = (paymentData) => {
-    // Find existing pending transaction
-    const existingTransaction = allTransactions.find(
-      t => t.gigId === paymentModal.gigId && 
-           t.fromUserId === user?.id && 
-           t.toUserId === paymentModal.studentId &&
-           t.status === 'pending'
-    )
+  const handlePaymentSuccess = async (paymentData) => {
+    try {
+      // Find existing pending transaction
+      const existingTransaction = allTransactions.find(
+        t => t.gigId === paymentModal.gigId && 
+             t.fromUserId === user?.id && 
+             t.toUserId === paymentModal.studentId &&
+             t.status === 'pending'
+      )
 
-    let result
-    if (existingTransaction) {
-      // Update existing pending transaction
-      result = updateTransaction(existingTransaction.id, {
-        status: 'completed',
-        paymentMethod: paymentData.paymentMethod || 'GCash'
-      })
-    } else {
-      // Create new transaction if none exists (fallback)
-      const transactionData = {
-        gigId: paymentModal.gigId,
-        fromUserId: user?.id,
-        toUserId: paymentModal.studentId,
-        amount: paymentModal.amount,
-        paymentMethod: paymentData.paymentMethod || 'GCash',
-        status: 'completed'
+      if (existingTransaction) {
+        // Update existing pending transaction
+        await transactionsAPI.update(existingTransaction.id, {
+          status: 'completed',
+          paymentMethod: paymentData.paymentMethod || 'GCash'
+        })
+      } else {
+        // Create new transaction if none exists
+        await transactionsAPI.create({
+          gigId: paymentModal.gigId,
+          fromUserId: user?.id,
+          toUserId: paymentModal.studentId,
+          amount: paymentModal.amount,
+          paymentMethod: paymentData.paymentMethod || 'GCash',
+          status: 'completed'
+        })
       }
-      result = saveTransaction(transactionData)
-    }
 
-    if (result.success) {
-      // Send user-specific notification to the student
-      triggerUserNotification(paymentModal.studentId, 'Payment Received', `You received ₱${paymentModal.amount.toLocaleString()} for "${paymentModal.gigTitle}"!`, 'payment')
+      // Refresh transactions data
+      const updatedTransactions = await transactionsAPI.getByUser(user?.id)
+      setAllTransactions(updatedTransactions || [])
 
       alert('Payment processed successfully!')
       setPaymentModal(null)
-    } else {
+    } catch (error) {
+      console.error('Payment failed:', error)
       alert('Payment failed. Please try again.')
     }
   }

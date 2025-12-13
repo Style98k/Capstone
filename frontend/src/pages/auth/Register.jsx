@@ -54,16 +54,22 @@ export default function Register() {
     setLoading(true)
 
     const { confirmPassword, ...userData } = formData
-    const result = register(userData)
+    
+    try {
+      const result = await register(userData)
 
-    if (result.success) {
-      const redirectPath =
-        result.user.role === 'student' ? '/student/dashboard' :
-          result.user.role === 'client' ? '/client/dashboard' :
-            result.user.role === 'admin' ? '/admin/dashboard' : '/'
-      navigate(redirectPath)
-    } else {
-      setError(result.message || 'Registration failed')
+      if (result.success) {
+        const redirectPath =
+          result.user.role === 'student' ? '/student/dashboard' :
+            result.user.role === 'client' ? '/client/dashboard' :
+              result.user.role === 'admin' ? '/admin/dashboard' : '/'
+        navigate(redirectPath)
+      } else {
+        setError(result.message || 'Registration failed')
+        setLoading(false)
+      }
+    } catch (err) {
+      setError('Registration failed. Please try again.')
       setLoading(false)
     }
   }

@@ -1,18 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Star, MessageSquare, Calendar } from 'lucide-react'
 import Card from '../UI/Card'
-import { mockRatings } from '../../data/mockRatings'
-import { mockUsers } from '../../data/mockUsers'
-import { mockGigs } from '../../data/mockGigs'
+import { ratingsAPI } from '../../utils/api'
 
 export default function CommentRating({ userId, userRole = 'student' }) {
   const [sortBy, setSortBy] = useState('newest') // newest, oldest, highest, lowest
+  const [userRatings, setUserRatings] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Get all ratings for this user
-  const userRatings = mockRatings
-    .filter(rating => rating.targetUserId === userId)
-    .map(rating => ({
-      ...rating,
+  // Fetch ratings from backend API
+  useEffect(() => {
+    const fetchRatings = async () => {
+      setLoading(true)
+      try {
+        // Note: This assumes the API will filter by targetUserId when we call it
+        // You may need to adjust based on your backend implementation
+        const data = await ratingsAPI.getByUserId(userId)
+        setUserRatings(data || [])
+      } catch (error) {
+        console.error('Error fetching ratings:', error)
+        setUserRatings([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (userId) {
+      fetchRatings()
+    }
+  }, [userId])
       rater: mockUsers.find(u => u.id === rating.raterId),
       gig: mockGigs.find(g => g.id === rating.gigId),
     }))

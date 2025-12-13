@@ -1,6 +1,6 @@
 // Local Storage Data Management Utilities
-import { mockGigs } from '../data/mockGigs.js'
-import { mockApplications } from '../data/mockApplications.js'
+// NOTE: These functions are DEPRECATED. Use API calls from utils/api.js instead.
+// This file is kept for backwards compatibility during migration.
 
 export const localStorageKeys = {
   GIGS: 'quickgig_gigs_v2',
@@ -11,32 +11,10 @@ export const localStorageKeys = {
   MESSAGES: 'quickgig_messages_v2'
 }
 
-// Initialize localStorage with empty data if not present (clean start for testing)
+// Initialize localStorage - now a no-op since we use database
 export const initializeLocalStorage = () => {
-  // Initialize gigs if empty - start with empty array for clean testing
-  if (!localStorage.getItem(localStorageKeys.GIGS)) {
-    localStorage.setItem(localStorageKeys.GIGS, JSON.stringify([]))
-  }
-
-  // Initialize applications if empty - start with empty array
-  if (!localStorage.getItem(localStorageKeys.APPLICATIONS)) {
-    localStorage.setItem(localStorageKeys.APPLICATIONS, JSON.stringify([]))
-  }
-
-  // Initialize transactions if empty
-  if (!localStorage.getItem(localStorageKeys.TRANSACTIONS)) {
-    localStorage.setItem(localStorageKeys.TRANSACTIONS, JSON.stringify([]))
-  }
-
-  // Initialize conversations if empty
-  if (!localStorage.getItem(localStorageKeys.CONVERSATIONS)) {
-    localStorage.setItem(localStorageKeys.CONVERSATIONS, JSON.stringify([]))
-  }
-
-  // Initialize messages if empty
-  if (!localStorage.getItem(localStorageKeys.MESSAGES)) {
-    localStorage.setItem(localStorageKeys.MESSAGES, JSON.stringify([]))
-  }
+  // No longer needed - data is stored in database
+  console.log('localStorage initialization skipped - using database')
 }
 
 // GIG MANAGEMENT

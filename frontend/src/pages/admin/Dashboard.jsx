@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react'
-import { mockUsers } from '../../data/mockUsers'
-import { mockApplications } from '../../data/mockApplications'
-import { mockTransactions } from '../../data/mockTransactions'
-import { getGigs } from '../../utils/localStorage'
+import { authAPI, gigsAPI, applicationsAPI, transactionsAPI } from '../../utils/api'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
 import { motion } from 'framer-motion'
@@ -21,61 +18,51 @@ import {
     ArrowUpRight
 } from 'lucide-react'
 
-// Helper to get all users (mock + registered from both storage keys) - same as Home.jsx
-const getAllUsers = () => {
-    try {
-        // Read from both quickgig_registered_users_v2 and quickgig_users_v2 for compatibility
-        const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
-        const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+export default function AdminDashboard() {
+    const [allUsers, setAllUsers] = useState([])
+    const [gigs, setGigs] = useState([])
+    const [applications, setApplications] = useState([])
+    const [transactions, setTransactions] = useState([])
+    const [loading, setLoading] = useState(true)
 
-        // Merge all users, avoiding duplicates by email
-        const allUsers = [...mockUsers]
-        const seenEmails = new Set(mockUsers.map(u => u.email))
-
-        for (const user of [...registeredUsers, ...additionalUsers]) {
-            if (!seenEmails.has(user.email)) {
-                allUsers.push(user)
-                seenEmails.add(user.email)
+    // Fetch data from backend API
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const [usersData, gigsData, appsData, transData] = await Promise.all([
+                    authAPI.getAllUsers(),
+                    gigsAPI.getAll(),
+                    applicationsAPI.getAll(),
+                    transactionsAPI.getAll()
+                ])
+                
+                setAllUsers(usersData)
+                setGigs(gigsData)
+                setApplications(appsData)
+                setTransactions(transData)
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error)
+            } finally {
+                setLoading(false)
             }
         }
 
-        return allUsers
-    } catch (error) {
-        console.error('Error reading users:', error)
-        return mockUsers
-    }
-}
+        fetchData()
 
-export default function AdminDashboard() {
-    const [allUsers, setAllUsers] = useState(getAllUsers())
-    const [gigs, setGigs] = useState(getGigs())
+        // Refresh data every 30 seconds
+        const interval = setInterval(fetchData, 30000)
 
-    // Update data periodically to catch new registrations
-    useEffect(() => {
-        const updateData = () => {
-            setAllUsers(getAllUsers())
-            setGigs(getGigs())
-        }
-
-        // Listen for storage changes
-        window.addEventListener('storage', updateData)
-
-        // Also update periodically for same-tab changes
-        const interval = setInterval(updateData, 2000)
-
-        return () => {
-            window.removeEventListener('storage', updateData)
-            clearInterval(interval)
-        }
+        return () => clearInterval(interval)
     }, [])
 
     const totalUsers = allUsers.length
     const students = allUsers.filter(u => u.role === 'student').length
     const clients = allUsers.filter(u => u.role === 'client').length
     const activeGigs = gigs.filter(g => g.status === 'open').length
-    const totalApplications = mockApplications.length
-    const totalTransactions = mockTransactions.length
-    const totalEarnings = 0 // Platform total earnings
+    const totalApplications = applications.length
+    const totalTransactions = transactions.length
+    const totalEarnings = transactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0)
 
     const pendingVerifications = allUsers.filter(u => !u.verified && u.role !== 'admin').length
 

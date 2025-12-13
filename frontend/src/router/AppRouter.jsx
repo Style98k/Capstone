@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { useAuth } from '../hooks/useLocalAuth'
-import { mockUsers } from '../data/mockUsers'
 import Navbar from '../components/Layout/Navbar'
 import Footer from '../components/Layout/Footer'
 import Sidebar from '../components/Layout/Sidebar'

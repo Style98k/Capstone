@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
-import { mockUsers } from '../../data/mockUsers'
-import { mockTransactions } from '../../data/mockTransactions'
-import { getGigs, getApplications } from '../../utils/localStorage'
+import { authAPI, transactionsAPI, gigsAPI, applicationsAPI } from '../../utils/api'
 import Card from '../../components/UI/Card'
 import {
   BarChart,
@@ -25,26 +23,6 @@ import {
   Download,
   Calendar
 } from 'lucide-react'
-
-// Helper to get all users (mock + registered from both storage keys)
-const getAllUsers = () => {
-  try {
-    const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
-    const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
-    const allUsers = [...mockUsers]
-    const seenEmails = new Set(mockUsers.map(u => u.email))
-
-    for (const user of [...registeredUsers, ...additionalUsers]) {
-      if (!seenEmails.has(user.email)) {
-        allUsers.push(user)
-        seenEmails.add(user.email)
-      }
-    }
-    return allUsers
-  } catch (error) {
-    return mockUsers
-  }
-}
 
 const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => {
   const colorStyles = {
@@ -81,27 +59,34 @@ const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => {
 
 export default function Reports() {
   const [dateRange] = useState('2/11/20 - 2/11/20')
-  const [allUsers, setAllUsers] = useState(getAllUsers())
+  const [allUsers, setAllUsers] = useState([])
   const [allGigs, setAllGigs] = useState([])
   const [allApplications, setAllApplications] = useState([])
+  const [allTransactions, setAllTransactions] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Load data from localStorage and update periodically
+  // Load data from API
   useEffect(() => {
-    const updateData = () => {
-      setAllUsers(getAllUsers())
-      setAllGigs(getGigs())
-      setAllApplications(getApplications())
+    const fetchData = async () => {
+      try {
+        const [users, gigs, applications, transactions] = await Promise.all([
+          authAPI.getAllUsers(),
+          gigsAPI.getAll(),
+          applicationsAPI.getAll(),
+          transactionsAPI.getAll()
+        ])
+        setAllUsers(users || [])
+        setAllGigs(gigs || [])
+        setAllApplications(applications || [])
+        setAllTransactions(transactions || [])
+      } catch (error) {
+        console.error('Error fetching report data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    updateData()
-
-    window.addEventListener('storage', updateData)
-    const interval = setInterval(updateData, 2000)
-
-    return () => {
-      window.removeEventListener('storage', updateData)
-      clearInterval(interval)
-    }
+    fetchData()
   }, [])
 
   const gigData = [
@@ -183,7 +168,7 @@ export default function Reports() {
         />
         <StatCard
           title="Total Revenue"
-          value={`₱${mockTransactions.reduce((acc, t) => acc + t.amount, 0).toLocaleString()}`}
+          value={`₱${allTransactions.reduce((acc, t) => acc + (t.amount || 0), 0).toLocaleString()}`}
           icon={CreditCard}
           color="amber"
           trend="up"

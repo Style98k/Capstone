@@ -1,88 +1,76 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useLocalAuth'
-import { initializeLocalStorage, getOpenGigs, getGigs } from '../utils/localStorage'
-import { mockUsers } from '../data/mockUsers'
+import { authAPI, gigsAPI } from '../utils/api'
+import { initializeLocalStorage } from '../utils/localStorage'
 import GigCard from '../components/Shared/GigCard'
 import Button from '../components/UI/Button'
 import { Briefcase, Users, Shield, TrendingUp, CheckCircle, GraduationCap, Star } from 'lucide-react'
 
-// Helper to get all users (mock + registered from both storage keys)
-const getAllUsers = () => {
-  try {
-    // Read from both quickgig_registered_users_v2 and quickgig_users_v2 for compatibility
-    const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
-    const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+export default function Home() {
+  const { user } = useAuth()
+  const [stats, setStats] = useState({ activeStudents: 0, registeredClients: 0, activeGigs: 0 })
+  const [recentGigs, setRecentGigs] = useState([])
+  const [loading, setLoading] = useState(true)
 
-    // Merge all users, avoiding duplicates by email
-    const allUsers = [...mockUsers]
-    const seenEmails = new Set(mockUsers.map(u => u.email))
+  // Initialize localStorage for backward compatibility
+  useEffect(() => {
+    initializeLocalStorage()
+  }, [])
 
-    for (const user of [...registeredUsers, ...additionalUsers]) {
-      if (!seenEmails.has(user.email)) {
-        allUsers.push(user)
-        seenEmails.add(user.email)
+  // Fetch statistics and recent gigs from backend
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [usersData, gigsData] = await Promise.all([
+          authAPI.getAllUsers(),
+          gigsAPI.getAll()
+        ])
+
+        // Calculate stats from backend data
+        const activeStudents = usersData.filter(u => u.role === 'student').length
+        const registeredClients = usersData.filter(u => u.role === 'client').length
+        const activeGigs = gigsData.filter(g => g.status === 'open').length
+
+        setStats({
+          activeStudents: activeStudents,
+          registeredClients: registeredClients,
+          activeGigs: activeGigs
+        })
+
+        // Show only open gigs, sorted by newest first
+        const openGigs = gigsData
+          .filter(g => g.status === 'open')
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          .slice(0, 6)
+        
+        setRecentGigs(openGigs)
+      } catch (error) {
+        console.error('Error fetching home data:', error)
+      } finally {
+        setLoading(false)
       }
     }
 
-    return allUsers
-  } catch (error) {
-    console.error('Error reading users:', error)
-    return mockUsers
-  }
-}
+    fetchData()
 
-// Helper to get statistics
-const getStatistics = () => {
-  const allUsers = getAllUsers()
-  const gigs = getGigs()
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchData, 30000)
 
-  const activeStudents = allUsers.filter(user => user.role === 'student').length
-  const registeredClients = allUsers.filter(user => user.role === 'client').length
-  const activeGigs = gigs.filter(gig => gig.status === 'open').length
-
-  return {
-    activeStudents: activeStudents > 0 ? activeStudents : '10+',
-    registeredClients: registeredClients,
-    activeGigs: activeGigs
-  }
-}
-
-export default function Home() {
-  const { user } = useAuth()
-  const [stats, setStats] = useState({ activeStudents: '10+', registeredClients: '5+', activeGigs: 0 })
-  const [recentGigs, setRecentGigs] = useState([])
-
-  // Initialize and get recent gigs
-  useEffect(() => {
-    initializeLocalStorage()
-    setRecentGigs(getOpenGigs().slice(0, 6))
+    return () => clearInterval(interval)
   }, [])
 
-  // Update statistics and recent gigs when component mounts or when localStorage changes
+  // Listen for localStorage changes (for backward compatibility)
   useEffect(() => {
-    const updateData = () => {
-      const newStats = getStatistics()
-      setStats(newStats)
-      // Also update recent gigs for immediate display of new jobs
-      setRecentGigs(getOpenGigs().slice(0, 6))
-    }
-
-    updateData()
-
-    // Listen for storage changes to update stats and gigs in real-time
     const handleStorageChange = () => {
-      updateData()
+      // Reload page when localStorage changes
+      window.location.reload()
     }
 
     window.addEventListener('storage', handleStorageChange)
 
-    // Also update periodically for same-tab changes
-    const interval = setInterval(updateData, 2000)
-
     return () => {
       window.removeEventListener('storage', handleStorageChange)
-      clearInterval(interval)
     }
   }, [])
 
@@ -201,7 +189,7 @@ export default function Home() {
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Users className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                   <span className="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                    Active Students
+                    Registered Students
                   </span>
                 </div>
                 <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">{stats.activeStudents}</div>

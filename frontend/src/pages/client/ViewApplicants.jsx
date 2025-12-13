@@ -5,9 +5,7 @@ import Input from '../../components/UI/Input'
 import Button from '../../components/UI/Button'
 import ApplicantDetailsModal from '../../components/applicants/ApplicantDetailsModal'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getApplications, getGigs, updateApplication, updateGig, initializeLocalStorage, saveConversation } from '../../utils/localStorage'
-import { triggerNotification, triggerUserNotification } from '../../utils/notificationManager'
-import { mockUsers } from '../../data/mockUsers'
+import { gigsAPI, applicationsAPI, conversationsAPI, notificationsAPI, authAPI } from '../../utils/api'
 
 export default function ViewApplicants() {
     const { user } = useAuth()
@@ -20,48 +18,85 @@ export default function ViewApplicants() {
     const [gigs, setGigs] = useState([])
     const [applications, setApplications] = useState([])
     const [allUsers, setAllUsers] = useState([])
+    const [isOnline, setIsOnline] = useState(navigator.onLine)
+    const [error, setError] = useState(null)
 
-    // Get all users from localStorage and mockUsers
-    const getAllUsers = () => {
-        try {
-            const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
-            const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
-            const users = [...mockUsers]
-            const seenEmails = new Set(mockUsers.map(u => u.email))
-            for (const u of [...registeredUsers, ...additionalUsers]) {
-                if (!seenEmails.has(u.email)) {
-                    users.push(u)
-                    seenEmails.add(u.email)
-                }
-            }
-            return users
-        } catch {
-            return mockUsers
-        }
-    }
-
-    // Load data from localStorage and update periodically
+    // Monitor online status
     useEffect(() => {
-        initializeLocalStorage()
-
-        const updateData = () => {
-            setGigs(getGigs())
-            setApplications(getApplications())
-            setAllUsers(getAllUsers())
-        }
-
-        updateData()
-
-        window.addEventListener('storage', updateData)
-        const interval = setInterval(updateData, 2000)
-
+        const handleOnline = () => setIsOnline(true)
+        const handleOffline = () => setIsOnline(false)
+        
+        window.addEventListener('online', handleOnline)
+        window.addEventListener('offline', handleOffline)
+        
         return () => {
-            window.removeEventListener('storage', updateData)
-            clearInterval(interval)
+            window.removeEventListener('online', handleOnline)
+            window.removeEventListener('offline', handleOffline)
         }
     }, [])
 
-    const myGigs = gigs.filter(g => g.ownerId === user?.id)
+    // Fetch data from backend API
+    const fetchData = async () => {
+        setIsLoading(true)
+        setError(null)
+        
+        try {
+            // Fetch gigs for current client
+            const gigsData = await gigsAPI.getAll()
+            setGigs(gigsData)
+            
+            // Fetch all applications
+            const appsData = await applicationsAPI.getAll()
+            
+            // Fetch all users for mapping data
+            const usersData = await authAPI.getAllUsers()
+            setAllUsers(usersData)
+            
+            // Map backend application data to match frontend structure
+            const mappedApps = appsData.map(app => ({
+                id: app.id,
+                gigId: app.gig_id,
+                userId: app.student_id,
+                proposal: app.proposal || app.message || app.cover_letter,
+                attachments: app.attachments ? JSON.parse(app.attachments) : [],
+                appliedAt: app.created_at,
+                status: app.status === 'accepted' ? 'hired' : app.status,
+                // Include joined user data
+                studentName: app.student_name,
+                studentEmail: app.student_email,
+                studentPhone: app.student_phone,
+                studentTitle: app.student_title,
+                studentLocation: app.student_location,
+                studentRating: app.student_rating,
+                studentPhoto: app.student_photo,
+                // Include joined gig data
+                gigTitle: app.gig_title,
+                gigCategory: app.gig_category,
+                gigBudget: app.gig_budget,
+                gigStatus: app.gig_status,
+                clientId: app.client_id
+            }))
+            setApplications(mappedApps)
+        } catch (err) {
+            console.error('Error fetching data from backend:', err.message)
+            setError('Failed to load data. Please try again.')
+            setGigs([])
+            setApplications([])
+            setAllUsers([])
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    // Load data on mount and when online/user changes
+    useEffect(() => {
+        if (user?.id) {
+            fetchData()
+        }
+    }, [user?.id])
+
+    // Filter gigs by client_id (backend only)
+    const myGigs = gigs.filter(g => g.client_id === user?.id)
     // Default to 'all' to show everything at a glance
     const selectedGigId = selectedGig || 'all'
 
@@ -71,13 +106,16 @@ export default function ViewApplicants() {
             .filter(app => {
                 if (selectedGigId === 'all') {
                     // Show applications for any of my gigs
-                    return myGigs.some(g => g.id === app.gigId)
+                    // Check both client_id (backend) and ownerId (localStorage)
+                    return myGigs.some(g => g.id === app.gigId) || app.clientId === user?.id
                 }
                 return app.gigId === selectedGigId
             })
             .map(app => {
+                // For backend data, use joined data if available
                 const userData = allUsers.find(u => u.id === app.userId)
                 const gigData = gigs.find(g => g.id === app.gigId)
+                
                 return {
                     ...app,
                     id: app.id,
@@ -85,25 +123,27 @@ export default function ViewApplicants() {
                     gigId: app.gigId,
                     proposal: app.proposal,
                     attachments: app.attachments || [],
-                    appliedAt: app.appliedAt,
+                    appliedAt: app.appliedAt || app.created_at,
                     status: app.status,
-                    name: userData?.name || 'Unknown',
-                    email: userData?.email || '',
-                    phone: userData?.phone || '',
-                    title: userData?.title || '',
-                    location: userData?.location || '',
-                    // Use gig category as skills/tags for the application, not user's profile skills
-                    skills: gigData?.category ? [gigData.category] : [],
-                    rating: userData?.rating || 'New',
-                    totalRatings: userData?.totalRatings || 0,
+                    // Use backend joined data first, then fall back to local lookup
+                    name: app.studentName || userData?.name || 'Unknown',
+                    email: app.studentEmail || userData?.email || '',
+                    phone: app.studentPhone || userData?.phone || '',
+                    title: app.studentTitle || userData?.title || '',
+                    location: app.studentLocation || userData?.location || '',
+                    // Use gig category as skills/tags for the application
+                    skills: app.gigCategory ? [app.gigCategory] : (gigData?.category ? [gigData.category] : []),
+                    rating: app.studentRating || userData?.rating || 'New',
+                    totalRatings: app.student_total_ratings || userData?.totalRatings || 0,
                     experience: userData?.experience || '',
                     availability: userData?.availability || '',
-                    schoolIdVerified: userData?.schoolIdVerified || 'unverified',
-                    assessmentVerified: userData?.assessmentVerified || 'unverified',
-                    appliedFor: gigData?.title || '',
+                    schoolIdVerified: app.school_id_verified || userData?.schoolIdVerified || 'unverified',
+                    assessmentVerified: app.assessment_verified || userData?.assessmentVerified || 'unverified',
+                    appliedFor: app.gigTitle || gigData?.title || '',
+                    photo: app.studentPhoto || userData?.profile_photo || userData?.photo || ''
                 }
             })
-    }, [applications, selectedGigId, gigs, allUsers])
+    }, [applications, selectedGigId, gigs, allUsers, myGigs, user?.id])
 
     // Filter applicants based on search and status
     // Note: When filtering by 'hired', include both 'hired' and 'completed' to match Dashboard
@@ -163,58 +203,62 @@ export default function ViewApplicants() {
     }
 
     const handleHireApplicant = async () => {
-        if (selectedApplicant) {
-            const gigTitle = selectedApplicant.appliedFor
-            const result = updateApplication(selectedApplicant.id, { status: 'hired' })
-            if (result.success) {
-                // Update gig status to "occupied" instead of "hired"
-                updateGig(selectedApplicant.gigId, { status: 'occupied' })
-
-                // Auto-reject all other pending applications for this gig
-                const gigApplications = getApplications().filter(
-                    app => app.gigId === selectedApplicant.gigId && app.status === 'pending' && app.id !== selectedApplicant.id
-                )
-                // Send rejection notification to each rejected applicant
-                gigApplications.forEach(app => {
-                    updateApplication(app.id, { status: 'rejected' })
-                    // Send user-specific rejection notification
-                    triggerUserNotification(app.userId, 'Application Update', `Your application for "${gigTitle}" was not selected. Keep applying!`, 'application')
+        if (!selectedApplicant) return
+        
+        setIsLoading(true)
+        const gigTitle = selectedApplicant.appliedFor
+        
+        try {
+            if (isOnline && localStorage.getItem('auth_token')) {
+                // Use backend API
+                await applicationsAPI.updateStatus(selectedApplicant.id, 'hired')
+                
+                // Create conversation via API
+                await conversationsAPI.create({
+                    gig_id: selectedApplicant.gigId,
+                    gig_title: gigTitle,
+                    participant1_id: user?.id,
+                    participant2_id: selectedApplicant.userId,
+                    last_message: 'Conversation started'
                 })
-
-                // Create conversation between client and student
-                saveConversation({
-                    gigId: selectedApplicant.gigId,
-                    gigTitle: gigTitle,
-                    participants: [user?.id, selectedApplicant.userId],
-                    participantNames: {
-                        [user?.id]: user?.name || 'Client',
-                        [selectedApplicant.userId]: selectedApplicant.name
-                    },
-                    lastMessage: 'Conversation started'
-                })
-
-                // Send user-specific acceptance notification to hired student
-                triggerUserNotification(selectedApplicant.userId, 'Application Accepted! 🎉', `Congratulations! You've been hired for "${gigTitle}". You can now message the client!`, 'application')
-
-                setIsLoading(false)
+                
+                // Backend auto-rejects other pending applications
+                // Backend auto-updates gig status
+                // Backend sends notifications
+                
+                // Refresh data from backend
+                await fetchData()
+                
                 setIsDetailsModalOpen(false)
-                window.location.reload()
             }
+        } catch (err) {
+            console.error('Failed to hire applicant:', err)
+            setError('Failed to hire applicant. Please try again.')
+        } finally {
+            setIsLoading(false)
         }
     }
 
     const handleRejectApplicant = async () => {
-        if (selectedApplicant) {
-            const gigTitle = selectedApplicant.appliedFor
-            const result = updateApplication(selectedApplicant.id, { status: 'rejected' })
-            if (result.success) {
-                // Send user-specific rejection notification
-                triggerUserNotification(selectedApplicant.userId, 'Application Update', `Your application for "${gigTitle}" was not selected. Keep applying!`, 'application')
-
-                setIsLoading(false)
-                setIsDetailsModalOpen(false)
-                window.location.reload()
-            }
+        if (!selectedApplicant) return
+        
+        setIsLoading(true)
+        
+        try {
+            // Use backend API
+            await applicationsAPI.updateStatus(selectedApplicant.id, 'rejected')
+            
+            // Backend sends rejection notification automatically
+            
+            // Refresh data from backend
+            await fetchData()
+            
+            setIsDetailsModalOpen(false)
+        } catch (err) {
+            console.error('Failed to reject applicant:', err)
+            setError('Failed to reject applicant. Please try again.')
+        } finally {
+            setIsLoading(false)
         }
     }
 

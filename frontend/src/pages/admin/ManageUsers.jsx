@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
-import { mockUsers } from '../../data/mockUsers'
-import { triggerNotification, triggerUserNotification } from '../../utils/notificationManager'
+import { authAPI } from '../../utils/api'
 import Card from '../../components/UI/Card'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
-  Filter,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -40,80 +38,12 @@ const getAvatarColor = (name) => {
   return avatarColors[index]
 }
 
-// Helper to get registered users from localStorage
-const getRegisteredUsers = () => {
-  try {
-    const saved = localStorage.getItem('quickgig_registered_users_v2')
-    return saved ? JSON.parse(saved) : []
-  } catch (e) {
-    return []
-  }
-}
-
-// Helper to get per-user verification status
-const getUserVerificationStatus = (userId) => {
-  try {
-    const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
-    return statuses[userId] || { verificationStatus: 'unverified', assessmentStatus: 'unverified' }
-  } catch (e) {
-    return { verificationStatus: 'unverified', assessmentStatus: 'unverified' }
-  }
-}
-
-// Helper to save per-user verification status
-const saveUserVerificationStatus = (userId, verificationStatus, assessmentStatus) => {
-  try {
-    const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
-    statuses[userId] = { verificationStatus, assessmentStatus }
-    localStorage.setItem('quickgig_user_verification_statuses_v2', JSON.stringify(statuses))
-  } catch (e) {
-    console.error('Error saving verification status:', e)
-  }
-}
-
 export default function ManageUsers() {
-  const [users, setUsers] = useState(() => {
-    // Combine mockUsers with registered users from localStorage
-    const registeredUsers = getRegisteredUsers()
-    const allUsers = [...mockUsers, ...registeredUsers]
-
-    // Get saved user updates (like profile photos) from quickgig_users_v2
-    const savedUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
-
-    // Remove duplicates based on email
-    const uniqueUsers = allUsers.filter((user, index, self) =>
-      index === self.findIndex(u => u.email === user.email)
-    )
-
-    // Map users with their verification status and merge any saved updates
-    return uniqueUsers.map(u => {
-      const storedStatus = getUserVerificationStatus(u.id)
-
-      // Find any saved updates for this user (like profile photo)
-      const savedUpdates = savedUsers.find(su => su.id === u.id)
-
-      // Special case for Maria (demo user with pending status)
-      if (u.name === 'Maria Student') {
-        return { ...u, ...savedUpdates, verificationStatus: 'pending', verified: false }
-      }
-
-      // For other users, use stored status or computed default
-      const verificationStatus = storedStatus.verificationStatus || (u.verified ? 'verified' : 'unverified')
-      const assessmentStatus = storedStatus.assessmentStatus || (u.verified ? 'verified' : 'unverified')
-
-      return {
-        ...u,
-        ...savedUpdates, // Merge saved updates (profile photo, etc.)
-        verificationStatus,
-        assessmentStatus,
-        verified: verificationStatus === 'verified' && assessmentStatus === 'verified'
-      }
-    })
-  })
-
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
-  const [verificationTab, setVerificationTab] = useState('all') // 'all', 'pending', 'verified'
+  const [verificationTab, setVerificationTab] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState('table')
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -122,66 +52,26 @@ export default function ManageUsers() {
   // Verification Modal State
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false)
   const [userToVerify, setUserToVerify] = useState(null)
-  const [storedID, setStoredID] = useState(null)
-  const [storedAssessment, setStoredAssessment] = useState(null)
 
-  // Refresh users list periodically to catch new registrations and profile updates
+  // Fetch users from backend API
   useEffect(() => {
-    const refreshUsers = () => {
-      const registeredUsers = getRegisteredUsers()
-      const allUsers = [...mockUsers, ...registeredUsers]
-
-      // Get saved user updates (like profile photos) from quickgig_users_v2
-      const savedUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
-
-      // Remove duplicates based on email
-      const uniqueUsers = allUsers.filter((user, index, self) =>
-        index === self.findIndex(u => u.email === user.email)
-      )
-
-      setUsers(prev => {
-        // Keep existing user states but add new users
-        const existingIds = new Set(prev.map(u => u.id))
-        const newUsers = uniqueUsers.filter(u => !existingIds.has(u.id)).map(u => {
-          const storedStatus = getUserVerificationStatus(u.id)
-          const savedUpdates = savedUsers.find(su => su.id === u.id)
-          return {
-            ...u,
-            ...savedUpdates,
-            verificationStatus: storedStatus.verificationStatus || 'unverified',
-            assessmentStatus: storedStatus.assessmentStatus || 'unverified',
-            verified: false
-          }
-        })
-
-        // Update existing users with latest verification statuses AND profile updates
-        const updatedExisting = prev.map(u => {
-          const storedStatus = getUserVerificationStatus(u.id)
-          const savedUpdates = savedUsers.find(su => su.id === u.id)
-
-          // Check if there are any updates to apply
-          const hasVerificationChange = storedStatus.verificationStatus && storedStatus.verificationStatus !== u.verificationStatus
-          const hasProfilePhotoChange = savedUpdates?.profilePhoto && savedUpdates.profilePhoto !== u.profilePhoto
-
-          if (hasVerificationChange || hasProfilePhotoChange) {
-            return {
-              ...u,
-              ...savedUpdates, // Merge profile updates
-              verificationStatus: storedStatus.verificationStatus || u.verificationStatus,
-              assessmentStatus: storedStatus.assessmentStatus || u.assessmentStatus,
-              verified: storedStatus.verificationStatus === 'verified' && storedStatus.assessmentStatus === 'verified'
-            }
-          }
-          return u
-        })
-
-        return [...updatedExisting, ...newUsers]
-      })
+    const fetchUsers = async () => {
+      setLoading(true)
+      try {
+        const data = await authAPI.getAllUsers()
+        setUsers(data)
+      } catch (error) {
+        console.error('Error fetching users:', error)
+        setUsers([])
+      } finally {
+        setLoading(false)
+      }
     }
 
-    // Refresh on mount and every 2 seconds
-    refreshUsers()
-    const interval = setInterval(refreshUsers, 2000)
+    fetchUsers()
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUsers, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -193,87 +83,64 @@ export default function ManageUsers() {
 
     const matchesRole = roleFilter === 'all' || u.role === roleFilter
 
-    // Updated Verification Tab Filter
+    // Verification Tab Filter
     let matchesTab = true
     if (verificationTab === 'pending') {
-      matchesTab = u.verificationStatus === 'pending' || u.assessmentStatus === 'pending'
+      matchesTab = u.verificationStatus === 'pending'
     } else if (verificationTab === 'verified') {
-      matchesTab = u.verificationStatus === 'verified' && u.assessmentStatus === 'verified'
+      matchesTab = u.verificationStatus === 'verified'
     }
 
     return matchesSearch && matchesRole && matchesTab
   })
 
-  const pendingCount = users.filter(u =>
-    u.verificationStatus === 'pending' || u.assessmentStatus === 'pending'
-  ).length
+  const pendingCount = users.filter(u => u.verificationStatus === 'pending').length
 
   const handleOpenVerify = (user) => {
     setUserToVerify(user)
-    // Load images from per-user localStorage when opening the modal
-    const idImage = localStorage.getItem(`studentIDImage_${user.id}`)
-    const assessmentImage = localStorage.getItem(`studentAssessmentImage_${user.id}`)
-    setStoredID(idImage)
-    setStoredAssessment(assessmentImage)
     setIsVerifyModalOpen(true)
   }
 
-  const handleApproveVerify = () => {
+  const handleApproveVerify = async () => {
     if (!userToVerify) return
 
-    setUsers(prev => prev.map(u =>
-      u.id === userToVerify.id
-        ? {
-          ...u,
-          verificationStatus: 'verified',
-          assessmentStatus: 'verified',
-          verified: true
-        }
-        : u
-    ))
+    try {
+      await authAPI.updateUser(userToVerify.id, {
+        verificationStatus: 'verified'
+      })
 
-    // Save per-user verification status
-    saveUserVerificationStatus(userToVerify.id, 'verified', 'verified')
+      setUsers(prev => prev.map(u =>
+        u.id === userToVerify.id
+          ? { ...u, verificationStatus: 'verified' }
+          : u
+      ))
 
-    // Also save for backward compatibility with current student session
-    localStorage.setItem('verificationStatus', 'verified')
-    localStorage.setItem('assessmentStatus', 'verified')
-    localStorage.setItem('studentNotification', 'Your School ID and Assessment Form have been approved! You are now fully verified.')
-
-    // Trigger user-specific notification to this student
-    triggerUserNotification(userToVerify.id, 'Verification Approved', 'Your documents are approved. You are verified!', 'system');
-
-    setIsVerifyModalOpen(false)
-    setUserToVerify(null)
+      setIsVerifyModalOpen(false)
+      setUserToVerify(null)
+    } catch (error) {
+      console.error('Error approving verification:', error)
+    }
   }
 
-  const handleRejectVerify = () => {
+  const handleRejectVerify = async () => {
     if (!userToVerify) return
 
-    setUsers(prev => prev.map(u =>
-      u.id === userToVerify.id
-        ? {
-          ...u,
-          verificationStatus: 'unverified',
-          assessmentStatus: 'unverified',
-          verified: false
-        }
-        : u
-    ))
+    try {
+      await authAPI.updateUser(userToVerify.id, {
+        verificationStatus: 'rejected'
+      })
 
-    // Save per-user verification status
-    saveUserVerificationStatus(userToVerify.id, 'unverified', 'unverified')
+      setUsers(prev => prev.map(u =>
+        u.id === userToVerify.id
+          ? { ...u, verificationStatus: 'rejected' }
+          : u
+      ))
 
-    // Also save for backward compatibility with current student session
-    localStorage.setItem('verificationStatus', 'unverified')
-    localStorage.setItem('assessmentStatus', 'unverified')
-    localStorage.setItem('studentNotification', 'Your documents were rejected. Please upload clearer copies.')
-
-    // Trigger user-specific notification to this student
-    triggerUserNotification(userToVerify.id, 'Verification Rejected', 'Your documents were rejected.', 'system');
-
-    setIsVerifyModalOpen(false)
-    setUserToVerify(null)
+      setIsVerifyModalOpen(false)
+      setUserToVerify(null)
+    } catch (error) {
+      console.error('Error rejecting verification:', error)
+    }
   }
 
   // Pagination
@@ -281,20 +148,46 @@ export default function ManageUsers() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage)
 
-  const handleVerify = (userId) => {
-    setUsers(users.map(u => (u.id === userId ? { ...u, verified: true } : u)))
+  const handleVerify = async (userId) => {
+    try {
+      await authAPI.updateUser(userId, { verificationStatus: 'verified' })
+      setUsers(users.map(u => (u.id === userId ? { ...u, verificationStatus: 'verified' } : u)))
+    } catch (error) {
+      console.error('Error verifying user:', error)
+    }
   }
 
-  const handleSuspend = (userId) => {
-    setUsers(users.map(u => (u.id === userId ? { ...u, suspended: !u.suspended } : u)))
+  const handleSuspend = async (userId) => {
+    try {
+      const user = users.find(u => u.id === userId)
+      await authAPI.updateUser(userId, { suspended: !user?.suspended })
+      setUsers(users.map(u => (u.id === userId ? { ...u, suspended: !u.suspended } : u)))
+    } catch (error) {
+      console.error('Error suspending user:', error)
+    }
   }
 
-  const handleDelete = (userId) => {
-    setUsers(users.filter(u => u.id !== userId))
+  const handleDelete = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        await authAPI.deleteUser(userId)
+        setUsers(users.filter(u => u.id !== userId))
+      } catch (error) {
+        console.error('Error deleting user:', error)
+      }
+    }
   }
 
   // Get unique roles for filter
   const roles = [...new Set(users.map(u => u.role).filter(Boolean))]
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    )
+  }
 
   return (
     <motion.div
@@ -312,7 +205,7 @@ export default function ManageUsers() {
       >
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">User management</h1>
+            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
             <span className="px-3 py-1 text-sm font-medium text-gray-500 bg-gray-100 rounded-full">
               {filteredUsers.length}
             </span>
@@ -324,22 +217,24 @@ export default function ManageUsers() {
       </motion.div>
 
       {/* Tabs */}
-      <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex gap-4 border-b border-gray-200">
         <button
-          onClick={() => { setVerificationTab('all'); setCurrentPage(1); }}
-          className={`pb-3 px-1 text-sm font-medium transition-all relative ${verificationTab === 'all'
-            ? 'text-indigo-600 border-b-2 border-indigo-600'
-            : 'text-gray-500 hover:text-gray-700'
-            }`}
+          onClick={() => { setVerificationTab('all'); setCurrentPage(1) }}
+          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+            verificationTab === 'all'
+              ? 'text-indigo-600 border-b-2 border-indigo-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
         >
-          All Users
+          All Users ({users.length})
         </button>
         <button
-          onClick={() => { setVerificationTab('pending'); setCurrentPage(1); }}
-          className={`pb-3 px-1 text-sm font-medium transition-all relative ${verificationTab === 'pending'
-            ? 'text-indigo-600 border-b-2 border-indigo-600'
-            : 'text-gray-500 hover:text-gray-700'
-            }`}
+          onClick={() => { setVerificationTab('pending'); setCurrentPage(1) }}
+          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+            verificationTab === 'pending'
+              ? 'text-indigo-600 border-b-2 border-indigo-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
         >
           Pending Verification
           {pendingCount > 0 && (
@@ -349,26 +244,26 @@ export default function ManageUsers() {
           )}
         </button>
         <button
-          onClick={() => { setVerificationTab('verified'); setCurrentPage(1); }}
-          className={`pb-3 px-1 text-sm font-medium transition-all relative ${verificationTab === 'verified'
-            ? 'text-indigo-600 border-b-2 border-indigo-600'
-            : 'text-gray-500 hover:text-gray-700'
-            }`}
+          onClick={() => { setVerificationTab('verified'); setCurrentPage(1) }}
+          className={`pb-3 px-1 text-sm font-medium transition-all relative ${
+            verificationTab === 'verified'
+              ? 'text-indigo-600 border-b-2 border-indigo-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
         >
           Verified
         </button>
       </div>
 
       {/* Toolbar */}
-      <Card padding="p-4" delay={1}>
+      <Card padding="p-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Left side - View toggles & Filters */}
+          {/* View Mode Toggles */}
           <div className="flex items-center gap-4">
-            {/* View Mode Toggles */}
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('table')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all
                   ${viewMode === 'table'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'}`}
@@ -378,17 +273,17 @@ export default function ManageUsers() {
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all
                   ${viewMode === 'grid'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
-                Board
+                Grid
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all
                   ${viewMode === 'list'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'}`}
@@ -398,740 +293,317 @@ export default function ManageUsers() {
               </button>
             </div>
 
-            {/* Divider */}
-            <div className="h-6 w-px bg-gray-200" />
-
             {/* Role Filter */}
-            <div className="flex items-center gap-2">
-              <select
-                value={roleFilter}
-                onChange={(e) => {
-                  setRoleFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 
-                  rounded-lg hover:bg-gray-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="all">All Roles</option>
-                {roles.map(role => (
-                  <option key={role} value={role}>{role}</option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 
+                rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <option value="all">All Roles</option>
+              {roles.map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Right side - Search & Actions */}
-          <div className="flex items-center gap-3">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                name="search"
-                id="search-users"
-                placeholder="Search users..."
-                value={filter}
-                onChange={(e) => {
-                  setFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                className="pl-10 pr-4 py-2 w-64 text-sm bg-gray-50 border border-gray-200 rounded-lg
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                  transition-all duration-200 placeholder:text-gray-400"
-              />
-            </div>
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="pl-10 pr-4 py-2 w-64 text-sm bg-gray-50 border border-gray-200 rounded-lg
+                focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
         </div>
       </Card>
 
-      {/* Views Container */}
-      <AnimatePresence mode="wait">
-        {/* TABLE VIEW */}
-        {viewMode === 'table' && (
-          <motion.div
-            key="table"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card padding="p-0" delay={2}>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <input
-                          type="checkbox"
-                          name="selectAll"
-                          id="select-all-users"
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                      </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Full name
-                      </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Role
-                      </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Joined date
-                      </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Verified
-                      </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedUsers.map((user, index) => (
-                      <motion.tr
-                        key={user.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, delay: index * 0.03 }}
-                        className="border-b border-gray-50 hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-transparent 
-                          transition-colors duration-200 group"
-                      >
-                        <td className="py-4 px-6">
-                          <input
-                            type="checkbox"
-                            name={`selectUser-${user.id}`}
-                            id={`select-user-${user.id}`}
-                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            {user.profilePhoto ? (
-                              <img
-                                src={user.profilePhoto}
-                                alt={user.name}
-                                className="w-10 h-10 rounded-full object-cover shadow-lg
-                                  group-hover:scale-110 transition-transform duration-200"
-                              />
-                            ) : (
-                              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user.name)} 
-                                flex items-center justify-center text-white font-semibold text-sm shadow-lg
-                                group-hover:scale-110 transition-transform duration-200`}>
-                                {user.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <span className="font-medium text-gray-900">{user.name}</span>
+      {/* TABLE VIEW */}
+      {viewMode === 'table' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card padding="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase">Name</th>
+                    <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase">Email</th>
+                    <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase">Role</th>
+                    <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                    <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase">Verification</th>
+                    <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedUsers.map((user, index) => (
+                    <motion.tr
+                      key={user.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.03 }}
+                      className="border-b border-gray-50 hover:bg-gray-50 transition-colors group"
+                    >
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user.name)} 
+                            flex items-center justify-center text-white font-semibold text-sm`}>
+                            {user.name.charAt(0).toUpperCase()}
                           </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <a href={`mailto:${user.email}`} className="text-indigo-600 hover:text-indigo-800 hover:underline transition-colors">
-                            {user.email}
-                          </a>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className="text-gray-600">{user.role || 'N/A'}</span>
-                        </td>
-                        <td className="py-4 px-6">
-                          {user.suspended ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium 
-                              bg-red-50 text-red-700 rounded-full border border-red-100">
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                              Suspended
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium 
-                              bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              Active
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-4 px-6 text-gray-500 text-sm">
-                          {user.createdAt
-                            ? new Date(user.createdAt).toLocaleDateString('en-US', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric'
-                            })
-                            : 'N/A'
-                          }
-                        </td>
-                        <td className="py-4 px-6">
-                          {user.verificationStatus === 'pending' ? (
-                            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium inline-flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                              Pending Review
-                            </span>
-                          ) : user.verified ? (
-                            <span className="text-emerald-600 font-medium flex items-center gap-1">
-                              <CheckCircle2 className="w-4 h-4" />
-                              Verified
-                            </span>
-                          ) : (
+                          <span className="font-medium text-gray-900">{user.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <a href={`mailto:${user.email}`} className="text-indigo-600 hover:underline">
+                          {user.email}
+                        </a>
+                      </td>
+                      <td className="py-4 px-6 text-gray-600">{user.role || 'N/A'}</td>
+                      <td className="py-4 px-6">
+                        {user.suspended ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium 
+                            bg-red-50 text-red-700 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                            Suspended
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium 
+                            bg-emerald-50 text-emerald-700 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Active
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6">
+                        {user.verificationStatus === 'pending' ? (
+                          <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium inline-flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            Pending
+                          </span>
+                        ) : user.verificationStatus === 'verified' ? (
+                          <span className="text-emerald-600 font-medium flex items-center gap-1">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Verified
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 font-medium flex items-center gap-1">
+                            <XCircle className="w-4 h-4" />
+                            Unverified
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-1">
+                          {user.verificationStatus === 'pending' && (
                             <button
-                              onClick={() => handleVerify(user.id)}
-                              className="text-gray-400 font-medium flex items-center gap-1 hover:text-gray-600 transition-colors"
+                              onClick={() => handleOpenVerify(user)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Review Verification"
                             >
-                              <XCircle className="w-4 h-4" />
-                              Unverified
+                              <Eye className="w-4 h-4" />
                             </button>
                           )}
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-1">
-                            {user.verificationStatus === 'pending' && (
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => handleOpenVerify(user)}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Review Verification"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </motion.button>
-                            )}
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                              title="Edit user"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleSuspend(user.id)}
-                              className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                              title={user.suspended ? "Unsuspend user" : "Suspend user"}
-                            >
-                              <Shield className="w-4 h-4" />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDelete(user.id)}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete user"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </motion.button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
+                          <button
+                            onClick={() => handleSuspend(user.id)}
+                            className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title={user.suspended ? "Unsuspend user" : "Suspend user"}
+                          >
+                            <Shield className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete user"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-end px-6 py-4 border-t border-gray-100 gap-1">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-30"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-30"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-1 mx-2">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = Math.max(1, Math.min(totalPages, i + Math.max(1, currentPage - 2)))
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-all
+                        ${currentPage === pageNum
+                          ? 'bg-indigo-500 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
+                })}
               </div>
 
-              {/* Pagination for Table */}
-              <div className="flex items-center justify-end px-6 py-4 border-t border-gray-100">
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-30"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-30"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+            </div>
+          </Card>
+        </motion.div>
+      )}
 
-                <div className="flex items-center gap-1">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronsLeft className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </motion.button>
+      {/* GRID VIEW */}
+      {viewMode === 'grid' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {paginatedUsers.map((user, index) => (
+              <motion.div
+                key={user.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                whileHover={{ y: -4 }}
+                className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-xl 
+                  transition-all duration-300 group"
+              >
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-pink-500 
+                  opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-2xl" />
 
-                  <div className="flex items-center gap-1 mx-2">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum
-                      if (totalPages <= 5) {
-                        pageNum = i + 1
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i
-                      } else {
-                        pageNum = currentPage - 2 + i
-                      }
-
-                      return (
-                        <motion.button
-                          key={pageNum}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-200
-                            ${currentPage === pageNum
-                              ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                              : 'text-gray-600 hover:bg-gray-100'}`}
-                        >
-                          {pageNum}
-                        </motion.button>
-                      )
-                    })}
-                    {totalPages > 5 && currentPage < totalPages - 2 && (
-                      <>
-                        <span className="text-gray-400 px-1">...</span>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setCurrentPage(totalPages)}
-                          className="w-8 h-8 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-all"
-                        >
-                          {totalPages}
-                        </motion.button>
-                      </>
-                    )}
+                <div className="flex flex-col items-center text-center">
+                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getAvatarColor(user.name)} 
+                    flex items-center justify-center text-white font-bold text-xl shadow-lg`}>
+                    {user.name.charAt(0).toUpperCase()}
                   </div>
+                  <h3 className="mt-3 font-semibold text-gray-900">{user.name}</h3>
+                  <p className="text-sm text-gray-500 truncate">{user.email}</p>
 
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronsRight className="w-4 h-4" />
-                  </motion.button>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* BOARD/GRID VIEW */}
-        {viewMode === 'grid' && (
-          <motion.div
-            key="grid"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {paginatedUsers.map((user, index) => (
-                <motion.div
-                  key={user.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className="group bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-xl 
-                    transition-all duration-300 relative overflow-hidden"
-                >
-                  {/* Gradient accent on hover */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 
-                    opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                  {/* Status indicator */}
-                  <div className="absolute top-4 right-4">
-                    {user.suspended ? (
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                    ) : (
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    )}
-                  </div>
-
-                  {/* Avatar */}
-                  <div className="flex flex-col items-center text-center mb-4">
-                    {user.profilePhoto ? (
-                      <img
-                        src={user.profilePhoto}
-                        alt={user.name}
-                        className="w-16 h-16 rounded-2xl object-cover shadow-lg
-                          group-hover:scale-110 group-hover:rotate-3 transition-all duration-300"
-                      />
-                    ) : (
-                      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getAvatarColor(user.name)} 
-                        flex items-center justify-center text-white font-bold text-xl shadow-lg
-                        group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <h3 className="mt-3 font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                      {user.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 truncate max-w-full">{user.email}</p>
-                  </div>
-
-                  {/* Info badges */}
-                  <div className="flex flex-wrap justify-center gap-2 mb-4">
+                  <div className="flex flex-wrap justify-center gap-2 mt-4">
                     <span className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
                       {user.role || 'N/A'}
                     </span>
-                    {user.verified ? (
+                    {user.verificationStatus === 'verified' && (
                       <span className="px-2.5 py-1 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-full flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" />
                         Verified
                       </span>
-                    ) : (
-                      <span className="px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-700 rounded-full flex items-center gap-1">
-                        <XCircle className="w-3 h-3" />
-                        Unverified
-                      </span>
                     )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex justify-center gap-2 pt-3 border-t border-gray-100">
-                    {!user.verified && (
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleVerify(user.id)}
-                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                        title="Verify user"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </motion.button>
-                    )}
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                      title="Edit user"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
+                  <div className="flex justify-center gap-2 mt-4 w-full">
+                    <button
                       onClick={() => handleSuspend(user.id)}
-                      className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                      title={user.suspended ? "Unsuspend user" : "Suspend user"}
+                      className="flex-1 p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors text-xs font-medium"
                     >
-                      <Shield className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
+                      {user.suspended ? 'Unsuspend' : 'Suspend'}
+                    </button>
+                    <button
                       onClick={() => handleDelete(user.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete user"
+                      className="flex-1 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </motion.button>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* LIST VIEW */}
+      {viewMode === 'list' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card padding="p-0">
+            <div className="divide-y divide-gray-50">
+              {paginatedUsers.map((user, index) => (
+                <motion.div
+                  key={user.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2, delay: index * 0.03 }}
+                  className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors group"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarColor(user.name)} 
+                      flex items-center justify-center text-white font-bold`}>
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">{user.name}</h3>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleSuspend(user.id)}
+                      className="px-3 py-1.5 text-sm font-medium text-amber-600 bg-amber-50 
+                        hover:bg-amber-100 rounded-lg transition-colors"
+                    >
+                      {user.suspended ? 'Unsuspend' : 'Suspend'}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(user.id)}
+                      className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 
+                        hover:bg-red-100 rounded-lg transition-colors"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </motion.div>
               ))}
             </div>
-
-            {/* Pagination for Grid */}
-            <Card padding="p-4" className="mt-6">
-              <div className="flex items-center justify-end">
-
-                <div className="flex items-center gap-1">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronsLeft className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </motion.button>
-
-                  <div className="flex items-center gap-1 mx-2">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum
-                      if (totalPages <= 5) {
-                        pageNum = i + 1
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i
-                      } else {
-                        pageNum = currentPage - 2 + i
-                      }
-
-                      return (
-                        <motion.button
-                          key={pageNum}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-200
-                            ${currentPage === pageNum
-                              ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                              : 'text-gray-600 hover:bg-gray-100'}`}
-                        >
-                          {pageNum}
-                        </motion.button>
-                      )
-                    })}
-                    {totalPages > 5 && currentPage < totalPages - 2 && (
-                      <>
-                        <span className="text-gray-400 px-1">...</span>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setCurrentPage(totalPages)}
-                          className="w-8 h-8 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-all"
-                        >
-                          {totalPages}
-                        </motion.button>
-                      </>
-                    )}
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronsRight className="w-4 h-4" />
-                  </motion.button>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* LIST VIEW */}
-        {viewMode === 'list' && (
-          <motion.div
-            key="list"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card padding="p-0" delay={2}>
-              <div className="divide-y divide-gray-50">
-                {paginatedUsers.map((user, index) => (
-                  <motion.div
-                    key={user.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2, delay: index * 0.03 }}
-                    className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-gray-50/80 hover:to-transparent 
-                      transition-all duration-200 group"
-                  >
-                    {/* Left side - User info */}
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      {user.profilePhoto ? (
-                        <img
-                          src={user.profilePhoto}
-                          alt={user.name}
-                          className="w-12 h-12 rounded-xl object-cover shadow-md
-                            group-hover:scale-105 group-hover:rotate-2 transition-all duration-300"
-                        />
-                      ) : (
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarColor(user.name)} 
-                          flex items-center justify-center text-white font-bold text-lg shadow-md
-                          group-hover:scale-105 group-hover:rotate-2 transition-all duration-300`}>
-                          {user.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                            {user.name}
-                          </h3>
-                          {user.suspended ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium 
-                              bg-red-50 text-red-700 rounded-full">
-                              Suspended
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium 
-                              bg-emerald-50 text-emerald-700 rounded-full">
-                              Active
-                            </span>
-                          )}
-                          {user.verified ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-amber-500" />
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                          <span>{user.email}</span>
-                          <span>•</span>
-                          <span>{user.role || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right side - Actions */}
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      {!user.verified && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => handleVerify(user.id)}
-                          className="px-3 py-1.5 text-sm font-medium text-emerald-600 bg-emerald-50 
-                            hover:bg-emerald-100 rounded-lg transition-colors flex items-center gap-1"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          Verify
-                        </motion.button>
-                      )}
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleSuspend(user.id)}
-                        className="px-3 py-1.5 text-sm font-medium text-amber-600 bg-amber-50 
-                          hover:bg-amber-100 rounded-lg transition-colors"
-                      >
-                        {user.suspended ? 'Unsuspend' : 'Suspend'}
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDelete(user.id)}
-                        className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 
-                          hover:bg-red-100 rounded-lg transition-colors"
-                      >
-                        Delete
-                      </motion.button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Pagination for List */}
-              <div className="flex items-center justify-end px-6 py-4 border-t border-gray-100">
-
-                <div className="flex items-center gap-1">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronsLeft className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </motion.button>
-
-                  <div className="flex items-center gap-1 mx-2">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum
-                      if (totalPages <= 5) {
-                        pageNum = i + 1
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i
-                      } else {
-                        pageNum = currentPage - 2 + i
-                      }
-
-                      return (
-                        <motion.button
-                          key={pageNum}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-200
-                            ${currentPage === pageNum
-                              ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                              : 'text-gray-600 hover:bg-gray-100'}`}
-                        >
-                          {pageNum}
-                        </motion.button>
-                      )
-                    })}
-                    {totalPages > 5 && currentPage < totalPages - 2 && (
-                      <>
-                        <span className="text-gray-400 px-1">...</span>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setCurrentPage(totalPages)}
-                          className="w-8 h-8 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-all"
-                        >
-                          {totalPages}
-                        </motion.button>
-                      </>
-                    )}
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors
-                      disabled:opacity-30 cursor-pointer"
-                  >
-                    <ChevronsRight className="w-4 h-4" />
-                  </motion.button>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Verification Modal */}
       <Modal
@@ -1148,57 +620,16 @@ export default function ManageUsers() {
                 <p className="text-lg font-bold text-gray-900">{userToVerify.name}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Student ID No.</label>
-                <p className="text-lg font-bold text-gray-900">
-                  {userToVerify.schoolId || '2024-001'}
-                </p>
+                <label className="text-sm font-medium text-gray-500">Email</label>
+                <p className="text-lg font-bold text-gray-900">{userToVerify.email}</p>
               </div>
             </div>
 
-            {/* ID Photo Section */}
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <label className="text-sm font-medium text-gray-500">ID Photo</label>
-                {userToVerify.verificationStatus === 'pending' && (
-                  <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
-                    New Upload
-                  </span>
-                )}
-              </div>
-              <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                <img
-                  src={storedID || "https://placehold.co/600x400"}
-                  alt="Student ID"
-                  className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
-                  onError={(e) => {
-                    e.target.onerror = null
-                    e.target.src = "https://placehold.co/600x400"
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Assessment Form Section */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <label className="text-sm font-medium text-gray-500">Assessment Form / COR</label>
-                {userToVerify.assessmentStatus === 'pending' && (
-                  <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
-                    New Upload
-                  </span>
-                )}
-              </div>
-              <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center p-8">
-                <img
-                  src={storedAssessment || "https://placehold.co/600x200?text=Assessment+Form+PDF"}
-                  alt="Assessment Form"
-                  className="max-w-full h-auto"
-                  onError={(e) => {
-                    e.target.onerror = null
-                    e.target.src = "https://placehold.co/600x200?text=Assessment+Form+PDF"
-                  }}
-                />
-              </div>
+              <label className="text-sm font-medium text-gray-500 block mb-2">Verification Status</label>
+              <p className="text-lg font-bold text-amber-700 bg-amber-50 p-3 rounded-lg">
+                Pending Review
+              </p>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
