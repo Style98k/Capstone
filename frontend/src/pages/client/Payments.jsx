@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { triggerNotification } from '../../utils/notificationManager'
-import { getTransactions, saveTransaction, updateTransaction, getGigs, getApplications } from '../../utils/localStorage'
+import { getTransactions, saveTransaction, updateTransaction, getGigs, getApplications, updateGig } from '../../utils/localStorage'
+import { calculateFee } from '../../utils/feeCalculator'
 import { mockUsers } from '../../data/mockUsers'
 import Card from '../../components/UI/Card'
 import Button from '../../components/UI/Button'
@@ -94,10 +95,10 @@ export default function Payments() {
   const handlePaymentSuccess = (paymentData) => {
     // Find existing pending transaction
     const existingTransaction = allTransactions.find(
-      t => t.gigId === paymentModal.gigId && 
-           t.fromUserId === user?.id && 
-           t.toUserId === paymentModal.studentId &&
-           t.status === 'pending'
+      t => t.gigId === paymentModal.gigId &&
+        t.fromUserId === user?.id &&
+        t.toUserId === paymentModal.studentId &&
+        t.status === 'pending'
     )
 
     let result
@@ -113,7 +114,9 @@ export default function Payments() {
         gigId: paymentModal.gigId,
         fromUserId: user?.id,
         toUserId: paymentModal.studentId,
-        amount: paymentModal.amount,
+        amount: paymentData.total, // Total amount paid by client
+        jobPrice: paymentData.amount, // Amount going to student
+        platformFee: paymentData.fee, // Fee kept by platform
         paymentMethod: paymentData.paymentMethod || 'GCash',
         status: 'completed'
       }
@@ -121,6 +124,14 @@ export default function Payments() {
     }
 
     if (result.success) {
+      // Update Gig Status and Fee Info
+      updateGig(paymentModal.gigId, {
+        status: 'completed',
+        platformFee: paymentData.fee,
+        paidAmount: paymentData.total
+      })
+
+      // Trigger notification to student
       // Trigger notification to student
       triggerNotification('student', 'Payment Received', `You received ₱${paymentModal.amount.toLocaleString()} for "${paymentModal.gigTitle}"!`, 'payment')
 
@@ -294,8 +305,8 @@ export default function Payments() {
                     <td className="py-3 px-4">
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded ${payment.status === 'completed'
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
                           }`}
                       >
                         {payment.status}

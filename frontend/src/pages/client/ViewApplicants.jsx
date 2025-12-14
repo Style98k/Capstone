@@ -371,30 +371,11 @@ export default function ViewApplicants() {
                                             size="sm"
                                             variant="outline"
                                             onClick={() => handleViewDetails(applicant)}
-                                            className="flex items-center gap-1.5 whitespace-nowrap"
+                                            className="flex items-center gap-1.5 whitespace-nowrap text-primary-600 border-primary-200 hover:bg-primary-50 dark:text-primary-400 dark:border-primary-900 dark:hover:bg-primary-900/20"
                                         >
                                             <Eye className="w-4 h-4" />
-                                            View
+                                            View Application
                                         </Button>
-                                        {applicant.status === 'pending' && (
-                                            <>
-                                                <Button
-                                                    size="sm"
-                                                    className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
-                                                    onClick={() => handleViewDetails(applicant)}
-                                                >
-                                                    Hire
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="text-red-600 hover:text-red-700 border-red-200 dark:border-red-800 whitespace-nowrap"
-                                                    onClick={() => handleViewDetails(applicant)}
-                                                >
-                                                    Reject
-                                                </Button>
-                                            </>
-                                        )}
                                     </div>
                                 </div>
                             </div>

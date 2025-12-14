@@ -75,7 +75,11 @@ export default function AdminDashboard() {
     const activeGigs = gigs.filter(g => g.status === 'open').length
     const totalApplications = mockApplications.length
     const totalTransactions = mockTransactions.length
-    const totalEarnings = 0 // Platform total earnings
+
+    // Calculate Platform Revenue from completed gigs in localStorage
+    const totalEarnings = gigs
+        .filter(g => g.status === 'completed' && g.platformFee)
+        .reduce((acc, gig) => acc + (gig.platformFee || 0), 0)
 
     const pendingVerifications = allUsers.filter(u => !u.verified && u.role !== 'admin').length
 
@@ -185,7 +189,7 @@ export default function AdminDashboard() {
                     delay={2}
                 />
                 <StatCard
-                    title="Total Earnings"
+                    title="Platform Revenue"
                     value={`₱${totalEarnings.toLocaleString()}`}
                     icon={Coins}
                     color="blue"

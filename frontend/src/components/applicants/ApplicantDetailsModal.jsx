@@ -283,7 +283,7 @@ export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHi
                                 variant="outline"
                                 onClick={onReject}
                                 disabled={isLoading}
-                                className="flex-1"
+                                className="flex-1 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-900/20"
                             >
                                 Reject
                             </Button>

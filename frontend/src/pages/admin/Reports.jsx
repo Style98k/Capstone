@@ -23,7 +23,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Download,
-  Calendar
+  Calendar,
+  Coins
 } from 'lucide-react'
 
 // Helper to get all users (mock + registered from both storage keys)
@@ -104,23 +105,55 @@ export default function Reports() {
     }
   }, [])
 
-  const gigData = [
-    { month: 'Jan', gigs: 5, sales: 3 },
-    { month: 'Feb', gigs: 8, sales: 5 },
-    { month: 'Mar', gigs: 12, sales: 8 },
-    { month: 'Apr', gigs: 15, sales: 12 },
-    { month: 'May', gigs: 18, sales: 10 },
-    { month: 'Jun', gigs: allGigs.length, sales: 14 },
-    { month: 'Jul', gigs: 25, sales: 20 },
-    { month: 'Aug', gigs: 28, sales: 24 },
-  ]
+  // Calculate real stats
+  const platformRevenue = allGigs
+    .filter(g => g.status === 'completed' && g.platformFee)
+    .reduce((acc, gig) => acc + (gig.platformFee || 0), 0)
 
+  const transactionVolume = allGigs
+    .filter(g => g.status === 'completed' && g.paidAmount)
+    .reduce((acc, gig) => acc + (gig.paidAmount || 0), 0)
+
+  // Process Application Data
   const applicationData = [
     { status: 'Pending', count: allApplications.filter(a => a.status === 'pending').length },
     { status: 'Hired', count: allApplications.filter(a => a.status === 'hired').length },
     { status: 'Completed', count: allApplications.filter(a => a.status === 'completed').length },
     { status: 'Rejected', count: allApplications.filter(a => a.status === 'rejected').length },
   ]
+
+  // Process Gig Data (Last 6 Months)
+  const getLast6Months = () => {
+    const months = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date()
+      d.setMonth(d.getMonth() - i)
+      months.push({
+        name: d.toLocaleString('default', { month: 'short' }),
+        monthIndex: d.getMonth(), // 0-11
+        year: d.getFullYear()
+      })
+    }
+    return months
+  }
+
+  const gigData = getLast6Months().map(monthInfo => {
+    // Filter gigs for this month and year
+    const monthlyGigs = allGigs.filter(g => {
+      const d = new Date(g.createdAt)
+      return d.getMonth() === monthInfo.monthIndex && d.getFullYear() === monthInfo.year
+    })
+
+    const monthlySales = monthlyGigs
+      .filter(g => g.status === 'completed' && g.paidAmount)
+      .reduce((sum, g) => sum + (g.paidAmount || 0), 0)
+
+    return {
+      month: monthInfo.name,
+      gigs: monthlyGigs.length,
+      sales: monthlySales
+    }
+  })
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -143,6 +176,55 @@ export default function Reports() {
     return null
   }
 
+  const handleExport = () => {
+    // Filter completed gigs
+    const completedGigs = allGigs.filter(g => g.status === 'completed')
+
+    if (completedGigs.length === 0) {
+      alert('No completed transactions to export.')
+      return
+    }
+
+    // Prepare CSV content
+    const headers = ['Date,Job ID,Title,Client,Student,Amount,Platform Fee']
+
+    const rows = completedGigs.map(gig => {
+      const client = allUsers.find(u => u.id === gig.ownerId)?.name || 'Unknown Client'
+
+      // Find the hired/completed student for this gig
+      const application = allApplications.find(app => app.gigId === gig.id && app.status === 'completed')
+      const student = allUsers.find(u => u.id === application?.userId)?.name || 'Unknown Student'
+
+      const date = new Date(gig.createdAt).toLocaleDateString()
+      const amount = gig.paidAmount || 0
+      const fee = gig.platformFee || 0
+
+      // Helper to escape CSV fields
+      const escape = (text) => `"${String(text).replace(/"/g, '""')}"`
+
+      return [
+        escape(date),
+        escape(gig.id),
+        escape(gig.title),
+        escape(client),
+        escape(student),
+        amount,
+        fee
+      ].join(',')
+    })
+
+    const csvContent = [headers, ...rows].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', 'QuickGig_Financial_Report.csv')
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="space-y-8 animate-slide-up-fade">
       {/* Header */}
@@ -152,7 +234,10 @@ export default function Reports() {
           <p className="text-gray-500 mt-1 font-medium">Platform statistics and insights</p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px]">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px]"
+          >
             <Download size={16} />
             Export
           </button>
@@ -181,9 +266,10 @@ export default function Reports() {
           trend="up"
           trendValue="13%"
         />
+
         <StatCard
-          title="Total Revenue"
-          value={`₱${mockTransactions.reduce((acc, t) => acc + t.amount, 0).toLocaleString()}`}
+          title="Total Transaction Volume"
+          value={`₱${transactionVolume.toLocaleString()}`}
           icon={CreditCard}
           color="amber"
           trend="up"
@@ -313,7 +399,7 @@ export default function Reports() {
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Applicants</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Pay</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Gig Price</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">

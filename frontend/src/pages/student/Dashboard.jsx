@@ -62,7 +62,34 @@ export default function StudentDashboard() {
     .reduce((sum, t) => sum + t.amount, 0)
 
   const recentGigs = allGigs.filter(g => g.status === 'open').slice(0, 3)
-  const myNotifications = mockNotifications.filter(n => n.userId === user?.id).slice(0, 5)
+  // Fetch real notifications from localStorage
+  const [realNotifications, setRealNotifications] = useState([])
+
+  useEffect(() => {
+    const fetchNotifications = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('notifications_student') || '[]')
+        // Sort by date (newest first) and take top 3
+        const sorted = stored.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 3)
+        setRealNotifications(sorted)
+      } catch (error) {
+        console.error('Error fetching notifications:', error)
+        setRealNotifications([])
+      }
+    }
+
+    fetchNotifications()
+    window.addEventListener('storage', fetchNotifications)
+    const interval = setInterval(fetchNotifications, 2000)
+
+    return () => {
+      window.removeEventListener('storage', fetchNotifications)
+      clearInterval(interval)
+    }
+  }, [])
+
+
+  const myNotifications = realNotifications
 
   // Rating: Show '—' if no completed gigs (no ratings to show)
   const displayRating = completedApps > 0 ? (user?.rating || '—') : '—'
