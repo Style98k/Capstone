@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { getNotifications, markNotificationAsRead } from '../../utils/notificationManager'
 
-export default function Navbar() {
+export default function Navbar({ onMenuClick }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -24,7 +24,7 @@ export default function Navbar() {
       setNotifications([]);
       return;
     }
-    
+
     // Load notifications for current user's role
     const role = user.role;
     const notifications = getNotifications(role);
@@ -76,7 +76,7 @@ export default function Navbar() {
 
   const getNavigationPath = (notification) => {
     const type = notification.type;
-    
+
     if (user?.role === 'student') {
       switch (type) {
         case 'payment':
@@ -116,20 +116,20 @@ export default function Navbar() {
           return null;
       }
     }
-    
+
     return null;
   };
 
   const handleNotificationClick = (notification) => {
     // Mark as read using the notification manager
     markNotificationAsRead(user?.role, notification.id);
-    
+
     // Navigate to the appropriate page
     const path = getNavigationPath(notification);
     if (path) {
       navigate(path);
     }
-    
+
     setNotificationsOpen(false);
   };
 
@@ -221,7 +221,7 @@ export default function Navbar() {
 
                   {/* Notification Dropdown */}
                   {notificationsOpen && (
-                    <div 
+                    <div
                       className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 shadow-xl rounded-lg z-50 border border-gray-100 dark:border-gray-700 overflow-hidden"
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -229,7 +229,7 @@ export default function Navbar() {
                       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-sky-50 to-indigo-50 dark:from-gray-750 dark:to-gray-700">
                         <h3 className="font-semibold text-gray-900 dark:text-white text-base">Notifications</h3>
                       </div>
-                      
+
                       {/* Content */}
                       <div className="max-h-96 overflow-y-auto">
                         {notifications.length === 0 ? (
@@ -242,9 +242,8 @@ export default function Navbar() {
                               <div
                                 key={notification.id}
                                 onClick={() => handleNotificationClick(notification)}
-                                className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer transition-colors flex items-start gap-3 group ${
-                                  notification.isUnread ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                                }`}
+                                className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer transition-colors flex items-start gap-3 group ${notification.isUnread ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                  }`}
                               >
                                 {/* Unread indicator */}
                                 {notification.isUnread && (
@@ -252,7 +251,7 @@ export default function Navbar() {
                                     <div className="h-2.5 w-2.5 bg-blue-500 rounded-full"></div>
                                   </div>
                                 )}
-                                
+
                                 {/* Content */}
                                 <div className="flex-1 min-w-0">
                                   <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">
@@ -358,7 +357,13 @@ export default function Navbar() {
               hover:bg-sky-50 dark:hover:bg-sky-900/20 
               hover:text-sky-600 dark:hover:text-sky-400
               transition-all duration-300 hover:scale-105"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={() => {
+              if (onMenuClick) {
+                onMenuClick()
+              } else {
+                setMobileMenuOpen(!mobileMenuOpen)
+              }
+            }}
           >
             {mobileMenuOpen ? (
               <X className="w-6 h-6 transition-transform duration-300" />
@@ -446,4 +451,3 @@ export default function Navbar() {
     </nav>
   )
 }
-

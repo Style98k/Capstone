@@ -86,11 +86,21 @@ function ProtectedRoute({ children, requiredRole = null }) {
 
 // Layout Component
 function Layout({ children, showSidebar = false, sidebarItems = [] }) {
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <Navbar />
+      <Navbar
+        onMenuClick={showSidebar ? () => setMobileSidebarOpen(!mobileSidebarOpen) : undefined}
+      />
       <div className="flex-1 flex pt-16">
-        {showSidebar && <Sidebar items={sidebarItems} />}
+        {showSidebar && (
+          <Sidebar
+            items={sidebarItems}
+            mobileOpen={mobileSidebarOpen}
+            setMobileOpen={setMobileSidebarOpen}
+          />
+        )}
         {/* Content area - leaves room for collapsed sidebar, centered in remaining space */}
         <main
           className={`flex-1 p-6 transition-all duration-300 ease-out ${showSidebar
