@@ -169,30 +169,32 @@ export default function AdminDashboard() {
                     title="Total Users"
                     value={totalUsers}
                     icon={Users}
-                    color="emerald"
-                    trend="up"
-                    trendValue="5%"
+                    color="minimalEmerald"
+                    showLink={false}
                     delay={0}
                 />
                 <StatCard
                     title="Active Gigs"
                     value={activeGigs}
                     icon={Briefcase}
-                    color="violet"
+                    color="minimalIndigo"
+                    showLink={false}
                     delay={1}
                 />
                 <StatCard
                     title="Total Applications"
                     value={totalApplications}
                     icon={FileText}
-                    color="amber"
+                    color="minimalOrange"
+                    showLink={false}
                     delay={2}
                 />
                 <StatCard
                     title="Platform Revenue"
                     value={`₱${totalEarnings.toLocaleString()}`}
                     icon={Coins}
-                    color="blue"
+                    color="minimalBlue"
+                    showLink={false}
                     delay={3}
                 />
             </motion.div>
