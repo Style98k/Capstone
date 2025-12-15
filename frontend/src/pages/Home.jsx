@@ -201,7 +201,7 @@ export default function Home() {
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Users className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                   <span className="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                    Active Students
+                    Registered Students
                   </span>
                 </div>
                 <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">{stats.activeStudents}</div>
