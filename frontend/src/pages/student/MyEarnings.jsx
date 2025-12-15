@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
-import { getTransactions, getGigs } from '../../utils/localStorage'
+import { getTransactions, getGigs, getApplications } from '../../utils/localStorage'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
 import { Coins, TrendingUp, Clock, CheckCircle } from 'lucide-react'
@@ -21,12 +21,14 @@ export default function MyEarnings() {
   const { user } = useAuth()
   const [allTransactions, setAllTransactions] = useState([])
   const [allGigs, setAllGigs] = useState([])
+  const [allApplications, setAllApplications] = useState([])
 
   // Load data from localStorage and update periodically
   useEffect(() => {
     const updateData = () => {
       setAllTransactions(getTransactions())
       setAllGigs(getGigs())
+      setAllApplications(getApplications())
     }
 
     updateData()
@@ -54,15 +56,60 @@ export default function MyEarnings() {
 
   const completedCount = myTransactions.filter(t => t.status === 'completed').length
 
-  // Chart data
-  const monthlyData = [
-    { month: 'Jan', earnings: 0 },
-    { month: 'Feb', earnings: 0 },
-    { month: 'Mar', earnings: 0 },
-    { month: 'Apr', earnings: 0 },
-    { month: 'May', earnings: 0 },
-    { month: 'Jun', earnings: totalEarnings },
-  ]
+  // Dynamic Chart Data Generation
+  const monthlyData = useMemo(() => {
+    const months = []
+    const today = new Date()
+
+    // Generate last 6 months labels
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+      months.push({
+        name: d.toLocaleString('default', { month: 'short' }),
+        monthIndex: d.getMonth(),
+        year: d.getFullYear(),
+        earnings: 0,
+        count: 0
+      })
+    }
+
+    // Filter relevant completed gigs and sum earnings
+    const completedUserGigs = allGigs.filter(gig => {
+      if (gig.status !== 'completed') return false
+
+      // Check if user is the student for this gig
+      // Priority 1: Check direct studentId on gig (if architecture supports it)
+      if (gig.studentId === user?.id) return true
+
+      // Priority 2: Check applications to link user to gig
+      // This ensures we capture gigs even if studentId isn't on the gig object
+      const app = allApplications.find(a => a.gigId === gig.id && a.userId === user?.id)
+      return app && app.status === 'completed'
+    })
+
+    // Map earnings to months
+    completedUserGigs.forEach(gig => {
+      // Determine completion date
+      let date = new Date(gig.createdAt) // Fallback
+
+      // Try to find more accurate date from application
+      const app = allApplications.find(a => a.gigId === gig.id && a.userId === user?.id)
+      if (app && app.updatedAt) {
+        date = new Date(app.updatedAt)
+      }
+
+      const monthEntry = months.find(m =>
+        m.monthIndex === date.getMonth() && m.year === date.getFullYear()
+      )
+
+      if (monthEntry) {
+        monthEntry.earnings += (gig.pay || 0)
+        monthEntry.count += 1
+      }
+    })
+
+    return months.map(({ name, earnings, count }) => ({ month: name, earnings, count }))
+  }, [allGigs, allApplications, user])
 
   return (
     <div className="space-y-6">
@@ -81,16 +128,25 @@ export default function MyEarnings() {
           icon={Coins}
           trend="up"
           trendValue="15%"
+          color="emerald"
+          showLink={false}
+          delay={0}
         />
         <StatCard
           title="Pending Payments"
           value={`₱${pendingEarnings.toLocaleString()}`}
           icon={Clock}
+          color="amber"
+          showLink={false}
+          delay={1}
         />
         <StatCard
           title="Completed Gigs"
           value={completedCount}
           icon={CheckCircle}
+          color="blue"
+          showLink={false}
+          delay={2}
         />
         <StatCard
           title="Average per Gig"
@@ -100,6 +156,9 @@ export default function MyEarnings() {
               : '₱0'
           }
           icon={TrendingUp}
+          color="violet"
+          showLink={false}
+          delay={3}
         />
       </div>
 
@@ -129,16 +188,16 @@ export default function MyEarnings() {
 
         <Card>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Monthly Comparison
+            Gigs Completed
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis />
+              <YAxis label={{ value: 'Count', angle: -90, position: 'insideLeft' }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="earnings" fill="#3b82f6" name="Earnings (₱)" />
+              <Bar dataKey="count" fill="#8b5cf6" name="Jobs Done" />
             </BarChart>
           </ResponsiveContainer>
         </Card>

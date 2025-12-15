@@ -287,7 +287,7 @@ export default function MyApplications() {
 
 function SummaryCard({ label, value, gradient, icon: Icon }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg hover:scale-[1.02] cursor-pointer">
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-10`} />
       <div className="relative p-4 flex items-center justify-between gap-3">
         <div>
@@ -295,7 +295,7 @@ function SummaryCard({ label, value, gradient, icon: Icon }) {
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
         </div>
         {Icon && (
-          <div className="h-10 w-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-200">
+          <div className="h-10 w-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-200 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
             <Icon className="w-5 h-5" />
           </div>
         )}

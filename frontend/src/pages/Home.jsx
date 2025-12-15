@@ -310,7 +310,7 @@ export default function Home() {
                 Verified Students
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                All students pass school ID verification so clients can hire with confidence.
+                All students pass school ID verification and Asessment Form so clients can hire with confidence.
               </p>
             </div>
             <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
@@ -321,7 +321,7 @@ export default function Home() {
                 Flexible Opportunities
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Short tasks, weekend work, or ongoing helpstudents choose what fits their schedule.
+                Short tasks, weekend work, or ongoing help students choose what fits their schedule.
               </p>
             </div>
             <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
@@ -364,7 +364,7 @@ export default function Home() {
               </div>
               <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Create Account</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Sign up as a student or client. Students quickly verify with their school ID.
+                Sign up as a student or client. Students quickly verify with their school ID and Assessment Form.
               </p>
             </div>
             <div className="text-center transition-transform duration-300 hover:-translate-y-1">
