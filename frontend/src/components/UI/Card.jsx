@@ -1,6 +1,7 @@
+import { forwardRef } from 'react'
 import { motion } from 'framer-motion'
 
-export default function Card({
+const Card = forwardRef(({
   children,
   className = '',
   hover = true,
@@ -9,7 +10,7 @@ export default function Card({
   gradient = false,
   delay = 0,
   ...props
-}) {
+}, ref) => {
   const baseClasses = `
     relative overflow-hidden rounded-2xl 
     ${padding}
@@ -26,6 +27,7 @@ export default function Card({
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
@@ -56,5 +58,7 @@ export default function Card({
       </div>
     </motion.div>
   )
-}
+})
+
+export default Card
 

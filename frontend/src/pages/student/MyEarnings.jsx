@@ -54,7 +54,35 @@ export default function MyEarnings() {
     .filter(t => t.status === 'pending')
     .reduce((sum, t) => sum + t.amount, 0)
 
-  const completedCount = myTransactions.filter(t => t.status === 'completed').length
+  // Calculate Gigs Logic
+  const workDoneGigs = useMemo(() => {
+    // Filter relevant gigs where user is the student
+    const userGigs = allGigs.filter(gig => {
+      if (gig.studentId === user?.id) return true
+      const app = allApplications.find(a => a.gigId === gig.id && a.userId === user?.id)
+      return app && (app.status === 'hired' || app.status === 'completed')
+    })
+
+    // Return gigs that are either completed or pending/awaiting_payment
+    return userGigs.filter(g =>
+      g.status === 'completed' ||
+      g.status === 'pending' ||
+      g.status === 'awaiting_payment'
+    )
+  }, [allGigs, allApplications, user])
+
+  const paidGigs = useMemo(() => {
+    // Filter relevant gigs where user is the student and status is completed
+    const userGigs = allGigs.filter(gig => {
+      if (gig.studentId === user?.id) return true
+      const app = allApplications.find(a => a.gigId === gig.id && a.userId === user?.id)
+      return app && (app.status === 'hired' || app.status === 'completed')
+    })
+
+    return userGigs.filter(g => g.status === 'completed')
+  }, [allGigs, allApplications, user])
+
+  const completedCount = workDoneGigs.length
 
   // Dynamic Chart Data Generation
   const monthlyData = useMemo(() => {
@@ -73,26 +101,24 @@ export default function MyEarnings() {
       })
     }
 
-    // Filter relevant completed gigs and sum earnings
-    const completedUserGigs = allGigs.filter(gig => {
-      if (gig.status !== 'completed') return false
+    // 1. Calculate Earnings (Line Chart) - strictly from COMPLETED transactions (Money Received)
+    // We ignore gigs here and look at actual money flow.
+    const completedTransactions = myTransactions.filter(t => t.status === 'completed')
 
-      // Check if user is the student for this gig
-      // Priority 1: Check direct studentId on gig (if architecture supports it)
-      if (gig.studentId === user?.id) return true
+    completedTransactions.forEach(trans => {
+      const date = new Date(trans.createdAt)
+      const monthEntry = months.find(m =>
+        m.monthIndex === date.getMonth() && m.year === date.getFullYear()
+      )
 
-      // Priority 2: Check applications to link user to gig
-      // This ensures we capture gigs even if studentId isn't on the gig object
-      const app = allApplications.find(a => a.gigId === gig.id && a.userId === user?.id)
-      return app && app.status === 'completed'
+      if (monthEntry) {
+        monthEntry.earnings += trans.amount
+      }
     })
 
-    // Map earnings to months
-    completedUserGigs.forEach(gig => {
-      // Determine completion date
-      let date = new Date(gig.createdAt) // Fallback
-
-      // Try to find more accurate date from application
+    // 2. Calculate Counts (Bar Chart) - from Work Done Gigs
+    workDoneGigs.forEach(gig => {
+      let date = new Date(gig.createdAt)
       const app = allApplications.find(a => a.gigId === gig.id && a.userId === user?.id)
       if (app && app.updatedAt) {
         date = new Date(app.updatedAt)
@@ -103,13 +129,12 @@ export default function MyEarnings() {
       )
 
       if (monthEntry) {
-        monthEntry.earnings += (gig.pay || 0)
         monthEntry.count += 1
       }
     })
 
     return months.map(({ name, earnings, count }) => ({ month: name, earnings, count }))
-  }, [allGigs, allApplications, user])
+  }, [myTransactions, workDoneGigs, allApplications, user]) // Updated dependencies
 
   return (
     <div className="space-y-6">
