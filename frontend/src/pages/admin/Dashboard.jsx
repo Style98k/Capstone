@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { mockUsers } from '../../data/mockUsers'
-import { mockApplications } from '../../data/mockApplications'
 import { mockTransactions } from '../../data/mockTransactions'
-import { getGigs } from '../../utils/localStorage'
+import { getGigs, getApplications } from '../../utils/localStorage'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
 import { motion } from 'framer-motion'
@@ -49,12 +48,14 @@ const getAllUsers = () => {
 export default function AdminDashboard() {
     const [allUsers, setAllUsers] = useState(getAllUsers())
     const [gigs, setGigs] = useState(getGigs())
+    const [applications, setApplications] = useState(getApplications())
 
     // Update data periodically to catch new registrations
     useEffect(() => {
         const updateData = () => {
             setAllUsers(getAllUsers())
             setGigs(getGigs())
+            setApplications(getApplications())
         }
 
         // Listen for storage changes
@@ -73,7 +74,7 @@ export default function AdminDashboard() {
     const students = allUsers.filter(u => u.role === 'student').length
     const clients = allUsers.filter(u => u.role === 'client').length
     const activeGigs = gigs.filter(g => g.status === 'open').length
-    const totalApplications = mockApplications.length
+    const totalApplications = applications.length
     const totalTransactions = mockTransactions.length
 
     // Calculate Platform Revenue from completed gigs in localStorage
