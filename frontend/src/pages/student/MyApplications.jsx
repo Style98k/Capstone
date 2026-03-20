@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { getApplications, getGigs } from '../../utils/localStorage'
+import { saveRating, hasRated } from '../../utils/ratingUtils'
 import Card from '../../components/UI/Card'
 import Select from '../../components/UI/Select'
+import Modal from '../../components/UI/Modal'
 import {
   Calendar,
   MapPin,
@@ -16,7 +18,10 @@ import {
   CheckCircle,
   Briefcase,
   Hourglass,
-  XCircle
+  XCircle,
+  Star,
+  Send,
+  Loader
 } from 'lucide-react'
 
 export default function MyApplications() {
@@ -24,6 +29,14 @@ export default function MyApplications() {
   const [statusFilter, setStatusFilter] = useState('')
   const [allApplications, setAllApplications] = useState([])
   const [allGigs, setAllGigs] = useState([])
+
+  // Rating modal state
+  const [ratingModal, setRatingModal] = useState(null)
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState('')
+  const [hoveredStar, setHoveredStar] = useState(0)
+  const [submittingRating, setSubmittingRating] = useState(false)
+  const [ratedGigs, setRatedGigs] = useState({}) // Track which gigs have been rated
 
   // Load data from localStorage and update periodically
   useEffect(() => {
@@ -42,6 +55,68 @@ export default function MyApplications() {
       clearInterval(interval)
     }
   }, [])
+
+  // Check which gigs have been rated by the student
+  useEffect(() => {
+    if (!user?.id) return
+    const rated = {}
+    allApplications
+      .filter(app => app.userId === user.id && app.status === 'completed')
+      .forEach(app => {
+        const gig = allGigs.find(g => g.id === app.gigId)
+        if (gig) {
+          rated[app.gigId] = hasRated(user.id, gig.ownerId, app.gigId)
+        }
+      })
+    setRatedGigs(rated)
+  }, [allApplications, allGigs, user?.id])
+
+  // Handle opening rating modal
+  const handleOpenRatingModal = (gig, clientId, clientName) => {
+    setRatingModal({
+      gigId: gig.id,
+      gigTitle: gig.title,
+      clientId,
+      clientName
+    })
+    setRating(5)
+    setComment('')
+    setHoveredStar(0)
+  }
+
+  // Handle submitting rating
+  const handleSubmitRating = async () => {
+    setSubmittingRating(true)
+
+    await saveRating({
+      raterId: user?.id,
+      raterName: user?.name,
+      raterRole: 'student',
+      targetId: ratingModal.clientId,
+      gigId: ratingModal.gigId,
+      gigTitle: ratingModal.gigTitle,
+      rating,
+      comment
+    })
+
+    // Update rated gigs state
+    setRatedGigs(prev => ({ ...prev, [ratingModal.gigId]: true }))
+
+    await new Promise(resolve => setTimeout(resolve, 500))
+    setSubmittingRating(false)
+    setRatingModal(null)
+  }
+
+  // Get client name from gig
+  const getClientName = (gig) => {
+    try {
+      const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+      const client = registeredUsers.find(u => u.id === gig.ownerId)
+      return client?.name || gig.ownerName || 'Client'
+    } catch {
+      return gig.ownerName || 'Client'
+    }
+  }
 
   const myApplications = allApplications
     .filter(app => app.userId === user?.id)
@@ -254,6 +329,21 @@ export default function MyApplications() {
                             Message client
                           </Link>
                         )}
+                        {app.status === 'completed' && !ratedGigs[gig.id] && (
+                          <button
+                            onClick={() => handleOpenRatingModal(gig, gig.ownerId, getClientName(gig))}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 text-white px-4 py-2 text-sm font-semibold shadow-md shadow-amber-500/20 hover:bg-amber-600 transition-colors"
+                          >
+                            <Star className="w-4 h-4" />
+                            Rate Client
+                          </button>
+                        )}
+                        {app.status === 'completed' && ratedGigs[gig.id] && (
+                          <span className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-4 py-2 text-sm font-semibold">
+                            <CheckCircle className="w-4 h-4" />
+                            Rated
+                          </span>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -281,6 +371,101 @@ export default function MyApplications() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Rate Client Modal */}
+      <Modal
+        isOpen={!!ratingModal}
+        onClose={() => setRatingModal(null)}
+        title="Rate Your Client"
+      >
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="text-center">
+            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Star className="w-8 h-8 text-amber-500" />
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              How was your experience working with <span className="font-semibold text-gray-700 dark:text-gray-200">{ratingModal?.clientName}</span>?
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              For: {ratingModal?.gigTitle}
+            </p>
+          </div>
+
+          {/* Star Rating */}
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tap to rate</p>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoveredStar(star)}
+                  onMouseLeave={() => setHoveredStar(0)}
+                  className="p-1 transition-transform hover:scale-110"
+                >
+                  <Star
+                    className={`w-10 h-10 transition-colors ${
+                      star <= (hoveredStar || rating)
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-gray-300 dark:text-gray-600'
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {rating === 1 && 'Poor'}
+              {rating === 2 && 'Fair'}
+              {rating === 3 && 'Good'}
+              {rating === 4 && 'Very Good'}
+              {rating === 5 && 'Excellent'}
+            </p>
+          </div>
+
+          {/* Comment */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Leave a comment (optional)
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Share your experience working with this client..."
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              onClick={() => setRatingModal(null)}
+              className="px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmitRating}
+              disabled={submittingRating}
+              className="px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submittingRating ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Submit Review
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

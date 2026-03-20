@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { getGigs, getApplications } from '../../utils/localStorage'
+import { getUserRating } from '../../utils/ratingUtils'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
 import CommentRating from '../../components/Shared/CommentRating'
@@ -16,6 +17,7 @@ export default function ClientProfile() {
     const [loading, setLoading] = useState(false)
     const [notification, setNotification] = useState(null)
     const [stats, setStats] = useState({ jobsPosted: 0, studentsHired: 0 })
+    const [ratingData, setRatingData] = useState({ average: 0, count: 0, reviews: [] })
     const fileInputRef = useRef(null)
 
     const [formData, setFormData] = useState({
@@ -37,6 +39,12 @@ export default function ClientProfile() {
             ).length
 
             setStats({ jobsPosted, studentsHired })
+
+            // Update rating data
+            if (user?.id) {
+                const ratings = getUserRating(user.id)
+                setRatingData(ratings)
+            }
         }
 
         updateStats()
@@ -368,11 +376,13 @@ export default function ClientProfile() {
                             <div className="p-2 rounded-lg bg-amber-500 text-white shadow-lg shadow-amber-500/30">
                                 <Star className="w-5 h-5" />
                             </div>
-                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Rating</span>
+                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                {ratingData.count > 0 ? `${ratingData.count} Reviews` : 'No ratings yet'}
+                            </span>
                         </div>
                         <p className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            {user?.rating || 'New'}
-                            {user?.rating && <Star className="w-5 h-5 text-amber-500 fill-amber-500" />}
+                            {ratingData.count > 0 ? ratingData.average : 'New'}
+                            {ratingData.count > 0 && <Star className="w-5 h-5 text-amber-500 fill-amber-500" />}
                         </p>
                     </motion.div>
                 </div>

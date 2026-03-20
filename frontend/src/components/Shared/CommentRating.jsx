@@ -1,22 +1,42 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Star, MessageSquare, Calendar } from 'lucide-react'
 import Card from '../UI/Card'
-import { mockRatings } from '../../data/mockRatings'
-import { mockUsers } from '../../data/mockUsers'
-import { mockGigs } from '../../data/mockGigs'
+import { getUserRating } from '../../utils/ratingUtils'
 
 export default function CommentRating({ userId, userRole = 'student' }) {
   const [sortBy, setSortBy] = useState('newest') // newest, oldest, highest, lowest
+  const [ratingData, setRatingData] = useState({ average: 0, count: 0, reviews: [] })
 
-  // Get all ratings for this user
-  const userRatings = mockRatings
-    .filter(rating => rating.targetUserId === userId)
-    .map(rating => ({
-      ...rating,
-      rater: mockUsers.find(u => u.id === rating.raterId),
-      gig: mockGigs.find(g => g.id === rating.gigId),
-    }))
-    .filter(rating => rating.rater) // Only show ratings where we have rater info
+  // Load ratings from localStorage
+  useEffect(() => {
+    const loadRatings = () => {
+      if (userId) {
+        const data = getUserRating(userId)
+        setRatingData(data)
+      }
+    }
+
+    loadRatings()
+
+    // Listen for storage changes
+    window.addEventListener('storage', loadRatings)
+    const interval = setInterval(loadRatings, 2000)
+
+    return () => {
+      window.removeEventListener('storage', loadRatings)
+      clearInterval(interval)
+    }
+  }, [userId])
+
+  // Get all ratings for this user with rater info
+  const userRatings = ratingData.reviews.map(rating => ({
+    ...rating,
+    stars: rating.rating,
+    createdAt: rating.date,
+    review: rating.comment,
+    rater: { name: rating.raterName || 'Anonymous' },
+    gig: { title: rating.gigTitle || 'Gig' }
+  }))
 
   // Calculate average rating
   const averageRating = userRatings.length > 0

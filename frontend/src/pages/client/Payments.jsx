@@ -132,13 +132,13 @@ export default function Payments() {
       })
 
       // Trigger notification to student
-      // Trigger notification to student
       triggerNotification('student', 'Payment Received', `You received ₱${paymentModal.amount.toLocaleString()} for "${paymentModal.gigTitle}"!`, 'payment')
 
-      alert('Payment processed successfully!')
-      setPaymentModal(null)
+      // Don't close modal here - PaymentModal will handle transition to rating step
+      // and close itself after rating is submitted or skipped
     } else {
       alert('Payment failed. Please try again.')
+      setPaymentModal(null)
     }
   }
 
@@ -338,6 +338,9 @@ export default function Payments() {
           amount={paymentModal.amount}
           gigTitle={paymentModal.gigTitle}
           studentName={paymentModal.studentName}
+          studentId={paymentModal.studentId}
+          gigId={paymentModal.gigId}
+          currentUser={user}
           onSuccess={handlePaymentSuccess}
         />
       )}

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { getApplications } from '../../utils/localStorage'
+import { getUserRating } from '../../utils/ratingUtils'
 import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Save, Camera, Star, Briefcase, TrendingUp,
@@ -12,6 +13,7 @@ import Modal from '../../components/UI/Modal'
 import Input from '../../components/UI/Input'
 import Textarea from '../../components/UI/Textarea'
 import Button from '../../components/UI/Button'
+import CommentRating from '../../components/Shared/CommentRating'
 
 export default function ProfileManagement() {
     const { user, updateUser } = useAuth()
@@ -38,19 +40,27 @@ export default function ProfileManagement() {
     const [idFile, setIdFile] = useState(null)
     const [assessmentFile, setAssessmentFile] = useState(null)
     const [notification, setNotification] = useState(null)
+    const [ratingData, setRatingData] = useState({ average: 0, count: 0, reviews: [] })
 
     // Sync with Admin and Check Notifications
     useEffect(() => {
-        // Fetch completed jobs count
-        const updateCompletedJobs = () => {
+        // Fetch completed jobs count and ratings
+        const updateData = () => {
             const apps = getApplications()
             const completed = apps.filter(app => app.userId === user?.id && app.status === 'completed').length
             setCompletedJobs(completed)
+
+            // Update rating data
+            if (user?.id) {
+                const ratings = getUserRating(user.id)
+                setRatingData(ratings)
+            }
         }
-        updateCompletedJobs()
+        updateData()
 
         // Update periodically
-        const interval = setInterval(updateCompletedJobs, 2000)
+        window.addEventListener('storage', updateData)
+        const interval = setInterval(updateData, 2000)
 
         // Sync Status (double check on mount)
         const storedStatus = localStorage.getItem('verificationStatus')
@@ -84,12 +94,16 @@ export default function ProfileManagement() {
                 setNotification(null)
             }, 5000)
             return () => {
+                window.removeEventListener('storage', updateData)
                 clearInterval(interval)
                 clearTimeout(timer)
             }
         }
 
-        return () => clearInterval(interval)
+        return () => {
+            window.removeEventListener('storage', updateData)
+            clearInterval(interval)
+        }
     }, [user?.id])
 
     const [formData, setFormData] = useState({
@@ -417,9 +431,11 @@ export default function ProfileManagement() {
                             </div>
                             <div className="text-center">
                                 <span className="block text-2xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-1">
-                                    {completedJobs > 0 ? (user?.rating || '—') : 'New'} <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                    {ratingData.count > 0 ? ratingData.average : 'New'} <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                                 </span>
-                                <span className="text-xs text-gray-500 uppercase tracking-wide">Rating</span>
+                                <span className="text-xs text-gray-500 uppercase tracking-wide">
+                                    {ratingData.count > 0 ? `${ratingData.count} Reviews` : 'No ratings yet'}
+                                </span>
                             </div>
                         </div>
                     </Card>
@@ -634,6 +650,9 @@ export default function ProfileManagement() {
                     </Card>
                 </div>
             </div>
+
+            {/* Ratings & Reviews Section */}
+            <CommentRating userId={user?.id} userRole="student" />
 
             <Modal
                 isOpen={isPhoneModalOpen}
