@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { User, Mail, Phone, Lock, GraduationCap, Briefcase, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Phone, Lock, GraduationCap, Briefcase, Eye, EyeOff, Calendar } from 'lucide-react'
 import { useAuth } from '../../hooks/useLocalAuth'
 import Button from '../../components/UI/Button'
 import Input from '../../components/UI/Input'
@@ -15,6 +15,7 @@ export default function Register() {
     name: '',
     email: '',
     phone: '',
+    birthday: '',
     password: '',
     confirmPassword: '',
     role: roleParam,
@@ -40,6 +41,11 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+
+    if (!formData.birthday) {
+      setError('Please enter your birthday')
+      return
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match')
@@ -168,6 +174,17 @@ export default function Register() {
                 onChange={handleChange}
                 placeholder="+63 912 345 6789"
                 leftIcon={Phone}
+              />
+
+              <Input
+                label="Birthday *"
+                type="date"
+                name="birthday"
+                id="birthday"
+                value={formData.birthday}
+                onChange={handleChange}
+                required
+                leftIcon={Calendar}
               />
 
               {formData.role === 'student' && (
