@@ -119,6 +119,19 @@ export default function GigDetails() {
           </p>
         </div>
 
+        {gig.imageUrl && (
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+              Reference Image
+            </h2>
+            <img
+              src={gig.imageUrl}
+              alt="Reference for this gig"
+              className="w-full max-h-64 object-cover rounded-lg mt-4 mb-4 shadow-sm border border-gray-200 dark:border-neutral-800"
+            />
+          </div>
+        )}
+
         {gig.requirements && gig.requirements.length > 0 && (
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">

@@ -19,6 +19,8 @@ import {
   Sparkles,
   Send,
   XCircle,
+  ImagePlus,
+  X,
 } from 'lucide-react'
 
 export default function PostGig() {
@@ -34,11 +36,23 @@ export default function PostGig() {
     requirements: '',
   })
   const [loading, setLoading] = useState(false)
+  const [gigImage, setGigImage] = useState(null)
   const [locationMode, setLocationMode] = useState('local') // 'local' | 'online' | 'remote'
   const [showMapPicker, setShowMapPicker] = useState(false)
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setGigImage(reader.result)
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleSubmit = async (e) => {
@@ -58,7 +72,8 @@ export default function PostGig() {
       shortDesc: formData.fullDesc.substring(0, 100) + '...',
       fullDesc: formData.fullDesc,
       requirements: formData.requirements ? formData.requirements.split(',').map(r => r.trim()) : [],
-      ownerId: user.id
+      ownerId: user.id,
+      imageUrl: gigImage
     }
 
     // Save gig to localStorage
@@ -284,6 +299,50 @@ export default function PostGig() {
             rows={3}
             className="transition-all duration-200 focus:ring-2 focus:ring-sky-500/60 focus:border-sky-500/70 hover:border-sky-400"
           />
+
+          {/* Reference Image Upload */}
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+              <ImagePlus className="w-4 h-4 text-pink-600 dark:text-pink-400" />
+              <span>Reference Image (Optional)</span>
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400 -mt-1">
+              Upload an image to help students understand the scope of work (e.g., a messy room, a project sample).
+            </p>
+
+            {gigImage ? (
+              <div className="relative inline-block">
+                <img
+                  src={gigImage}
+                  alt="Reference preview"
+                  className="w-full max-w-md max-h-64 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setGigImage(null)}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-md"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl cursor-pointer hover:border-sky-400 hover:bg-sky-50/50 dark:hover:border-sky-500 dark:hover:bg-sky-900/20 transition-colors">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <ImagePlus className="w-10 h-10 text-slate-400 dark:text-slate-500 mb-3" />
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    <span className="font-semibold text-sky-600 dark:text-sky-400">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">PNG, JPG, GIF, WEBP</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
 
           <div className="flex flex-wrap gap-4 pt-2">
             <Button
