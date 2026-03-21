@@ -27,7 +27,7 @@ import {
 export default function PostGig() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const isVerified = user?.verified === 'verified'
+  const isVerified = user?.verified === true || user?.verified === 'verified'
   const [formData, setFormData] = useState({
     title: '',
     category: '',

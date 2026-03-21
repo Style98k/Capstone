@@ -7,7 +7,7 @@ export const mockUsers = [
     password: 'password',
     role: 'admin',
     status: 'active',
-    verified: true
+    verified: 'verified'
   },
 
   // 2. STUDENT (Maria)
@@ -18,8 +18,9 @@ export const mockUsers = [
     password: 'password',
     role: 'student',
     status: 'active',
-    verified: 'unverified',
-    phoneVerified: 'false'
+    verified: 'verified',
+    nbiStatus: 'verified',
+    phoneVerified: 'true'
   },
 
   // 3. CLIENT (Pepito)
@@ -30,6 +31,8 @@ export const mockUsers = [
     password: 'password',
     role: 'client',
     status: 'active',
-    verified: true
+    verified: 'verified',
+    nbiStatus: 'verified',
+    phoneVerified: 'true'
   }
 ]

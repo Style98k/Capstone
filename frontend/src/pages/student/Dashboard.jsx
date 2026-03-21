@@ -103,7 +103,7 @@ export default function StudentDashboard() {
   return (
     <div className="space-y-8">
       {/* Verification Warning Banner */}
-      {user?.verified !== 'verified' && (
+      {!(user?.verified === true || user?.verified === 'verified') && (
         <div className="bg-gradient-to-r from-amber-50 to-red-50 dark:from-amber-900/30 dark:to-red-900/30 border border-amber-200 dark:border-amber-700 rounded-xl p-4 flex items-start gap-3 shadow-sm">
           <div className="flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-800/50 rounded-full flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
