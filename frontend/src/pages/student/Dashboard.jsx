@@ -115,7 +115,7 @@ export default function StudentDashboard() {
               <Link to="/student/profile" className="font-medium underline hover:text-amber-900 dark:hover:text-amber-100">
                 Profile
               </Link>{' '}
-              to upload your Valid ID and NBI Clearance to unlock platform features.
+              to upload your School ID and NBI Clearance to unlock platform features.
             </p>
           </div>
         </div>

@@ -478,28 +478,36 @@ export default function ProfileManagement() {
                 {/* Left Column: Avatar & Quick Stats */}
                 <div className="lg:col-span-1 space-y-6">
                     <Card className="flex flex-col items-center text-center p-8">
-                        <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
-                            <div className={`w-40 h-40 rounded-full overflow-hidden border-4 border-white dark:border-gray-700 shadow-2xl bg-gray-200 flex items-center justify-center transition-all duration-300`}>
-                                {formData.photo || user?.profilePhoto ? (
-                                    <img
-                                        src={formData.photo || user.profilePhoto}
-                                        alt="Profile"
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    <span className="text-5xl font-bold text-gray-400">
+                        {/* Avatar Container */}
+                        <div className="relative w-32 h-32 mx-auto mb-4">
+                            {/* Image / Initial Placeholder */}
+                            {formData.photo || user?.profilePhoto ? (
+                                <img
+                                    src={formData.photo || user.profilePhoto}
+                                    alt="Profile"
+                                    className="w-full h-full rounded-full object-cover border-4 border-white shadow-md"
+                                />
+                            ) : (
+                                <div className="w-full h-full rounded-full object-cover border-4 border-white shadow-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                    <span className="text-4xl font-bold text-gray-400">
                                         {user?.name?.charAt(0).toUpperCase()}
                                     </span>
-                                )}
-                            </div>
+                                </div>
+                            )}
 
-                            {/* Camera overlay - always show on hover */}
-                            <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            {/* Hover Overlay */}
+                            <label
+                                onClick={handlePhotoClick}
+                                className="absolute inset-0 bg-black/50 rounded-full flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer"
+                            >
                                 <Camera className="w-8 h-8 text-white" />
-                            </div>
+                            </label>
 
-                            {/* Upload badge */}
-                            <div className="absolute bottom-2 right-2 p-2 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-transform hover:scale-110">
+                            {/* Small Camera Button (Bottom Right) */}
+                            <div
+                                onClick={handlePhotoClick}
+                                className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full border-2 border-white shadow-sm cursor-pointer hover:bg-blue-700"
+                            >
                                 <Camera className="w-4 h-4" />
                             </div>
                         </div>

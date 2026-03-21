@@ -129,6 +129,7 @@ export default function ManageUsers() {
   const [storedID, setStoredID] = useState(null)
   const [storedAssessment, setStoredAssessment] = useState(null)
   const [storedNBI, setStoredNBI] = useState(null)
+  const [storedClientID, setStoredClientID] = useState(null)
 
   // Refresh users list periodically to catch new registrations and profile updates
   useEffect(() => {
@@ -201,9 +202,10 @@ export default function ManageUsers() {
     // Updated Verification Tab Filter
     let matchesTab = true
     if (verificationTab === 'pending') {
-      // Check for any pending status including NBI or verified='pending'
+      // Check for any pending status including NBI, ID status, or verified='pending'
       const nbiStatus = localStorage.getItem(`nbiStatus_${u.id}`) || 'unverified'
-      matchesTab = u.verificationStatus === 'pending' || u.assessmentStatus === 'pending' || nbiStatus === 'pending' || u.verified === 'pending'
+      const idStatus = localStorage.getItem(`idStatus_${u.id}`) || 'unverified'
+      matchesTab = u.verificationStatus === 'pending' || u.assessmentStatus === 'pending' || nbiStatus === 'pending' || idStatus === 'pending' || u.verified === 'pending'
     } else if (verificationTab === 'verified') {
       matchesTab = u.verificationStatus === 'verified' && u.assessmentStatus === 'verified' && u.verified === 'verified'
     }
@@ -213,7 +215,8 @@ export default function ManageUsers() {
 
   const pendingCount = users.filter(u => {
     const nbiStatus = localStorage.getItem(`nbiStatus_${u.id}`) || 'unverified'
-    return u.verificationStatus === 'pending' || u.assessmentStatus === 'pending' || nbiStatus === 'pending' || u.verified === 'pending'
+    const idStatus = localStorage.getItem(`idStatus_${u.id}`) || 'unverified'
+    return u.verificationStatus === 'pending' || u.assessmentStatus === 'pending' || nbiStatus === 'pending' || idStatus === 'pending' || u.verified === 'pending'
   }).length
 
   const handleOpenVerify = (user) => {
@@ -222,9 +225,11 @@ export default function ManageUsers() {
     const idImage = localStorage.getItem(`studentIDImage_${user.id}`)
     const assessmentImage = localStorage.getItem(`studentAssessmentImage_${user.id}`)
     const nbiImage = localStorage.getItem(`nbiImage_${user.id}`)
+    const clientIdImage = localStorage.getItem(`clientIDImage_${user.id}`)
     setStoredID(idImage)
     setStoredAssessment(assessmentImage)
     setStoredNBI(nbiImage)
+    setStoredClientID(clientIdImage)
     setIsVerifyModalOpen(true)
   }
 
@@ -238,6 +243,7 @@ export default function ManageUsers() {
           verificationStatus: 'verified',
           assessmentStatus: 'verified',
           nbiStatus: 'verified',
+          idStatus: 'verified',
           verified: 'verified'
         }
         : u
@@ -246,8 +252,9 @@ export default function ManageUsers() {
     // Save per-user verification status
     saveUserVerificationStatus(userToVerify.id, 'verified', 'verified')
 
-    // Also save NBI status
+    // Also save NBI status and ID status
     localStorage.setItem(`nbiStatus_${userToVerify.id}`, 'verified')
+    localStorage.setItem(`idStatus_${userToVerify.id}`, 'verified')
 
     // Update user's verified status in quickgig_users_v2 and registered users
     try {
@@ -294,6 +301,7 @@ export default function ManageUsers() {
           verificationStatus: 'unverified',
           assessmentStatus: 'unverified',
           nbiStatus: 'unverified',
+          idStatus: 'unverified',
           verified: 'unverified'
         }
         : u
@@ -302,13 +310,15 @@ export default function ManageUsers() {
     // Save per-user verification status
     saveUserVerificationStatus(userToVerify.id, 'unverified', 'unverified')
 
-    // Reset NBI status
+    // Reset NBI status and ID status
     localStorage.setItem(`nbiStatus_${userToVerify.id}`, 'unverified')
+    localStorage.setItem(`idStatus_${userToVerify.id}`, 'unverified')
 
     // Remove uploaded images so they have to re-upload
     localStorage.removeItem(`studentIDImage_${userToVerify.id}`)
     localStorage.removeItem(`studentAssessmentImage_${userToVerify.id}`)
     localStorage.removeItem(`nbiImage_${userToVerify.id}`)
+    localStorage.removeItem(`clientIDImage_${userToVerify.id}`)
 
     // Update user's verified status in quickgig_users_v2 and registered users
     try {
@@ -1217,58 +1227,99 @@ export default function ManageUsers() {
                 <p className="text-lg font-bold text-gray-900">{userToVerify.name}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Student ID No.</label>
+                <label className="text-sm font-medium text-gray-500">
+                  {userToVerify.role === 'student' ? 'Student ID No.' : 'User Role'}
+                </label>
                 <p className="text-lg font-bold text-gray-900">
-                  {userToVerify.schoolId || '2024-001'}
+                  {userToVerify.role === 'student'
+                    ? (userToVerify.schoolId || '2024-001')
+                    : 'Client'
+                  }
                 </p>
               </div>
             </div>
 
-            {/* ID Photo Section */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <label className="text-sm font-medium text-gray-500">ID Photo</label>
-                {userToVerify.verificationStatus === 'pending' && (
-                  <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
-                    New Upload
-                  </span>
-                )}
-              </div>
-              <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                <img
-                  src={storedID || "https://placehold.co/600x400"}
-                  alt="Student ID"
-                  className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
-                  onError={(e) => {
-                    e.target.onerror = null
-                    e.target.src = "https://placehold.co/600x400"
-                  }}
-                />
-              </div>
-            </div>
+            {/* ID Photo Section - Different for Student vs Client */}
+            {userToVerify.role === 'student' ? (
+              <>
+                {/* School ID for Students */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-sm font-medium text-gray-500">School ID</label>
+                    {userToVerify.verificationStatus === 'pending' && (
+                      <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                        New Upload
+                      </span>
+                    )}
+                  </div>
+                  <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                    <img
+                      src={storedID || "https://placehold.co/600x400"}
+                      alt="Student ID"
+                      className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        e.target.onerror = null
+                        e.target.src = "https://placehold.co/600x400"
+                      }}
+                    />
+                  </div>
+                </div>
 
-            {/* Assessment Form Section */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <label className="text-sm font-medium text-gray-500">Assessment Form / COR</label>
-                {userToVerify.assessmentStatus === 'pending' && (
-                  <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
-                    New Upload
-                  </span>
-                )}
-              </div>
-              <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center p-8">
-                <img
-                  src={storedAssessment || "https://placehold.co/600x200?text=Assessment+Form+PDF"}
-                  alt="Assessment Form"
-                  className="max-w-full h-auto"
-                  onError={(e) => {
-                    e.target.onerror = null
-                    e.target.src = "https://placehold.co/600x200?text=Assessment+Form+PDF"
-                  }}
-                />
-              </div>
-            </div>
+                {/* Assessment Form Section for Students */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-sm font-medium text-gray-500">Assessment Form / COR</label>
+                    {userToVerify.assessmentStatus === 'pending' && (
+                      <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                        New Upload
+                      </span>
+                    )}
+                  </div>
+                  <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center p-8">
+                    <img
+                      src={storedAssessment || "https://placehold.co/600x200?text=Assessment+Form+PDF"}
+                      alt="Assessment Form"
+                      className="max-w-full h-auto"
+                      onError={(e) => {
+                        e.target.onerror = null
+                        e.target.src = "https://placehold.co/600x200?text=Assessment+Form+PDF"
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Valid ID for Clients */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-sm font-medium text-gray-500">Valid ID</label>
+                    {storedClientID && (
+                      <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                        New Upload
+                      </span>
+                    )}
+                  </div>
+                  <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center p-8">
+                    {storedClientID ? (
+                      <img
+                        src={storedClientID}
+                        alt="Valid ID"
+                        className="max-w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          e.target.onerror = null
+                          e.target.src = "https://placehold.co/600x400?text=Valid+ID"
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-400 text-sm">No Valid ID uploaded yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* NBI Clearance Section */}
             <div>

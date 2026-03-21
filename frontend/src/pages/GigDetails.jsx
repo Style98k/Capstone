@@ -159,7 +159,7 @@ export default function GigDetails() {
               <div>
                 <h3 className="font-semibold text-amber-800 dark:text-amber-200">Verification Required</h3>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                  You must verify your account before applying for gigs. Please upload your Valid ID and NBI Clearance in your profile.
+                  You must verify your account before applying for gigs. Please upload your School ID and NBI Clearance in your profile.
                 </p>
               </div>
             </div>

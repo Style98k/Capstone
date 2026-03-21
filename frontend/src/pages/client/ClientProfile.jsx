@@ -23,6 +23,13 @@ export default function ClientProfile() {
     const [ratingData, setRatingData] = useState({ average: 0, count: 0, reviews: [] })
     const fileInputRef = useRef(null)
 
+    // Valid ID State
+    const [idStatus, setIdStatus] = useState(() => {
+        return localStorage.getItem(`idStatus_${user?.id}`) || 'unverified'
+    })
+    const [isIdModalOpen, setIsIdModalOpen] = useState(false)
+    const [idFile, setIdFile] = useState(null)
+
     // NBI Clearance State
     const [nbiStatus, setNbiStatus] = useState(() => {
         return localStorage.getItem(`nbiStatus_${user?.id}`) || 'unverified'
@@ -65,6 +72,14 @@ export default function ClientProfile() {
         return () => {
             window.removeEventListener('storage', updateStats)
             clearInterval(interval)
+        }
+    }, [user?.id])
+
+    // Sync ID status
+    useEffect(() => {
+        const storedIdStatus = localStorage.getItem(`idStatus_${user?.id}`)
+        if (storedIdStatus) {
+            setIdStatus(storedIdStatus)
         }
     }, [user?.id])
 
@@ -150,6 +165,83 @@ export default function ClientProfile() {
             setNbiFile(null)
         }
         reader.readAsDataURL(file)
+    }
+
+    const handleIdFileChange = (e) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        // Validate file size (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            setNotification({ type: 'error', message: 'Image must be less than 2MB' })
+            setTimeout(() => setNotification(null), 3000)
+            e.target.value = ''
+            return
+        }
+
+        setIdFile(file)
+
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            localStorage.setItem(`clientIDImage_${user.id}`, event.target.result)
+        }
+        reader.onerror = () => {
+            setNotification({ type: 'error', message: 'Error reading file' })
+            setTimeout(() => setNotification(null), 3000)
+            setIdFile(null)
+        }
+        reader.readAsDataURL(file)
+    }
+
+    const handleIdSubmit = () => {
+        if (!idFile) return
+
+        const newIdStatus = 'pending'
+        setIdStatus(newIdStatus)
+
+        // Save ID status
+        localStorage.setItem(`idStatus_${user.id}`, newIdStatus)
+
+        // Save per-user verification status
+        try {
+            const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
+            statuses[user.id] = { ...statuses[user.id], idStatus: newIdStatus }
+            localStorage.setItem('quickgig_user_verification_statuses_v2', JSON.stringify(statuses))
+        } catch (e) {
+            console.error('Error saving verification status:', e)
+        }
+
+        // Update user's verified status to 'pending'
+        try {
+            const users = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+            const userIndex = users.findIndex(u => u.id === user.id)
+            if (userIndex !== -1) {
+                users[userIndex].verified = 'pending'
+                users[userIndex].idStatus = newIdStatus
+                localStorage.setItem('quickgig_users_v2', JSON.stringify(users))
+            }
+
+            const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+            const regIndex = registeredUsers.findIndex(u => u.id === user.id)
+            if (regIndex !== -1) {
+                registeredUsers[regIndex].verified = 'pending'
+                registeredUsers[regIndex].idStatus = newIdStatus
+                localStorage.setItem('quickgig_registered_users_v2', JSON.stringify(registeredUsers))
+            }
+
+            window.dispatchEvent(new Event('storage'))
+        } catch (e) {
+            console.error('Error updating verified status:', e)
+        }
+
+        // Send notification to admin
+        triggerNotification('admin', 'Verification Request', `${user.name} uploaded a Valid ID for review.`, 'verification', null)
+
+        setIsIdModalOpen(false)
+        setIdFile(null)
+
+        setNotification({ type: 'success', message: 'Valid ID uploaded successfully! Pending review.' })
+        setTimeout(() => setNotification(null), 3000)
     }
 
     const handleNbiSubmit = () => {
@@ -265,12 +357,7 @@ export default function ClientProfile() {
                 <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
                         {/* Avatar with Photo Upload */}
-                        <motion.div
-                            className="relative group cursor-pointer"
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ type: "spring", stiffness: 300 }}
-                            onClick={() => fileInputRef.current?.click()}
-                        >
+                        <div className="relative w-32 h-32 mx-auto mb-4">
                             {/* Hidden file input */}
                             <input
                                 ref={fileInputRef}
@@ -280,32 +367,35 @@ export default function ClientProfile() {
                                 className="hidden"
                             />
 
+                            {/* Image / Initial Placeholder */}
                             {user.profilePhoto ? (
                                 <img
                                     src={user.profilePhoto}
                                     alt={user.name}
-                                    className="w-24 h-24 rounded-full object-cover shadow-2xl ring-4 ring-white/30"
+                                    className="w-full h-full rounded-full object-cover border-4 border-white shadow-md"
                                 />
                             ) : (
-                                <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-4xl font-bold shadow-2xl ring-4 ring-white/30">
+                                <div className="w-full h-full rounded-full object-cover border-4 border-white shadow-md bg-white/20 backdrop-blur-sm flex items-center justify-center text-4xl font-bold">
                                     {user.name.charAt(0).toUpperCase()}
                                 </div>
                             )}
 
-                            {/* Camera overlay on hover */}
-                            <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                <Camera className="w-8 h-8 text-white" />
-                            </div>
-
-                            {/* Role badge */}
-                            <motion.div
-                                className="absolute -bottom-1 -right-1 p-2 bg-violet-500 rounded-full shadow-lg"
-                                animate={{ scale: [1, 1.1, 1] }}
-                                transition={{ duration: 2, repeat: Infinity }}
+                            {/* Hover Overlay */}
+                            <label
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute inset-0 bg-black/50 rounded-full flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer"
                             >
-                                <Building2 className="w-4 h-4 text-white" />
-                            </motion.div>
-                        </motion.div>
+                                <Camera className="w-8 h-8 text-white" />
+                            </label>
+
+                            {/* Small Camera Button (Bottom Right) */}
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full border-2 border-white shadow-sm cursor-pointer hover:bg-blue-700"
+                            >
+                                <Camera className="w-4 h-4" />
+                            </div>
+                        </div>
 
                         <div>
                             <h1 className="text-3xl font-bold">{user.name}</h1>
@@ -502,6 +592,24 @@ export default function ClientProfile() {
                             <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">Valid ID</span>
+                            {idStatus === 'verified' && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                            )}
+                            {idStatus === 'pending' && (
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">Pending Review</span>
+                            )}
+                            {(!idStatus || idStatus === 'unverified') && (
+                                <Button
+                                    size="sm"
+                                    className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                    onClick={() => setIsIdModalOpen(true)}
+                                >
+                                    Upload ID
+                                </Button>
+                            )}
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-600 dark:text-gray-400">NBI Clearance</span>
                             {nbiStatus === 'verified' && (
                                 <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
@@ -574,6 +682,58 @@ export default function ClientProfile() {
                             Cancel
                         </Button>
                         <Button onClick={handleNbiSubmit} disabled={!nbiFile}>
+                            Submit
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Valid ID Upload Modal */}
+            <Modal
+                isOpen={isIdModalOpen}
+                onClose={() => setIsIdModalOpen(false)}
+                title="Upload Valid ID"
+            >
+                <div className="space-y-6">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Please upload a clear photo or scan of your valid Government-issued ID to verify your identity.
+                    </p>
+
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
+                        <input
+                            key={isIdModalOpen ? 'open' : 'closed'}
+                            type="file"
+                            name="validId"
+                            id="valid-id-upload-client"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            accept="image/*"
+                            onChange={handleIdFileChange}
+                        />
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-3">
+                            <Upload className="w-8 h-8 text-blue-500" />
+                        </div>
+                        {idFile ? (
+                            <>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
+                                    {idFile.name}
+                                </span>
+                                <span className="text-xs text-green-500 mt-1">File selected</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Click to upload Valid ID
+                                </span>
+                                <span className="text-xs text-gray-500 mt-1">Supports PNG, JPG</span>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="outline" onClick={() => setIsIdModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleIdSubmit} disabled={!idFile}>
                             Submit
                         </Button>
                     </div>
