@@ -31,6 +31,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
 
@@ -44,6 +45,26 @@ export default function Register() {
 
     if (!formData.birthday) {
       setError('Please enter your birthday')
+      return
+    }
+
+    // Age verification - must be 18 or older
+    const birthDate = new Date(formData.birthday)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const m = today.getMonth() - birthDate.getMonth()
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+
+    if (age < 18) {
+      setError('According to labor laws, you must be at least 18 years old to register.')
+      return
+    }
+
+    // Legal consent validation
+    if (!agreedToTerms) {
+      setError('You must agree to the Terms of Service and Privacy Policy to continue.')
       return
     }
 
@@ -240,6 +261,20 @@ export default function Register() {
               />
 
               <p className="text-xs text-gray-500">Password must be at least 6 characters.</p>
+
+              {/* Legal & Privacy Checkbox */}
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="agreedToTerms"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                />
+                <label htmlFor="agreedToTerms" className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                  I agree to the Terms of Service, Statement of Data Privacy (RA 10173), and acknowledge the Cybercrime Prevention Act of 2012 (RA 10175).
+                </label>
+              </div>
 
               <Button
                 type="submit"

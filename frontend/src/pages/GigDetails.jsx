@@ -7,7 +7,7 @@ import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
 import Textarea from '../components/UI/Textarea'
 import GigCommentRating from '../components/Shared/GigCommentRating'
-import { MapPin, Clock, Coins, User, FileText, Sparkles } from 'lucide-react'
+import { MapPin, Clock, Coins, User, FileText, Sparkles, AlertTriangle } from 'lucide-react'
 import { useState, useRef, useMemo } from 'react'
 
 export default function GigDetails() {
@@ -149,25 +149,51 @@ export default function GigDetails() {
           </div>
         )}
 
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6 flex gap-4">
-          {user && user.role === 'student' && !hasApplied && (
-            <Button onClick={() => setShowApplyModal(true)}>Apply for this Gig</Button>
-          )}
-          {hasApplied && (
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <p className="text-green-700 dark:text-green-300">
-                You have already applied for this gig
-              </p>
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6 flex flex-col gap-4">
+          {/* Verification Warning for Students */}
+          {user && user.role === 'student' && user.verified !== 'verified' && !hasApplied && (
+            <div className="bg-gradient-to-r from-amber-50 to-red-50 dark:from-amber-900/30 dark:to-red-900/30 border border-amber-200 dark:border-amber-700 rounded-xl p-4 flex items-start gap-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-800/50 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-800 dark:text-amber-200">Verification Required</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  You must verify your account before applying for gigs. Please upload your Valid ID and NBI Clearance in your profile.
+                </p>
+              </div>
             </div>
           )}
-          {!user && (
-            <Link to="/login">
-              <Button>Login to Apply</Button>
-            </Link>
-          )}
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            Back
-          </Button>
+
+          <div className="flex gap-4">
+            {user && user.role === 'student' && !hasApplied && (
+              user.verified === 'verified' ? (
+                <Button onClick={() => setShowApplyModal(true)}>Apply for this Gig</Button>
+              ) : (
+                <Button
+                  disabled
+                  className="bg-gray-400 cursor-not-allowed hover:bg-gray-400"
+                >
+                  Verify Account to Apply
+                </Button>
+              )
+            )}
+            {hasApplied && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <p className="text-green-700 dark:text-green-300">
+                  You have already applied for this gig
+                </p>
+              </div>
+            )}
+            {!user && (
+              <Link to="/login">
+                <Button>Login to Apply</Button>
+              </Link>
+            )}
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Back
+            </Button>
+          </div>
         </div>
       </Card>
 

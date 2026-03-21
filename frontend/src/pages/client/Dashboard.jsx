@@ -4,7 +4,7 @@ import { getGigs, getApplications } from '../../utils/localStorage'
 import StatCard from '../../components/Shared/StatCard'
 import Card from '../../components/UI/Card'
 import CommentRating from '../../components/Shared/CommentRating'
-import { Briefcase, Users, CheckCircle, Coins, PlusCircle } from 'lucide-react'
+import { Briefcase, Users, CheckCircle, Coins, PlusCircle, AlertTriangle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export default function ClientDashboard() {
@@ -49,6 +49,25 @@ export default function ClientDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Verification Warning Banner */}
+      {user?.verified !== 'verified' && (
+        <div className="bg-gradient-to-r from-amber-50 to-red-50 dark:from-amber-900/30 dark:to-red-900/30 border border-amber-200 dark:border-amber-700 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+          <div className="flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-800/50 rounded-full flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-amber-800 dark:text-amber-200">Action Required: Account Unverified</h3>
+            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+              Your account is currently unverified. Please go to your{' '}
+              <Link to="/client/profile" className="font-medium underline hover:text-amber-900 dark:hover:text-amber-100">
+                Profile
+              </Link>{' '}
+              to upload your Valid ID and NBI Clearance to unlock platform features.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">

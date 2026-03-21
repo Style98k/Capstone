@@ -54,9 +54,12 @@ const getRegisteredUsers = () => {
 const getUserVerificationStatus = (userId) => {
   try {
     const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
-    return statuses[userId] || { verificationStatus: 'unverified', assessmentStatus: 'unverified' }
+    const nbiStatus = localStorage.getItem(`nbiStatus_${userId}`) || 'unverified'
+    return statuses[userId]
+      ? { ...statuses[userId], nbiStatus }
+      : { verificationStatus: 'unverified', assessmentStatus: 'unverified', nbiStatus }
   } catch (e) {
-    return { verificationStatus: 'unverified', assessmentStatus: 'unverified' }
+    return { verificationStatus: 'unverified', assessmentStatus: 'unverified', nbiStatus: 'unverified' }
   }
 }
 
@@ -64,7 +67,8 @@ const getUserVerificationStatus = (userId) => {
 const saveUserVerificationStatus = (userId, verificationStatus, assessmentStatus) => {
   try {
     const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
-    statuses[userId] = { verificationStatus, assessmentStatus }
+    const nbiStatus = localStorage.getItem(`nbiStatus_${userId}`) || 'unverified'
+    statuses[userId] = { verificationStatus, assessmentStatus, nbiStatus }
     localStorage.setItem('quickgig_user_verification_statuses_v2', JSON.stringify(statuses))
   } catch (e) {
     console.error('Error saving verification status:', e)
@@ -124,6 +128,7 @@ export default function ManageUsers() {
   const [userToVerify, setUserToVerify] = useState(null)
   const [storedID, setStoredID] = useState(null)
   const [storedAssessment, setStoredAssessment] = useState(null)
+  const [storedNBI, setStoredNBI] = useState(null)
 
   // Refresh users list periodically to catch new registrations and profile updates
   useEffect(() => {
@@ -196,25 +201,30 @@ export default function ManageUsers() {
     // Updated Verification Tab Filter
     let matchesTab = true
     if (verificationTab === 'pending') {
-      matchesTab = u.verificationStatus === 'pending' || u.assessmentStatus === 'pending'
+      // Check for any pending status including NBI or verified='pending'
+      const nbiStatus = localStorage.getItem(`nbiStatus_${u.id}`) || 'unverified'
+      matchesTab = u.verificationStatus === 'pending' || u.assessmentStatus === 'pending' || nbiStatus === 'pending' || u.verified === 'pending'
     } else if (verificationTab === 'verified') {
-      matchesTab = u.verificationStatus === 'verified' && u.assessmentStatus === 'verified'
+      matchesTab = u.verificationStatus === 'verified' && u.assessmentStatus === 'verified' && u.verified === 'verified'
     }
 
     return matchesSearch && matchesRole && matchesTab
   })
 
-  const pendingCount = users.filter(u =>
-    u.verificationStatus === 'pending' || u.assessmentStatus === 'pending'
-  ).length
+  const pendingCount = users.filter(u => {
+    const nbiStatus = localStorage.getItem(`nbiStatus_${u.id}`) || 'unverified'
+    return u.verificationStatus === 'pending' || u.assessmentStatus === 'pending' || nbiStatus === 'pending' || u.verified === 'pending'
+  }).length
 
   const handleOpenVerify = (user) => {
     setUserToVerify(user)
     // Load images from per-user localStorage when opening the modal
     const idImage = localStorage.getItem(`studentIDImage_${user.id}`)
     const assessmentImage = localStorage.getItem(`studentAssessmentImage_${user.id}`)
+    const nbiImage = localStorage.getItem(`nbiImage_${user.id}`)
     setStoredID(idImage)
     setStoredAssessment(assessmentImage)
+    setStoredNBI(nbiImage)
     setIsVerifyModalOpen(true)
   }
 
@@ -227,7 +237,8 @@ export default function ManageUsers() {
           ...u,
           verificationStatus: 'verified',
           assessmentStatus: 'verified',
-          verified: true
+          nbiStatus: 'verified',
+          verified: 'verified'
         }
         : u
     ))
@@ -235,13 +246,39 @@ export default function ManageUsers() {
     // Save per-user verification status
     saveUserVerificationStatus(userToVerify.id, 'verified', 'verified')
 
+    // Also save NBI status
+    localStorage.setItem(`nbiStatus_${userToVerify.id}`, 'verified')
+
+    // Update user's verified status in quickgig_users_v2 and registered users
+    try {
+      const users = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+      const userIndex = users.findIndex(u => u.id === userToVerify.id)
+      if (userIndex !== -1) {
+        users[userIndex].verified = 'verified'
+        localStorage.setItem('quickgig_users_v2', JSON.stringify(users))
+      }
+
+      const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+      const regIndex = registeredUsers.findIndex(u => u.id === userToVerify.id)
+      if (regIndex !== -1) {
+        registeredUsers[regIndex].verified = 'verified'
+        localStorage.setItem('quickgig_registered_users_v2', JSON.stringify(registeredUsers))
+      }
+    } catch (e) {
+      console.error('Error updating user verified status:', e)
+    }
+
     // Also save for backward compatibility with current student session
     localStorage.setItem('verificationStatus', 'verified')
     localStorage.setItem('assessmentStatus', 'verified')
-    localStorage.setItem('studentNotification', 'Your School ID and Assessment Form have been approved! You are now fully verified.')
+    localStorage.setItem('studentNotification', 'Your documents have been approved! Your account is now fully verified.')
 
-    // Trigger bell notification to student
-    triggerNotification('student', 'Verification Approved', 'Your documents are approved. You are verified!', 'system');
+    // Trigger bell notification to user
+    triggerNotification('student', 'Verification Approved', 'Your documents are approved. Your account is now verified!', 'system');
+    triggerNotification('client', 'Verification Approved', 'Your documents are approved. Your account is now verified!', 'system');
+
+    // Dispatch storage event for immediate UI updates
+    window.dispatchEvent(new Event('storage'))
 
     setIsVerifyModalOpen(false)
     setUserToVerify(null)
@@ -256,7 +293,8 @@ export default function ManageUsers() {
           ...u,
           verificationStatus: 'unverified',
           assessmentStatus: 'unverified',
-          verified: false
+          nbiStatus: 'unverified',
+          verified: 'unverified'
         }
         : u
     ))
@@ -264,13 +302,44 @@ export default function ManageUsers() {
     // Save per-user verification status
     saveUserVerificationStatus(userToVerify.id, 'unverified', 'unverified')
 
+    // Reset NBI status
+    localStorage.setItem(`nbiStatus_${userToVerify.id}`, 'unverified')
+
+    // Remove uploaded images so they have to re-upload
+    localStorage.removeItem(`studentIDImage_${userToVerify.id}`)
+    localStorage.removeItem(`studentAssessmentImage_${userToVerify.id}`)
+    localStorage.removeItem(`nbiImage_${userToVerify.id}`)
+
+    // Update user's verified status in quickgig_users_v2 and registered users
+    try {
+      const users = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+      const userIndex = users.findIndex(u => u.id === userToVerify.id)
+      if (userIndex !== -1) {
+        users[userIndex].verified = 'unverified'
+        localStorage.setItem('quickgig_users_v2', JSON.stringify(users))
+      }
+
+      const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+      const regIndex = registeredUsers.findIndex(u => u.id === userToVerify.id)
+      if (regIndex !== -1) {
+        registeredUsers[regIndex].verified = 'unverified'
+        localStorage.setItem('quickgig_registered_users_v2', JSON.stringify(registeredUsers))
+      }
+    } catch (e) {
+      console.error('Error updating user verified status:', e)
+    }
+
     // Also save for backward compatibility with current student session
     localStorage.setItem('verificationStatus', 'unverified')
     localStorage.setItem('assessmentStatus', 'unverified')
     localStorage.setItem('studentNotification', 'Your documents were rejected. Please upload clearer copies.')
 
-    // Trigger bell notification to student
-    triggerNotification('student', 'Verification Rejected', 'Your documents were rejected.', 'system');
+    // Trigger bell notification to user
+    triggerNotification('student', 'Verification Rejected', 'Your documents were rejected. Please re-upload clearer copies.', 'system');
+    triggerNotification('client', 'Verification Rejected', 'Your documents were rejected. Please re-upload clearer copies.', 'system');
+
+    // Dispatch storage event for immediate UI updates
+    window.dispatchEvent(new Event('storage'))
 
     setIsVerifyModalOpen(false)
     setUserToVerify(null)
@@ -1137,7 +1206,7 @@ export default function ManageUsers() {
       <Modal
         isOpen={isVerifyModalOpen}
         onClose={() => setIsVerifyModalOpen(false)}
-        title="Verify Student Documents"
+        title="Review User Documents"
         size="lg"
       >
         {userToVerify && (
@@ -1198,6 +1267,35 @@ export default function ManageUsers() {
                     e.target.src = "https://placehold.co/600x200?text=Assessment+Form+PDF"
                   }}
                 />
+              </div>
+            </div>
+
+            {/* NBI Clearance Section */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-sm font-medium text-gray-500">NBI Clearance</label>
+                {storedNBI && (
+                  <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                    New Upload
+                  </span>
+                )}
+              </div>
+              <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center p-8">
+                {storedNBI ? (
+                  <img
+                    src={storedNBI}
+                    alt="NBI Clearance"
+                    className="max-w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      e.target.onerror = null
+                      e.target.src = "https://placehold.co/600x200?text=NBI+Clearance"
+                    }}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400 text-sm">No NBI Clearance uploaded yet</p>
+                  </div>
+                )}
               </div>
             </div>
 

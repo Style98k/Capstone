@@ -21,11 +21,13 @@ import {
   XCircle,
   ImagePlus,
   X,
+  AlertTriangle,
 } from 'lucide-react'
 
 export default function PostGig() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const isVerified = user?.verified === 'verified'
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -114,7 +116,31 @@ export default function PostGig() {
         <div className="pointer-events-none absolute -right-6 -top-10 h-32 w-32 rounded-full bg-sky-100 dark:bg-sky-900/40 blur-3xl" />
         <div className="pointer-events-none absolute -left-6 bottom-0 h-24 w-24 rounded-full bg-fuchsia-100 dark:bg-fuchsia-900/30 blur-3xl" />
 
+        {/* Verification Warning Banner */}
+        {!isVerified && (
+          <div className="relative mb-6 bg-gradient-to-r from-amber-50 to-red-50 dark:from-amber-900/30 dark:to-red-900/30 border border-amber-200 dark:border-amber-700 rounded-xl p-4 flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-800/50 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-amber-800 dark:text-amber-200">Verification Required</h3>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                You must verify your account before posting jobs. Please go to your{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate('/client/profile')}
+                  className="font-medium underline hover:text-amber-900 dark:hover:text-amber-100"
+                >
+                  Profile
+                </button>{' '}
+                to upload your Valid ID and NBI Clearance.
+              </p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="relative space-y-8">
+          <fieldset disabled={!isVerified} className={`space-y-8 ${!isVerified ? 'opacity-60' : ''}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
               label={
@@ -343,14 +369,21 @@ export default function PostGig() {
               </label>
             )}
           </div>
+          </fieldset>
 
           <div className="flex flex-wrap gap-4 pt-2">
             <Button
               type="submit"
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-full shadow-md shadow-sky-500/20 hover:shadow-lg hover:-translate-y-0.5"
+              disabled={loading || !isVerified}
+              className={`inline-flex items-center gap-2 rounded-full ${
+                !isVerified
+                  ? 'bg-gray-400 cursor-not-allowed shadow-none hover:bg-gray-400 hover:translate-y-0'
+                  : 'shadow-md shadow-sky-500/20 hover:shadow-lg hover:-translate-y-0.5'
+              }`}
             >
-              {loading ? (
+              {!isVerified ? (
+                <span>Verification Required to Post</span>
+              ) : loading ? (
                 <span>Posting...</span>
               ) : (
                 <>

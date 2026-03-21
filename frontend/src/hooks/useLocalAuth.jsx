@@ -123,7 +123,7 @@ export function AuthProvider({ children }) {
     const newUser = {
       id: `user_${Date.now()}`,
       ...userData,
-      verified: userData.role === 'admin',
+      verified: userData.role === 'admin' ? 'verified' : 'unverified',
       createdAt: new Date().toISOString(),
     }
 

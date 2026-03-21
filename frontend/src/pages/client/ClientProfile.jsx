@@ -5,10 +5,13 @@ import { getGigs, getApplications } from '../../utils/localStorage'
 import { getUserRating } from '../../utils/ratingUtils'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
+import Button from '../../components/UI/Button'
+import Modal from '../../components/UI/Modal'
 import CommentRating from '../../components/Shared/CommentRating'
+import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Mail, Phone, Building2, Save, X, Edit3,
-    CheckCircle2, Sparkles, Briefcase, Star, Camera
+    CheckCircle2, Sparkles, Briefcase, Star, Camera, ShieldCheck, Upload
 } from 'lucide-react'
 
 export default function ClientProfile() {
@@ -19,6 +22,13 @@ export default function ClientProfile() {
     const [stats, setStats] = useState({ jobsPosted: 0, studentsHired: 0 })
     const [ratingData, setRatingData] = useState({ average: 0, count: 0, reviews: [] })
     const fileInputRef = useRef(null)
+
+    // NBI Clearance State
+    const [nbiStatus, setNbiStatus] = useState(() => {
+        return localStorage.getItem(`nbiStatus_${user?.id}`) || 'unverified'
+    })
+    const [isNbiModalOpen, setIsNbiModalOpen] = useState(false)
+    const [nbiFile, setNbiFile] = useState(null)
 
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -55,6 +65,14 @@ export default function ClientProfile() {
         return () => {
             window.removeEventListener('storage', updateStats)
             clearInterval(interval)
+        }
+    }, [user?.id])
+
+    // Sync NBI status
+    useEffect(() => {
+        const storedNbiStatus = localStorage.getItem(`nbiStatus_${user?.id}`)
+        if (storedNbiStatus) {
+            setNbiStatus(storedNbiStatus)
         }
     }, [user?.id])
 
@@ -106,6 +124,81 @@ export default function ClientProfile() {
             }
             reader.readAsDataURL(file)
         }
+    }
+
+    const handleNbiFileChange = (e) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        // Validate file size (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            setNotification({ type: 'error', message: 'Image must be less than 2MB' })
+            setTimeout(() => setNotification(null), 3000)
+            e.target.value = ''
+            return
+        }
+
+        setNbiFile(file)
+
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            localStorage.setItem(`nbiImage_${user.id}`, event.target.result)
+        }
+        reader.onerror = () => {
+            setNotification({ type: 'error', message: 'Error reading file' })
+            setTimeout(() => setNotification(null), 3000)
+            setNbiFile(null)
+        }
+        reader.readAsDataURL(file)
+    }
+
+    const handleNbiSubmit = () => {
+        if (!nbiFile) return
+
+        const newNbiStatus = 'pending'
+        setNbiStatus(newNbiStatus)
+
+        // Save NBI status
+        localStorage.setItem(`nbiStatus_${user.id}`, newNbiStatus)
+
+        // Save per-user verification status
+        try {
+            const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
+            statuses[user.id] = { ...statuses[user.id], nbiStatus: newNbiStatus }
+            localStorage.setItem('quickgig_user_verification_statuses_v2', JSON.stringify(statuses))
+        } catch (e) {
+            console.error('Error saving verification status:', e)
+        }
+
+        // Update user's verified status to 'pending'
+        try {
+            const users = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+            const userIndex = users.findIndex(u => u.id === user.id)
+            if (userIndex !== -1) {
+                users[userIndex].verified = 'pending'
+                localStorage.setItem('quickgig_users_v2', JSON.stringify(users))
+            }
+
+            const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+            const regIndex = registeredUsers.findIndex(u => u.id === user.id)
+            if (regIndex !== -1) {
+                registeredUsers[regIndex].verified = 'pending'
+                localStorage.setItem('quickgig_registered_users_v2', JSON.stringify(registeredUsers))
+            }
+
+            window.dispatchEvent(new Event('storage'))
+        } catch (e) {
+            console.error('Error updating verified status:', e)
+        }
+
+        // Send notification to admin
+        triggerNotification('admin', 'NBI Uploaded', `${user.name} submitted their NBI clearance for verification.`, 'verification')
+
+        setIsNbiModalOpen(false)
+        setNbiFile(null)
+
+        setNotification({ type: 'success', message: 'NBI Clearance uploaded successfully! Pending review.' })
+        setTimeout(() => setNotification(null), 3000)
     }
 
     if (!user) return null
@@ -388,10 +481,104 @@ export default function ClientProfile() {
                 </div>
             </motion.div>
 
+            {/* Verification Status Card */}
+            <motion.div variants={itemVariants}>
+                <Card className="overflow-hidden">
+                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+                        <motion.div
+                            className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg"
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                        >
+                            <ShieldCheck className="w-5 h-5 text-white" />
+                        </motion.div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                            Verification Status
+                        </h2>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">Email Status</span>
+                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">NBI Clearance</span>
+                            {nbiStatus === 'verified' && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                            )}
+                            {nbiStatus === 'pending' && (
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">Pending Review</span>
+                            )}
+                            {nbiStatus === 'unverified' && (
+                                <Button
+                                    size="sm"
+                                    className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                    onClick={() => setIsNbiModalOpen(true)}
+                                >
+                                    Upload NBI
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </Card>
+            </motion.div>
+
             {/* Ratings & Reviews Section */}
             <motion.div variants={itemVariants}>
                 <CommentRating userId={user?.id} userRole={user?.role} />
             </motion.div>
+
+            {/* NBI Upload Modal */}
+            <Modal
+                isOpen={isNbiModalOpen}
+                onClose={() => setIsNbiModalOpen(false)}
+                title="Upload NBI Clearance"
+            >
+                <div className="space-y-6">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Please upload a clear photo or scan of your valid NBI Clearance to verify your identity.
+                    </p>
+
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
+                        <input
+                            key={isNbiModalOpen ? 'open' : 'closed'}
+                            type="file"
+                            name="nbiClearance"
+                            id="nbi-clearance-upload-client"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            accept="image/*"
+                            onChange={handleNbiFileChange}
+                        />
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-3">
+                            <Upload className="w-8 h-8 text-blue-500" />
+                        </div>
+                        {nbiFile ? (
+                            <>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
+                                    {nbiFile.name}
+                                </span>
+                                <span className="text-xs text-green-500 mt-1">File selected</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Click to upload NBI Clearance
+                                </span>
+                                <span className="text-xs text-gray-500 mt-1">Supports PNG, JPG</span>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="outline" onClick={() => setIsNbiModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleNbiSubmit} disabled={!nbiFile}>
+                            Submit
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </motion.div>
     )
 }

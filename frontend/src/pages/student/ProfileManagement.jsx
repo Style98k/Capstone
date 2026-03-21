@@ -30,15 +30,20 @@ export default function ProfileManagement() {
     const [assessmentStatus, setAssessmentStatus] = useState(() => {
         return localStorage.getItem('assessmentStatus') || 'unverified'
     })
+    const [nbiStatus, setNbiStatus] = useState(() => {
+        return localStorage.getItem(`nbiStatus_${user?.id}`) || 'unverified'
+    })
     const [phoneStatus, setPhoneStatus] = useState(() => {
         return localStorage.getItem('phoneVerified') === 'true' ? 'verified' : 'unverified'
     })
     const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false)
     const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState(false)
+    const [isNbiModalOpen, setIsNbiModalOpen] = useState(false)
     const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false)
     const [otpCode, setOtpCode] = useState('')
     const [idFile, setIdFile] = useState(null)
     const [assessmentFile, setAssessmentFile] = useState(null)
+    const [nbiFile, setNbiFile] = useState(null)
     const [notification, setNotification] = useState(null)
     const [ratingData, setRatingData] = useState({ average: 0, count: 0, reviews: [] })
 
@@ -77,6 +82,12 @@ export default function ProfileManagement() {
         const storedPhoneStatus = localStorage.getItem('phoneVerified')
         if (storedPhoneStatus === 'true') {
             setPhoneStatus('verified')
+        }
+
+        // Sync NBI status
+        const storedNbiStatus = localStorage.getItem(`nbiStatus_${user?.id}`)
+        if (storedNbiStatus) {
+            setNbiStatus(storedNbiStatus)
         }
 
         // Check for Admin Notifications
@@ -231,14 +242,68 @@ export default function ProfileManagement() {
         reader.readAsDataURL(file);
     }
 
+    const handleNbiFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Check file size (2MB = 2 * 1024 * 1024 bytes)
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        if (file.size > maxSize) {
+            alert('File is too large. Please choose an image smaller than 2MB.');
+            e.target.value = ''; // Reset the file input
+            return;
+        }
+
+        // Set file state immediately so Submit button enables right away
+        setNbiFile(file);
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            // Save the base64 string to localStorage with user ID
+            localStorage.setItem(`nbiImage_${user.id}`, event.target.result);
+        };
+        reader.onerror = (error) => {
+            console.error('Error reading file:', error);
+            alert('Error reading the file. Please try again.');
+            setNbiFile(null); // Reset on error
+        };
+        reader.readAsDataURL(file);
+    }
+
     // Helper to save per-user verification status
-    const saveUserVerificationStatus = (verificationStatus, assessmentStatus) => {
+    const saveUserVerificationStatus = (verificationStatus, assessmentStatus, nbiStatus) => {
         try {
             const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
-            statuses[user.id] = { verificationStatus, assessmentStatus }
+            statuses[user.id] = { verificationStatus, assessmentStatus, nbiStatus: nbiStatus || 'unverified' }
             localStorage.setItem('quickgig_user_verification_statuses_v2', JSON.stringify(statuses))
         } catch (e) {
             console.error('Error saving verification status:', e)
+        }
+    }
+
+    // Helper to update user's verified status in localStorage
+    const updateUserVerifiedStatus = (status) => {
+        try {
+            // Update in quickgig_users_v2
+            const users = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+            const userIndex = users.findIndex(u => u.id === user.id)
+            if (userIndex !== -1) {
+                users[userIndex].verified = status
+                localStorage.setItem('quickgig_users_v2', JSON.stringify(users))
+            }
+
+            // Update in registered users
+            const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+            const regIndex = registeredUsers.findIndex(u => u.id === user.id)
+            if (regIndex !== -1) {
+                registeredUsers[regIndex].verified = status
+                localStorage.setItem('quickgig_registered_users_v2', JSON.stringify(registeredUsers))
+            }
+
+            // Dispatch storage event for immediate UI updates
+            window.dispatchEvent(new Event('storage'))
+        } catch (e) {
+            console.error('Error updating verified status:', e)
         }
     }
 
@@ -297,6 +362,38 @@ export default function ProfileManagement() {
         setNotification({
             type: 'success',
             message: 'Assessment Form uploaded successfully! Your document is pending review.'
+        });
+    }
+
+    const handleNbiSubmit = () => {
+        if (!nbiFile) return; // Guard against submit without file
+
+        const newNbiStatus = 'pending';
+        setNbiStatus(newNbiStatus);
+
+        // Save NBI status
+        localStorage.setItem(`nbiStatus_${user.id}`, newNbiStatus);
+
+        // Save per-user verification status including NBI
+        saveUserVerificationStatus(verificationStatus, assessmentStatus, newNbiStatus);
+
+        // Update user's verified status to 'pending' so they appear in admin queue
+        updateUserVerifiedStatus('pending');
+
+        // Send notification to admin about NBI upload
+        triggerNotification('admin', 'NBI Uploaded', `${user.name} submitted their NBI clearance for verification.`, 'verification');
+
+        setIsNbiModalOpen(false);
+
+        // Reset file input
+        const fileInput = document.getElementById('nbi-clearance-upload');
+        if (fileInput) fileInput.value = '';
+        setNbiFile(null);
+
+        // Show success message
+        setNotification({
+            type: 'success',
+            message: 'NBI Clearance uploaded successfully! Your document is pending review.'
         });
     }
 
@@ -491,6 +588,24 @@ export default function ProfileManagement() {
                                         onClick={() => setIsAssessmentModalOpen(true)}
                                     >
                                         Upload PDF
+                                    </Button>
+                                )}
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600 dark:text-gray-400">NBI Clearance</span>
+                                {nbiStatus === 'verified' && (
+                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                                )}
+                                {nbiStatus === 'pending' && (
+                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">Pending Review</span>
+                                )}
+                                {nbiStatus === 'unverified' && (
+                                    <Button
+                                        size="sm"
+                                        className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                        onClick={() => setIsNbiModalOpen(true)}
+                                    >
+                                        Upload NBI
                                     </Button>
                                 )}
                             </div>
@@ -777,6 +892,57 @@ export default function ProfileManagement() {
                             Cancel
                         </Button>
                         <Button onClick={handleAssessmentSubmit} disabled={!assessmentFile}>
+                            Submit
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={isNbiModalOpen}
+                onClose={() => setIsNbiModalOpen(false)}
+                title="Upload NBI Clearance"
+            >
+                <div className="space-y-6">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Please upload a clear photo or scan of your valid NBI Clearance to verify your identity.
+                    </p>
+
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative">
+                        <input
+                            key={isNbiModalOpen ? 'open' : 'closed'}
+                            type="file"
+                            name="nbiClearance"
+                            id="nbi-clearance-upload"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            accept="image/*"
+                            onChange={handleNbiFileChange}
+                        />
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-3">
+                            <Upload className="w-8 h-8 text-blue-500" />
+                        </div>
+                        {nbiFile ? (
+                            <>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
+                                    {nbiFile.name}
+                                </span>
+                                <span className="text-xs text-green-500 mt-1">File selected</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Click to upload NBI Clearance
+                                </span>
+                                <span className="text-xs text-gray-500 mt-1">Supports PNG, JPG</span>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="outline" onClick={() => setIsNbiModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleNbiSubmit} disabled={!nbiFile}>
                             Submit
                         </Button>
                     </div>
