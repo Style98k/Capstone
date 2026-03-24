@@ -12,6 +12,7 @@ export default function ManageGigs() {
   const { user } = useAuth()
   const [statusFilter, setStatusFilter] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, gig: null })
 
   // Get data from localStorage
   const gigs = useMemo(() => {
@@ -32,15 +33,23 @@ export default function ManageGigs() {
     return applications.filter(app => app.gigId === gigId).length
   }
 
-  const handleDeleteGig = (gigId) => {
-    if (window.confirm('Are you sure you want to delete this gig? This action cannot be undone.')) {
-      const result = deleteGig(gigId)
-      if (result.success) {
-        alert('Gig deleted successfully!')
-        setRefreshKey(prev => prev + 1) // Refresh the data
-      } else {
-        alert('Failed to delete gig. Please try again.')
-      }
+  const openDeleteModal = (gig) => {
+    setDeleteModal({ isOpen: true, gig })
+  }
+
+  const closeDeleteModal = () => {
+    setDeleteModal({ isOpen: false, gig: null })
+  }
+
+  const confirmDeleteGig = () => {
+    if (!deleteModal.gig) return
+
+    const result = deleteGig(deleteModal.gig.id)
+    if (result.success) {
+      setRefreshKey(prev => prev + 1)
+      closeDeleteModal()
+    } else {
+      alert('Failed to delete gig. Please try again.')
     }
   }
 
@@ -244,15 +253,17 @@ export default function ManageGigs() {
                         </Button>
                       </motion.div>
                     )}
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Button variant="danger" size="sm" onClick={() => handleDeleteGig(gig.id)} className="hover:bg-red-700 hover:shadow-md transition-all duration-200 min-w-[80px] flex items-center justify-center">
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Delete
-                      </Button>
-                    </motion.div>
+                    {(gig.status === 'open' || gig.status === 'paused') && (
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button variant="danger" size="sm" onClick={() => openDeleteModal(gig)} className="hover:bg-red-700 hover:shadow-md transition-all duration-200 min-w-[80px] flex items-center justify-center">
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
+                      </motion.div>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -268,6 +279,57 @@ export default function ManageGigs() {
             </Card>
           )}
         </motion.div>
+
+        {/* Delete Confirmation Modal */}
+        {deleteModal.isOpen && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              {/* Backdrop */}
+              <div
+                className="fixed inset-0 bg-black/50 transition-opacity"
+                onClick={closeDeleteModal}
+              />
+
+              {/* Modal */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6 z-10"
+              >
+                <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full">
+                  <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+
+                <h3 className="text-lg font-semibold text-center text-gray-900 dark:text-white mb-2">
+                  Delete Job Post?
+                </h3>
+
+                <p className="text-sm text-center text-gray-600 dark:text-gray-400 mb-6">
+                  Are you sure you want to delete "{deleteModal.gig?.title}"? This action cannot be undone.
+                </p>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={closeDeleteModal}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    className="flex-1"
+                    onClick={confirmDeleteGig}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
