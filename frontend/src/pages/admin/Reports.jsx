@@ -61,19 +61,20 @@ const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => {
   return (
     <Card className="h-full" hover={true}>
       <div className="flex flex-col h-full justify-between">
-        <div className={`p-2 w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors duration-300 ${colorStyles[color]}`}>
-          <Icon size={24} />
+        <div className={`p-2 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 transition-colors duration-300 ${colorStyles[color]}`}>
+          <Icon size={20} className="sm:hidden" />
+          <Icon size={24} className="hidden sm:block" />
         </div>
         <div>
-          <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{value}</h3>
-          <p className="text-gray-500 font-medium text-sm">{title}</p>
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 break-words">{value}</h3>
+          <p className="text-gray-500 font-medium text-xs sm:text-sm">{title}</p>
         </div>
-        <div className="flex items-center mt-4">
+        <div className="flex items-center mt-3 sm:mt-4 flex-wrap gap-1">
           <span className={`flex items-center text-xs font-bold px-2 py-1 rounded-full ${trendColor}`}>
             <TrendIcon size={14} className="mr-1" />
             {trendValue}
           </span>
-          <span className="text-gray-400 text-xs ml-2">vs last month</span>
+          <span className="text-gray-400 text-xs ml-1 sm:ml-2">vs last month</span>
         </div>
       </div>
     </Card>
@@ -230,20 +231,20 @@ export default function Reports() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
-          <p className="text-gray-500 mt-1 font-medium">Platform statistics and insights</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
+          <p className="text-gray-500 mt-1 font-medium text-sm sm:text-base">Platform statistics and insights</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px]"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px] flex-1 sm:flex-none"
           >
             <Download size={16} />
-            Export
+            <span className="hidden xs:inline">Export</span>
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px]">
+          <button className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px] flex-1 sm:flex-none">
             <Calendar size={16} />
-            {dateRange}
+            <span className="hidden xs:inline">{dateRange}</span>
           </button>
         </div>
       </div>

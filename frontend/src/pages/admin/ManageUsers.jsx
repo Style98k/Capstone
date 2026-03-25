@@ -447,38 +447,38 @@ export default function ManageUsers() {
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('table')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
                   ${viewMode === 'table'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <Table2 className="w-4 h-4" />
-                Table
+                <span className="hidden sm:inline">Table</span>
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
                   ${viewMode === 'grid'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
-                Board
+                <span className="hidden sm:inline">Board</span>
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
                   ${viewMode === 'list'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <List className="w-4 h-4" />
-                List
+                <span className="hidden sm:inline">List</span>
               </button>
             </div>
 
             {/* Divider */}
-            <div className="h-6 w-px bg-gray-200" />
+            <div className="hidden sm:block h-6 w-px bg-gray-200" />
 
             {/* Role Filter */}
             <div className="flex items-center gap-2">
@@ -500,9 +500,9 @@ export default function ManageUsers() {
           </div>
 
           {/* Right side - Search & Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full lg:w-auto">
             {/* Search */}
-            <div className="relative">
+            <div className="relative flex-1 lg:flex-none">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
@@ -514,7 +514,7 @@ export default function ManageUsers() {
                   setFilter(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="pl-10 pr-4 py-2 w-64 text-sm bg-gray-50 border border-gray-200 rounded-lg
+                className="pl-10 pr-4 py-2 w-full lg:w-64 text-sm bg-gray-50 border border-gray-200 rounded-lg
                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
                   transition-all duration-200 placeholder:text-gray-400"
               />
@@ -536,10 +536,10 @@ export default function ManageUsers() {
           >
             <Card padding="p-0" delay={2}>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[600px]">
                   <thead>
                     <tr className="border-b border-gray-100">
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         <input
                           type="checkbox"
                           name="selectAll"
@@ -547,25 +547,25 @@ export default function ManageUsers() {
                           className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                       </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Full name
                       </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Email
                       </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="hidden md:table-cell text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Role
                       </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="hidden lg:table-cell text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Joined date
                       </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="hidden md:table-cell text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Verified
                       </th>
-                      <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -580,7 +580,7 @@ export default function ManageUsers() {
                         className="border-b border-gray-50 hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-transparent 
                           transition-colors duration-200 group"
                       >
-                        <td className="py-4 px-6">
+                        <td className="py-4 px-4 sm:px-6">
                           <input
                             type="checkbox"
                             name={`selectUser-${user.id}`}
@@ -588,7 +588,7 @@ export default function ManageUsers() {
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           />
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-4 px-4 sm:px-6">
                           <div className="flex items-center gap-3">
                             {user.profilePhoto ? (
                               <img
@@ -598,7 +598,7 @@ export default function ManageUsers() {
                                   group-hover:scale-110 transition-transform duration-200"
                               />
                             ) : (
-                              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user.name)} 
+                              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user.name)}
                                 flex items-center justify-center text-white font-semibold text-sm shadow-lg
                                 group-hover:scale-110 transition-transform duration-200`}>
                                 {user.name.charAt(0).toUpperCase()}
@@ -607,15 +607,15 @@ export default function ManageUsers() {
                             <span className="font-medium text-gray-900">{user.name}</span>
                           </div>
                         </td>
-                        <td className="py-4 px-6">
-                          <a href={`mailto:${user.email}`} className="text-indigo-600 hover:text-indigo-800 hover:underline transition-colors">
+                        <td className="py-4 px-4 sm:px-6">
+                          <a href={`mailto:${user.email}`} className="text-indigo-600 hover:text-indigo-800 hover:underline transition-colors text-sm break-all">
                             {user.email}
                           </a>
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="hidden md:table-cell py-4 px-4 sm:px-6">
                           <span className="text-gray-600">{user.role || 'N/A'}</span>
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-4 px-4 sm:px-6">
                           {user.suspended ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium 
                               bg-red-50 text-red-700 rounded-full border border-red-100">
@@ -630,7 +630,7 @@ export default function ManageUsers() {
                             </span>
                           )}
                         </td>
-                        <td className="py-4 px-6 text-gray-500 text-sm">
+                        <td className="hidden lg:table-cell py-4 px-4 sm:px-6 text-gray-500 text-sm">
                           {user.createdAt
                             ? new Date(user.createdAt).toLocaleDateString('en-US', {
                               day: '2-digit',
@@ -640,7 +640,7 @@ export default function ManageUsers() {
                             : 'N/A'
                           }
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="hidden md:table-cell py-4 px-4 sm:px-6">
                           {user.verificationStatus === 'pending' ? (
                             <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium inline-flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
@@ -661,7 +661,7 @@ export default function ManageUsers() {
                             </button>
                           )}
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-4 px-4 sm:px-6">
                           <div className="flex items-center gap-1">
                             {user.verificationStatus === 'pending' && (
                               <motion.button

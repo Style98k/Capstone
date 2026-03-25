@@ -125,18 +125,18 @@ export default function Settings() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">System Settings</h1>
-            <p className="text-gray-500 mt-2 text-lg">Manage generic platform configuration and preferences.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">System Settings</h1>
+            <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-lg">Manage platform configuration and preferences.</p>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="mb-8 border-b border-gray-200">
-          <nav className="flex space-x-1 overflow-x-auto pb-1" aria-label="Tabs">
+        <div className="mb-6 sm:mb-8 border-b border-gray-200">
+          <nav className="flex space-x-1 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide" aria-label="Tabs">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id
               const Icon = tab.icon
@@ -145,13 +145,13 @@ export default function Settings() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                  group relative min-w-0 flex-1 overflow-hidden py-4 px-4 text-center text-sm font-medium hover:bg-gray-50 focus:z-10 transition-all rounded-t-lg
+                  group relative min-w-0 flex-shrink-0 sm:flex-1 overflow-hidden py-3 sm:py-4 px-3 sm:px-4 text-center text-sm font-medium hover:bg-gray-50 focus:z-10 transition-all rounded-t-lg
                   ${isActive ? 'text-primary-600' : 'text-gray-500 hover:text-gray-700'}
                 `}
                 >
                   <div className="flex items-center justify-center space-x-2">
                     <Icon className={`w-4 h-4 ${isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500'}`} />
-                    <span>{tab.label}</span>
+                    <span className="hidden sm:inline">{tab.label}</span>
                   </div>
                   {isActive && (
                     <motion.div
