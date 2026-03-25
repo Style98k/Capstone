@@ -234,23 +234,23 @@ export default function Reports() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
           <p className="text-gray-500 mt-1 font-medium text-sm sm:text-base">Platform statistics and insights</p>
         </div>
-        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="flex gap-2 sm:gap-3">
           <button
             onClick={handleExport}
-            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px] flex-1 sm:flex-none"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px]"
           >
             <Download size={16} />
-            <span className="hidden xs:inline">Export</span>
+            <span className="hidden sm:inline">Export</span>
           </button>
-          <button className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px] flex-1 sm:flex-none">
+          <button className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px]">
             <Calendar size={16} />
-            <span className="hidden xs:inline">{dateRange}</span>
+            <span className="hidden sm:inline">{dateRange}</span>
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <StatCard
           title="Total Users"
           value={allUsers.length}

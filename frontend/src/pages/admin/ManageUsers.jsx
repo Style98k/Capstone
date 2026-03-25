@@ -390,13 +390,13 @@ export default function ManageUsers() {
         className="flex items-start justify-between"
       >
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">User management</h1>
-            <span className="px-3 py-1 text-sm font-medium text-gray-500 bg-gray-100 rounded-full">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User management</h1>
+            <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-gray-500 bg-gray-100 rounded-full">
               {filteredUsers.length}
             </span>
           </div>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">
             Manage your team members and their account permissions here.
           </p>
         </div>
@@ -439,82 +439,71 @@ export default function ManageUsers() {
       </div>
 
       {/* Toolbar */}
-      <Card padding="p-4" delay={1}>
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Left side - View toggles & Filters */}
-          <div className="flex items-center gap-4">
+      <Card padding="p-3 sm:p-4" delay={1}>
+        <div className="flex flex-col gap-3">
+          {/* Top row - View toggles, Filter, Search */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* View Mode Toggles */}
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('table')}
-                className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200
                   ${viewMode === 'table'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <Table2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Table</span>
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200
                   ${viewMode === 'grid'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
-                <span className="hidden sm:inline">Board</span>
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200
                   ${viewMode === 'list'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'}`}
               >
                 <List className="w-4 h-4" />
-                <span className="hidden sm:inline">List</span>
               </button>
             </div>
 
-            {/* Divider */}
-            <div className="hidden sm:block h-6 w-px bg-gray-200" />
-
             {/* Role Filter */}
-            <div className="flex items-center gap-2">
-              <select
-                value={roleFilter}
-                onChange={(e) => {
-                  setRoleFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 
-                  rounded-lg hover:bg-gray-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="all">All Roles</option>
-                {roles.map(role => (
-                  <option key={role} value={role}>{role}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="px-2 sm:px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200
+                rounded-lg hover:bg-gray-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="all">All Roles</option>
+              {roles.map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
 
-          {/* Right side - Search & Actions */}
-          <div className="flex items-center gap-3 w-full lg:w-auto">
-            {/* Search */}
-            <div className="relative flex-1 lg:flex-none">
+            {/* Search - Grows to fill remaining space */}
+            <div className="relative flex-1 min-w-[150px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 name="search"
                 id="search-users"
-                placeholder="Search users..."
+                placeholder="Search..."
                 value={filter}
                 onChange={(e) => {
                   setFilter(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="pl-10 pr-4 py-2 w-full lg:w-64 text-sm bg-gray-50 border border-gray-200 rounded-lg
+                className="pl-10 pr-3 py-1.5 w-full text-sm bg-gray-50 border border-gray-200 rounded-lg
                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
                   transition-all duration-200 placeholder:text-gray-400"
               />
@@ -536,10 +525,10 @@ export default function ManageUsers() {
           >
             <Card padding="p-0" delay={2}>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[600px]">
+                <table className="w-full min-w-[500px]">
                   <thead>
                     <tr className="border-b border-gray-100">
-                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-3 px-3 sm:px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-10">
                         <input
                           type="checkbox"
                           name="selectAll"
@@ -547,25 +536,19 @@ export default function ManageUsers() {
                           className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                       </th>
-                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Full name
+                      <th className="text-left py-3 px-3 sm:px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        User
                       </th>
-                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="hidden md:table-cell text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="hidden sm:table-cell text-left py-3 px-3 sm:px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Role
                       </th>
-                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-3 px-3 sm:px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="hidden lg:table-cell text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Joined date
+                      <th className="hidden lg:table-cell text-left py-3 px-3 sm:px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Joined
                       </th>
-                      <th className="hidden md:table-cell text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Verified
-                      </th>
-                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-3 px-3 sm:px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">
                         Actions
                       </th>
                     </tr>
@@ -577,10 +560,10 @@ export default function ManageUsers() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2, delay: index * 0.03 }}
-                        className="border-b border-gray-50 hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-transparent 
+                        className="border-b border-gray-50 hover:bg-gradient-to-r hover:from-gray-50/50 hover:to-transparent
                           transition-colors duration-200 group"
                       >
-                        <td className="py-4 px-4 sm:px-6">
+                        <td className="py-3 px-3 sm:px-4">
                           <input
                             type="checkbox"
                             name={`selectUser-${user.id}`}
@@ -588,49 +571,47 @@ export default function ManageUsers() {
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           />
                         </td>
-                        <td className="py-4 px-4 sm:px-6">
-                          <div className="flex items-center gap-3">
+                        <td className="py-3 px-3 sm:px-4">
+                          <div className="flex items-center gap-2 sm:gap-3">
                             {user.profilePhoto ? (
                               <img
                                 src={user.profilePhoto}
                                 alt={user.name}
-                                className="w-10 h-10 rounded-full object-cover shadow-lg
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-lg flex-shrink-0
                                   group-hover:scale-110 transition-transform duration-200"
                               />
                             ) : (
-                              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user.name)}
-                                flex items-center justify-center text-white font-semibold text-sm shadow-lg
+                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br ${getAvatarColor(user.name)}
+                                flex items-center justify-center text-white font-semibold text-xs sm:text-sm shadow-lg flex-shrink-0
                                 group-hover:scale-110 transition-transform duration-200`}>
                                 {user.name.charAt(0).toUpperCase()}
                               </div>
                             )}
-                            <span className="font-medium text-gray-900">{user.name}</span>
+                            <div className="min-w-0">
+                              <p className="font-medium text-gray-900 text-sm truncate">{user.name}</p>
+                              <p className="text-xs text-gray-500 truncate max-w-[120px] sm:max-w-[180px]">{user.email}</p>
+                            </div>
                           </div>
                         </td>
-                        <td className="py-4 px-4 sm:px-6">
-                          <a href={`mailto:${user.email}`} className="text-indigo-600 hover:text-indigo-800 hover:underline transition-colors text-sm break-all">
-                            {user.email}
-                          </a>
+                        <td className="hidden sm:table-cell py-3 px-3 sm:px-4">
+                          <span className="text-gray-600 text-sm">{user.role || 'N/A'}</span>
                         </td>
-                        <td className="hidden md:table-cell py-4 px-4 sm:px-6">
-                          <span className="text-gray-600">{user.role || 'N/A'}</span>
-                        </td>
-                        <td className="py-4 px-4 sm:px-6">
+                        <td className="py-3 px-3 sm:px-4">
                           {user.suspended ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium 
-                              bg-red-50 text-red-700 rounded-full border border-red-100">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium
+                              bg-red-50 text-red-700 rounded-full">
                               <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                              Suspended
+                              <span className="hidden sm:inline">Suspended</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium 
-                              bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium
+                              bg-emerald-50 text-emerald-700 rounded-full">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              Active
+                              <span className="hidden sm:inline">Active</span>
                             </span>
                           )}
                         </td>
-                        <td className="hidden lg:table-cell py-4 px-4 sm:px-6 text-gray-500 text-sm">
+                        <td className="hidden lg:table-cell py-3 px-3 sm:px-4 text-gray-500 text-xs">
                           {user.createdAt
                             ? new Date(user.createdAt).toLocaleDateString('en-US', {
                               day: '2-digit',
@@ -640,35 +621,14 @@ export default function ManageUsers() {
                             : 'N/A'
                           }
                         </td>
-                        <td className="hidden md:table-cell py-4 px-4 sm:px-6">
-                          {user.verificationStatus === 'pending' ? (
-                            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium inline-flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                              Pending Review
-                            </span>
-                          ) : user.verified ? (
-                            <span className="text-emerald-600 font-medium flex items-center gap-1">
-                              <CheckCircle2 className="w-4 h-4" />
-                              Verified
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => handleVerify(user.id)}
-                              className="text-gray-400 font-medium flex items-center gap-1 hover:text-gray-600 transition-colors"
-                            >
-                              <XCircle className="w-4 h-4" />
-                              Unverified
-                            </button>
-                          )}
-                        </td>
-                        <td className="py-4 px-4 sm:px-6">
-                          <div className="flex items-center gap-1">
+                        <td className="py-3 px-3 sm:px-4">
+                          <div className="flex items-center gap-0.5">
                             {user.verificationStatus === 'pending' && (
                               <motion.button
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => handleOpenVerify(user)}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 title="Review Verification"
                               >
                                 <Eye className="w-4 h-4" />
@@ -677,7 +637,7 @@ export default function ManageUsers() {
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.95 }}
-                              className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                               title="Edit user"
                             >
                               <Edit3 className="w-4 h-4" />
@@ -686,7 +646,7 @@ export default function ManageUsers() {
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={() => handleSuspend(user.id)}
-                              className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                               title={user.suspended ? "Unsuspend user" : "Suspend user"}
                             >
                               <Shield className="w-4 h-4" />
@@ -695,7 +655,7 @@ export default function ManageUsers() {
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={() => handleDelete(user.id)}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title="Delete user"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -709,7 +669,7 @@ export default function ManageUsers() {
               </div>
 
               {/* Pagination for Table */}
-              <div className="flex items-center justify-end px-6 py-4 border-t border-gray-100">
+              <div className="flex items-center justify-center sm:justify-end px-3 sm:px-6 py-3 border-t border-gray-100">
 
                 <div className="flex items-center gap-1">
                   <motion.button
