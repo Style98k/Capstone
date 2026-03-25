@@ -1,18 +1,19 @@
-export default function Input({ 
-  label, 
-  type = 'text', 
-  placeholder = '', 
-  value, 
-  onChange, 
+export default function Input({
+  label,
+  type = 'text',
+  placeholder = '',
+  value,
+  onChange,
   error,
   className = '',
   required = false,
   leftIcon: LeftIcon,
   rightElement,
-  ...props 
+  ...props
 }) {
   const hasLeftIcon = Boolean(LeftIcon)
   const hasRightElement = Boolean(rightElement)
+  const isDateInput = type === 'date'
 
   return (
     <div className="mb-4">
@@ -34,7 +35,9 @@ export default function Input({
           onChange={onChange}
           className={`input ${error ? 'border-red-500 focus:ring-red-500' : ''} ${
             hasLeftIcon ? 'pl-10' : ''
-          } ${hasRightElement ? 'pr-10' : ''} ${className}`}
+          } ${hasRightElement ? 'pr-10' : ''} ${
+            isDateInput ? 'text-base' : ''
+          } ${className}`}
           required={required}
           {...props}
         />
