@@ -169,15 +169,27 @@ export default function Navbar({ onMenuClick }) {
     hover:scale-110 hover:shadow-md hover:shadow-sky-100 dark:hover:shadow-sky-900/30
   `
 
+  const [logoError, setLogoError] = useState(false)
+
   return (
     <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-sky-100/50 dark:border-slate-800/50 fixed top-0 left-0 right-0 z-50 h-16 shadow-sm shadow-sky-100/30 dark:shadow-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo - Unchanged as requested */}
+          {/* Logo: use an image at /logo.png if available, otherwise fall back to the original Q box */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">Q</span>
-            </div>
+            {!logoError ? (
+              <img
+                src="/logo.png"
+                alt="QuickGig"
+                className="w-[55px] h-[55px] object-contain rounded-lg"
+                onError={() => setLogoError(true)}
+                onLoad={() => setLogoError(false)}
+              />
+            ) : (
+              <div className="w-[55px] h-[55px] bg-sky-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-2xl">Q</span>
+              </div>
+            )}
             <span className="text-xl font-bold text-gray-900 dark:text-white">QuickGig</span>
           </Link>
 

@@ -293,104 +293,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features */}
-        <section className="w-full">
-          <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-white mb-4">
-            Why Choose QuickGig?
-          </h2>
-          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mb-10">
-            Made for students who want real experience and clients who want trusted, flexible help.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-              <div className="w-12 h-12 bg-sky-100 dark:bg-sky-900 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-sky-200 dark:group-hover:bg-sky-800 transition-colors">
-                <Shield className="w-6 h-6 text-sky-600 dark:text-sky-300 group-hover:drop-shadow-[0_0_18px_rgba(56,189,248,0.8)] transition-all duration-300" />
-              </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
-                Verified Students
-              </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                All students pass school ID verification and Asessment Form so clients can hire with confidence.
-              </p>
-            </div>
-            <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-              <div className="w-12 h-12 bg-violet-100 dark:bg-violet-900 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-violet-200 dark:group-hover:bg-violet-800 transition-colors">
-                <Briefcase className="w-6 h-6 text-violet-600 dark:text-violet-300 group-hover:drop-shadow-[0_0_18px_rgba(139,92,246,0.8)] transition-all duration-300" />
-              </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
-                Flexible Opportunities
-              </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Short tasks, weekend work, or ongoing help students choose what fits their schedule.
-              </p>
-            </div>
-            <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800 transition-colors">
-                <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-300 group-hover:drop-shadow-[0_0_18px_rgba(16,185,129,0.8)] transition-all duration-300" />
-              </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
-                Smart Matching
-              </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Filters by category, skills, and availability help everyone find the perfect match fast.
-              </p>
-            </div>
-            <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-amber-200 dark:group-hover:bg-amber-800 transition-colors">
-                <TrendingUp className="w-6 h-6 text-amber-600 dark:text-amber-300 group-hover:drop-shadow-[0_0_18px_rgba(251,191,36,0.8)] transition-all duration-300" />
-              </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
-                Secure Payments
-              </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Safe, reliable payments via GCash and PayPal, with clear tracking for both sides.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* How It Works */}
-        <section className="bg-white/80 dark:bg-slate-900/80 py-16 rounded-3xl w-full border border-slate-100 dark:border-slate-800">
-          <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-white mb-4">
-            How It Works
-          </h2>
-          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mb-10">
-            Three simple steps for both students and clients.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center transition-transform duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-sky-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg shadow-sky-400/40">
-                1
-              </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Create Account</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Sign up as a student or client. Students quickly verify with their school ID and Assessment Form.
-              </p>
-            </div>
-            <div className="text-center transition-transform duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-violet-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg shadow-violet-400/40">
-                2
-              </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
-                Connect & Apply
-              </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Students browse and apply to gigs while clients post jobs and review applicants.
-              </p>
-            </div>
-            <div className="text-center transition-transform duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-emerald-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg shadow-emerald-400/40">
-                3
-              </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Complete & Earn</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Finish the gig, get rated, and receive secure payments via GCash or PayPal.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Benefits Section */}
+        {/* Benefits Section (moved up) */}
         <section>
           <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-white mb-12">
             Benefits for Everyone
@@ -466,6 +369,103 @@ export default function Home() {
                   </span>
                 </li>
               </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section className="bg-white/80 dark:bg-slate-900/80 py-16 rounded-3xl w-full border border-slate-100 dark:border-slate-800">
+          <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-white mb-4">
+            How It Works
+          </h2>
+          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mb-10">
+            Three simple steps for both students and clients.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center transition-transform duration-300 hover:-translate-y-1">
+              <div className="w-16 h-16 bg-sky-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg shadow-sky-400/40">
+                1
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Create Account</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Sign up as a student or client. Students quickly verify with their school ID and Assessment Form.
+              </p>
+            </div>
+            <div className="text-center transition-transform duration-300 hover:-translate-y-1">
+              <div className="w-16 h-16 bg-violet-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg shadow-violet-400/40">
+                2
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+                Connect & Apply
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Students browse and apply to gigs while clients post jobs and review applicants.
+              </p>
+            </div>
+            <div className="text-center transition-transform duration-300 hover:-translate-y-1">
+              <div className="w-16 h-16 bg-emerald-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg shadow-emerald-400/40">
+                3
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Complete & Earn</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Finish the gig, get rated, and receive secure payments via GCash or PayPal.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Features (moved down) */}
+        <section className="w-full">
+          <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-white mb-4">
+            Why Choose QuickGig?
+          </h2>
+          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mb-10">
+            Made for students who want real experience and clients who want trusted, flexible help.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+              <div className="w-12 h-12 bg-sky-100 dark:bg-sky-900 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-sky-200 dark:group-hover:bg-sky-800 transition-colors">
+                <Shield className="w-6 h-6 text-sky-600 dark:text-sky-300 group-hover:drop-shadow-[0_0_18px_rgba(56,189,248,0.8)] transition-all duration-300" />
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+                Verified Students
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                All students pass school ID verification and Asessment Form so clients can hire with confidence.
+              </p>
+            </div>
+            <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+              <div className="w-12 h-12 bg-violet-100 dark:bg-violet-900 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-violet-200 dark:group-hover:bg-violet-800 transition-colors">
+                <Briefcase className="w-6 h-6 text-violet-600 dark:text-violet-300 group-hover:drop-shadow-[0_0_18px_rgba(139,92,246,0.8)] transition-all duration-300" />
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+                Flexible Opportunities
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Short tasks, weekend work, or ongoing help students choose what fits their schedule.
+              </p>
+            </div>
+            <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800 transition-colors">
+                <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-300 group-hover:drop-shadow-[0_0_18px_rgba(16,185,129,0.8)] transition-all duration-300" />
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+                Smart Matching
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Filters by category, skills, and availability help everyone find the perfect match fast.
+              </p>
+            </div>
+            <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-amber-200 dark:group-hover:bg-amber-800 transition-colors">
+                <TrendingUp className="w-6 h-6 text-amber-600 dark:text-amber-300 group-hover:drop-shadow-[0_0_18px_rgba(251,191,36,0.8)] transition-all duration-300" />
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+                Secure Payments
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Safe, reliable payments via GCash and PayPal, with clear tracking for both sides.
+              </p>
             </div>
           </div>
         </section>
