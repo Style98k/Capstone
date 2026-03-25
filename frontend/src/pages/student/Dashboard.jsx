@@ -18,7 +18,6 @@ import {
   Clock3,
   ArrowUpRight,
   Search,
-  MessageSquare,
   Sparkles,
   AlertTriangle
 } from 'lucide-react'
@@ -152,12 +151,6 @@ export default function StudentDashboard() {
                 <button className="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/25 px-4 py-2 font-semibold text-white backdrop-blur transition-all duration-200 hover:bg-white/25 hover:-translate-y-0.5">
                   <Briefcase className="w-4 h-4" />
                   Applications
-                </button>
-              </Link>
-              <Link to="/student/messages">
-                <button className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-4 py-2 font-semibold text-white backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5">
-                  <MessageSquare className="w-4 h-4" />
-                  Messages
                 </button>
               </Link>
             </div>

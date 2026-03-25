@@ -12,7 +12,6 @@ import {
   BriefcaseIcon,
   ClipboardDocumentListIcon,
   CurrencyDollarIcon,
-  ChatBubbleLeftRightIcon,
   DocumentPlusIcon,
   UserGroupIcon,
   CreditCardIcon,
@@ -32,14 +31,12 @@ const StudentDashboard = lazy(() => import('../pages/student/Dashboard'))
 const BrowseGigs = lazy(() => import('../pages/student/BrowseGigs'))
 const MyApplications = lazy(() => import('../pages/student/MyApplications'))
 const MyEarnings = lazy(() => import('../pages/student/MyEarnings'))
-const Messages = lazy(() => import('../pages/student/Messages'))
 const ProfileManagement = lazy(() => import('../pages/student/ProfileManagement'))
 
 const ClientDashboard = lazy(() => import('../pages/client/Dashboard'))
 const PostGig = lazy(() => import('../pages/client/PostGig'))
 const ClientManageGigs = lazy(() => import('../pages/client/ManageGigs'))
 const ViewApplicants = lazy(() => import('../pages/client/ViewApplicants'))
-const ClientMessages = lazy(() => import('../pages/client/Messages'))
 const Payments = lazy(() => import('../pages/client/Payments'))
 const ClientProfile = lazy(() => import('../pages/client/ClientProfile'))
 
@@ -128,7 +125,6 @@ export default function AppRouter() {
     { path: '/student/browse', label: 'Browse Gigs', icon: BriefcaseIcon },
     { path: '/student/applications', label: 'My Applications', icon: ClipboardDocumentListIcon },
     { path: '/student/earnings', label: 'My Earnings', icon: CurrencyDollarIcon },
-    { path: '/student/messages', label: 'Messages', icon: ChatBubbleLeftRightIcon },
   ]
 
   const clientSidebarItems = [
@@ -137,7 +133,6 @@ export default function AppRouter() {
     { path: '/client/manage-gigs', label: 'Manage Gigs', icon: BriefcaseIcon },
     { path: '/client/applicants', label: 'View Applicants', icon: UserGroupIcon },
     { path: '/client/payments', label: 'Payments', icon: CreditCardIcon },
-    { path: '/client/messages', label: 'Messages', icon: ChatBubbleLeftRightIcon },
   ]
 
   const adminSidebarItems = [
@@ -264,16 +259,6 @@ export default function AppRouter() {
           }
         />
         <Route
-          path="/student/messages"
-          element={
-            <ProtectedRoute requiredRole="student">
-              <Layout showSidebar sidebarItems={studentSidebarItems}>
-                <Messages />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/student/profile"
           element={
             <ProtectedRoute requiredRole="student">
@@ -321,16 +306,6 @@ export default function AppRouter() {
             <ProtectedRoute requiredRole="client">
               <Layout showSidebar sidebarItems={clientSidebarItems}>
                 <ViewApplicants />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/client/messages"
-          element={
-            <ProtectedRoute requiredRole="client">
-              <Layout showSidebar sidebarItems={clientSidebarItems}>
-                <ClientMessages />
               </Layout>
             </ProtectedRoute>
           }
