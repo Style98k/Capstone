@@ -194,22 +194,22 @@ export default function Reports() {
   }
 
   return (
-    <div className="space-y-6 animate-slide-up-fade">
+    <div className="space-y-6 animate-slide-up-fade overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
           <p className="text-gray-500 mt-1 font-medium text-sm">Platform statistics and insights</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex w-full sm:w-auto gap-2">
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm"
           >
             <Download size={16} />
             <span className="hidden sm:inline">Export</span>
           </button>
-          <button className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm">
+          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm">
             <Calendar size={16} />
             <span className="hidden sm:inline">{dateRange}</span>
           </button>
@@ -217,7 +217,7 @@ export default function Reports() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Users"
           value={allUsers.length}
@@ -263,8 +263,8 @@ export default function Reports() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bar Chart */}
-        <Card className="p-6">
-          <div className="flex justify-between items-center mb-8">
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 sm:mb-8">
             <div>
               <h2 className="text-lg font-bold text-gray-900">Application Status</h2>
               <div className="text-gray-400 text-sm mt-1">Application overview</div>
@@ -276,7 +276,7 @@ export default function Reports() {
               </div>
             </div>
           </div>
-          <div className="h-[300px] w-full">
+          <div className="h-[260px] sm:h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={applicationData} barSize={20}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -300,8 +300,8 @@ export default function Reports() {
         </Card>
 
         {/* Line Chart */}
-        <Card className="p-6">
-          <div className="flex justify-between items-center mb-8">
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 sm:mb-8">
             <div>
               <h2 className="text-lg font-bold text-gray-900">Gigs Overview</h2>
               <div className="flex items-center gap-2 mt-1">
@@ -313,7 +313,7 @@ export default function Reports() {
               <MoreHorizontal size={20} className="text-gray-400" />
             </button>
           </div>
-          <div className="h-[300px] w-full">
+          <div className="h-[260px] sm:h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={gigData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />

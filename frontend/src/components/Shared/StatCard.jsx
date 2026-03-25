@@ -129,7 +129,7 @@ export default function StatCard({
       onClick={onClick}
     >
       <div className={`
-        relative overflow-hidden rounded-2xl p-6
+        relative overflow-hidden rounded-2xl p-4 sm:p-6
         ${variant.cardClass}
         transition-all duration-300 ease-in-out
         cursor-pointer
@@ -149,7 +149,7 @@ export default function StatCard({
                 {title}
               </p>
               <motion.p
-                className="text-4xl font-bold text-slate-900"
+                className="text-2xl sm:text-4xl font-bold text-slate-900 break-words"
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: delay * 0.1 + 0.2, duration: 0.4, type: "spring" }}
@@ -162,7 +162,7 @@ export default function StatCard({
             {Icon && (
               <motion.div
                 className={`
-                  stat-icon p-4 rounded-xl
+                  stat-icon p-3 sm:p-4 rounded-xl shrink-0
                   ${variant.iconBg}
                   ${variant.iconShadow}
                   group-hover:scale-110 group-hover:rotate-3
@@ -170,7 +170,7 @@ export default function StatCard({
                 `}
                 whileHover={{ scale: 1.15, rotate: 6 }}
               >
-                <Icon className={`w-7 h-7 ${variant.iconColor}`} strokeWidth={2.5} />
+                <Icon className={`w-5 h-5 sm:w-7 sm:h-7 ${variant.iconColor}`} strokeWidth={2.5} />
               </motion.div>
             )}
           </div>

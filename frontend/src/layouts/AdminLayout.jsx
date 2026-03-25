@@ -22,8 +22,8 @@ export default function AdminLayout() {
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-blue-100/30 via-cyan-100/20 to-transparent rounded-full blur-3xl pointer-events-none" />
 
       <Sidebar navigation={navigation} />
-      <div className="md:pl-72 flex flex-col flex-1 relative">
-        <main className="flex-1 py-8 px-6 sm:px-8 lg:px-10 overflow-auto">
+      <div className="md:pl-72 flex flex-col flex-1 relative min-w-0">
+        <main className="flex-1 py-6 sm:py-8 px-4 sm:px-8 lg:px-10 overflow-x-hidden overflow-y-auto min-w-0">
           <Outlet />
         </main>
       </div>
