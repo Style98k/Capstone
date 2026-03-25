@@ -40,7 +40,7 @@ export default function Login() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img src="/logo.png" alt="QuickGig" className="w-16 h-16 object-contain" />
+            <img src="/logo.png" alt="QuickGig" className="w-16 h-16 object-contain rounded-2xl" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome back</h2>
           <p className="mt-2 text-gray-600 dark:text-gray-400">Sign in to your account to continue.</p>

@@ -19,7 +19,7 @@ export default function Navbar() {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="flex items-center gap-2 text-xl font-bold text-sky-600">
-                <img src="/logo.png" alt="QuickGig" className="w-8 h-8 object-contain" />
+                <img src="/logo.png" alt="QuickGig" className="w-8 h-8 object-contain rounded-lg" />
                 QuickGig
               </Link>
             </div>
