@@ -151,7 +151,7 @@ export default function Reports() {
     return {
       month: monthInfo.name,
       gigs: monthlyGigs.length,
-      sales: monthlySales
+      income: monthlySales
     }
   })
 
@@ -357,7 +357,7 @@ export default function Reports() {
                 <Tooltip content={<CustomTooltip />} />
                 <Line
                   type="monotone"
-                  dataKey="sales"
+                  dataKey="income"
                   stroke="#10b981"
                   strokeWidth={3}
                   dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
