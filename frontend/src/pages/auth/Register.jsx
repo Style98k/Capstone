@@ -100,9 +100,7 @@ export default function Register() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-sky-600 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-500/40">
-              <span className="text-white font-bold text-3xl">Q</span>
-            </div>
+            <img src="/logo.png" alt="QuickGig" className="w-16 h-16 object-contain" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Create your QuickGig account</h2>
           <p className="mt-2 text-gray-600 dark:text-gray-400">Fill in your details to get started.</p>
