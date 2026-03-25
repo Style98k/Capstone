@@ -3,7 +3,6 @@ import { mockUsers } from '../../data/mockUsers'
 import { mockTransactions } from '../../data/mockTransactions'
 import { getGigs, getApplications } from '../../utils/localStorage'
 import Card from '../../components/UI/Card'
-import StatCard from '../../components/Shared/StatCard'
 import {
   BarChart,
   Bar,
@@ -46,6 +45,40 @@ const getAllUsers = () => {
   } catch (error) {
     return mockUsers
   }
+}
+
+const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => {
+  const colorStyles = {
+    emerald: 'bg-emerald-50 text-emerald-600',
+    violet: 'bg-violet-50 text-violet-600',
+    amber: 'bg-amber-50 text-amber-600',
+    blue: 'bg-blue-50 text-blue-600',
+  }
+
+  const trendColor = trend === 'up' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'
+  const TrendIcon = trend === 'up' ? ArrowUpRight : ArrowDownRight
+
+  return (
+    <Card className="h-full" hover={true}>
+      <div className="flex flex-col h-full justify-between">
+        <div className={`p-2 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 transition-colors duration-300 ${colorStyles[color]}`}>
+          <Icon size={20} className="sm:hidden" />
+          <Icon size={24} className="hidden sm:block" />
+        </div>
+        <div>
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 break-words">{value}</h3>
+          <p className="text-gray-500 font-medium text-xs sm:text-sm">{title}</p>
+        </div>
+        <div className="flex items-center mt-3 sm:mt-4 flex-wrap gap-1">
+          <span className={`flex items-center text-xs font-bold px-2 py-1 rounded-full ${trendColor}`}>
+            <TrendIcon size={14} className="mr-1" />
+            {trendValue}
+          </span>
+          <span className="text-gray-400 text-xs ml-1 sm:ml-2">vs last month</span>
+        </div>
+      </div>
+    </Card>
+  )
 }
 
 export default function Reports() {
@@ -194,77 +227,70 @@ export default function Reports() {
   }
 
   return (
-    <div className="space-y-6 animate-slide-up-fade overflow-x-hidden">
+    <div className="space-y-8 animate-slide-up-fade">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
-          <p className="text-gray-500 mt-1 font-medium text-sm">Platform statistics and insights</p>
+          <p className="text-gray-500 mt-1 font-medium text-sm sm:text-base">Platform statistics and insights</p>
         </div>
-        <div className="flex w-full sm:w-auto gap-2">
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={handleExport}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px] flex-1 sm:flex-none"
           >
             <Download size={16} />
-            <span className="hidden sm:inline">Export</span>
+            <span className="hidden xs:inline">Export</span>
           </button>
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm">
+          <button className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all text-sm font-semibold shadow-sm hover:translate-y-[-2px] flex-1 sm:flex-none">
             <Calendar size={16} />
-            <span className="hidden sm:inline">{dateRange}</span>
+            <span className="hidden xs:inline">{dateRange}</span>
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Users"
           value={allUsers.length}
           icon={Users}
-          color="minimalBlue"
+          color="blue"
           trend="up"
           trendValue="2.9%"
-          showLink={false}
-          delay={0}
         />
         <StatCard
           title="Total Gigs"
           value={allGigs.length}
           icon={ShoppingBag}
-          color="minimalIndigo"
+          color="violet"
           trend="up"
           trendValue="13%"
-          showLink={false}
-          delay={1}
         />
+
         <StatCard
-          title="Transaction Vol."
+          title="Total Transaction Volume"
           value={`₱${transactionVolume.toLocaleString()}`}
           icon={CreditCard}
-          color="minimalOrange"
+          color="amber"
           trend="up"
           trendValue="14%"
-          showLink={false}
-          delay={2}
         />
         <StatCard
-          title="Applications"
+          title="Total Applications"
           value={allApplications.length}
           icon={FileText}
-          color="minimalEmerald"
+          color="emerald"
           trend="up"
           trendValue="16%"
-          showLink={false}
-          delay={3}
         />
       </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bar Chart */}
-        <Card className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 sm:mb-8">
+        <Card className="p-6">
+          <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-lg font-bold text-gray-900">Application Status</h2>
               <div className="text-gray-400 text-sm mt-1">Application overview</div>
@@ -276,7 +302,7 @@ export default function Reports() {
               </div>
             </div>
           </div>
-          <div className="h-[260px] sm:h-[300px] w-full">
+          <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={applicationData} barSize={20}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -300,8 +326,8 @@ export default function Reports() {
         </Card>
 
         {/* Line Chart */}
-        <Card className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 sm:mb-8">
+        <Card className="p-6">
+          <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-lg font-bold text-gray-900">Gigs Overview</h2>
               <div className="flex items-center gap-2 mt-1">
@@ -313,7 +339,7 @@ export default function Reports() {
               <MoreHorizontal size={20} className="text-gray-400" />
             </button>
           </div>
-          <div className="h-[260px] sm:h-[300px] w-full">
+          <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={gigData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
