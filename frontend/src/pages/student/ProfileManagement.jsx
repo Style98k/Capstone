@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import emailjs from '@emailjs/browser'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { getApplications } from '../../utils/localStorage'
 import { getUserRating } from '../../utils/ratingUtils'
@@ -6,7 +7,7 @@ import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Save, Camera, Star, Briefcase, TrendingUp,
     MapPin, Phone, Mail, Globe, Facebook, Calendar, Link as LinkIcon,
-    ShieldCheck, Upload, X, CheckCircle2, AlertCircle
+    ShieldCheck, Upload, X, CheckCircle2, AlertCircle, Loader2
 } from 'lucide-react'
 import Card from '../../components/UI/Card'
 import Modal from '../../components/UI/Modal'
@@ -41,6 +42,15 @@ export default function ProfileManagement() {
     const [nbiFile, setNbiFile] = useState(null)
     const [notification, setNotification] = useState(null)
     const [ratingData, setRatingData] = useState({ average: 0, count: 0, reviews: [] })
+
+    // Email OTP Verification State
+    const [generatedOTP, setGeneratedOTP] = useState(null)
+    const [isEmailVerified, setIsEmailVerified] = useState(() => {
+        return localStorage.getItem(`emailVerified_${user?.id}`) === 'true'
+    })
+    const [isOtpModalOpen, setIsOtpModalOpen] = useState(false)
+    const [otpInput, setOtpInput] = useState('')
+    const [isSendingOtp, setIsSendingOtp] = useState(false)
 
     // Sync with Admin and Check Notifications
     useEffect(() => {
@@ -386,6 +396,63 @@ export default function ProfileManagement() {
         });
     }
 
+    // Email OTP Functions
+    const sendEmailOTP = async () => {
+        if (!user?.email) {
+            setNotification({ type: 'error', message: 'No email address found.' })
+            return
+        }
+
+        // Clear old error states
+        setNotification(null)
+        setIsSendingOtp(true)
+        setNotification({ type: 'success', message: `Sending code to ${user.email}...` })
+
+        // Generate 6-digit OTP
+        const code = Math.floor(100000 + Math.random() * 900000).toString()
+        setGeneratedOTP(code)
+        console.log("OTP Sent:", code)
+
+        // Show modal immediately
+        setOtpInput('')
+        setIsOtpModalOpen(true)
+
+        try {
+            await emailjs.send(
+                'service_w4ltvyx',
+                'template_w3f3axu',
+                {
+                    email: user.email,
+                    otp_code: code
+                },
+                'Zavm2qRHwJICz7wKe'
+            )
+
+            setIsSendingOtp(false)
+            setNotification({ type: 'success', message: 'Verification code sent! Check your email.' })
+            setTimeout(() => setNotification(null), 3000)
+        } catch (error) {
+            console.error('EmailJS Error:', error)
+            setIsSendingOtp(false)
+            setNotification({ type: 'error', message: 'Failed to send verification code. Please try again.' })
+            setTimeout(() => setNotification(null), 3000)
+        }
+    }
+
+    const handleVerifyOTP = () => {
+        if (otpInput === generatedOTP) {
+            localStorage.setItem(`emailVerified_${user.id}`, 'true')
+            setIsEmailVerified(true)
+            setIsOtpModalOpen(false)
+            setOtpInput('')
+            setGeneratedOTP(null)
+            setNotification({ type: 'success', message: 'Email verified successfully!' })
+            setTimeout(() => setNotification(null), 3000)
+        } else {
+            alert('Invalid code, please try again.')
+        }
+    }
+
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-12 relative">
             {/* Notification Toast */}
@@ -531,7 +598,11 @@ export default function ProfileManagement() {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Email Status</span>
-                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                                {isEmailVerified ? (
+                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                                ) : (
+                                    <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">Unverified</span>
+                                )}
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">School ID</span>
@@ -622,14 +693,39 @@ export default function ProfileManagement() {
                                 placeholder="e.g. Computer Science Student"
                                 leftIcon={Briefcase}
                             />
-                            <Input
-                                label="Email Address"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                leftIcon={Mail}
-                            />
+                            <div className="relative">
+                                <Input
+                                    label="Email Address"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    disabled={!isEditing}
+                                    leftIcon={Mail}
+                                />
+                                {!isEmailVerified && (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        className="absolute right-2 top-8 h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                        onClick={sendEmailOTP}
+                                        disabled={isSendingOtp}
+                                    >
+                                        {isSendingOtp ? (
+                                            <>
+                                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                                Sending...
+                                            </>
+                                        ) : (
+                                            'Verify Email'
+                                        )}
+                                    </Button>
+                                )}
+                                {isEmailVerified && (
+                                    <span className="absolute right-2 top-8 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium flex items-center gap-1">
+                                        <CheckCircle2 className="w-3 h-3" /> Verified
+                                    </span>
+                                )}
+                            </div>
                             <Input
                                 label="Phone Number"
                                 name="phone"
@@ -871,6 +967,39 @@ export default function ProfileManagement() {
                         </Button>
                         <Button onClick={handleNbiSubmit} disabled={!nbiFile}>
                             Submit
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Email OTP Verification Modal */}
+            <Modal
+                isOpen={isOtpModalOpen}
+                onClose={() => setIsOtpModalOpen(false)}
+                title="Verify Your Email"
+            >
+                <div className="space-y-6">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        We've sent a 6-digit verification code to <strong>{user?.email}</strong>. 
+                        Please enter it below to verify your email address.
+                    </p>
+
+                    <Input
+                        label="Verification Code"
+                        type="text"
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="Enter 6-digit code"
+                        maxLength={6}
+                        className="text-center text-2xl tracking-widest"
+                    />
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="outline" onClick={() => setIsOtpModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleVerifyOTP} disabled={otpInput.length !== 6}>
+                            Verify
                         </Button>
                     </div>
                 </div>

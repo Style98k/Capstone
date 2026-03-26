@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
+import emailjs from '@emailjs/browser'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { getGigs, getApplications } from '../../utils/localStorage'
 import { getUserRating } from '../../utils/ratingUtils'
@@ -11,7 +12,7 @@ import CommentRating from '../../components/Shared/CommentRating'
 import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Mail, Phone, Building2, Save, X, Edit3,
-    CheckCircle2, Sparkles, Briefcase, Star, Camera, ShieldCheck, Upload
+    CheckCircle2, Sparkles, Briefcase, Star, Camera, ShieldCheck, Upload, Loader2
 } from 'lucide-react'
 
 export default function ClientProfile() {
@@ -36,6 +37,15 @@ export default function ClientProfile() {
     })
     const [isNbiModalOpen, setIsNbiModalOpen] = useState(false)
     const [nbiFile, setNbiFile] = useState(null)
+
+    // Email OTP Verification State
+    const [generatedOTP, setGeneratedOTP] = useState(null)
+    const [isEmailVerified, setIsEmailVerified] = useState(() => {
+        return localStorage.getItem(`emailVerified_${user?.id}`) === 'true'
+    })
+    const [isOtpModalOpen, setIsOtpModalOpen] = useState(false)
+    const [otpInput, setOtpInput] = useState('')
+    const [isSendingOtp, setIsSendingOtp] = useState(false)
 
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -293,6 +303,63 @@ export default function ClientProfile() {
         setTimeout(() => setNotification(null), 3000)
     }
 
+    // Email OTP Functions
+    const sendEmailOTP = async () => {
+        if (!user?.email) {
+            setNotification({ type: 'error', message: 'No email address found.' })
+            return
+        }
+
+        // Clear old error states
+        setNotification(null)
+        setIsSendingOtp(true)
+        setNotification({ type: 'success', message: `Sending code to ${user.email}...` })
+
+        // Generate 6-digit OTP
+        const code = Math.floor(100000 + Math.random() * 900000).toString()
+        setGeneratedOTP(code)
+        console.log("OTP Sent:", code)
+
+        // Show modal immediately
+        setOtpInput('')
+        setIsOtpModalOpen(true)
+
+        try {
+            await emailjs.send(
+                'service_w4ltvyx',
+                'template_w3f3axu',
+                {
+                    email: user.email,
+                    otp_code: code
+                },
+                'Zavm2qRHwJICz7wKe'
+            )
+
+            setIsSendingOtp(false)
+            setNotification({ type: 'success', message: 'Verification code sent! Check your email.' })
+            setTimeout(() => setNotification(null), 3000)
+        } catch (error) {
+            console.error('EmailJS Error:', error)
+            setIsSendingOtp(false)
+            setNotification({ type: 'error', message: 'Failed to send verification code. Please try again.' })
+            setTimeout(() => setNotification(null), 3000)
+        }
+    }
+
+    const handleVerifyOTP = () => {
+        if (otpInput === generatedOTP) {
+            localStorage.setItem(`emailVerified_${user.id}`, 'true')
+            setIsEmailVerified(true)
+            setIsOtpModalOpen(false)
+            setOtpInput('')
+            setGeneratedOTP(null)
+            setNotification({ type: 'success', message: 'Email verified successfully!' })
+            setTimeout(() => setNotification(null), 3000)
+        } else {
+            alert('Invalid code, please try again.')
+        }
+    }
+
     if (!user) return null
 
     // Animation variants
@@ -487,6 +554,7 @@ export default function ClientProfile() {
                         <motion.div
                             whileHover={{ scale: isEditing ? 1.02 : 1 }}
                             transition={{ type: "spring", stiffness: 300 }}
+                            className="relative"
                         >
                             <Input
                                 label="Email Address"
@@ -498,6 +566,29 @@ export default function ClientProfile() {
                                 leftIcon={Mail}
                                 className={isEditing ? 'ring-2 ring-violet-200 dark:ring-violet-800' : ''}
                             />
+                            {!isEmailVerified && (
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    className="absolute right-2 top-8 h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                    onClick={sendEmailOTP}
+                                    disabled={isSendingOtp}
+                                >
+                                    {isSendingOtp ? (
+                                        <>
+                                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                            Sending...
+                                        </>
+                                    ) : (
+                                        'Verify Email'
+                                    )}
+                                </Button>
+                            )}
+                            {isEmailVerified && (
+                                <span className="absolute right-2 top-8 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" /> Verified
+                                </span>
+                            )}
                         </motion.div>
 
                         <motion.div
@@ -588,7 +679,11 @@ export default function ClientProfile() {
                     <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-600 dark:text-gray-400">Email Status</span>
-                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                            {isEmailVerified ? (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
+                            ) : (
+                                <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">Unverified</span>
+                            )}
                         </div>
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-600 dark:text-gray-400">Valid ID</span>
@@ -734,6 +829,39 @@ export default function ClientProfile() {
                         </Button>
                         <Button onClick={handleIdSubmit} disabled={!idFile}>
                             Submit
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Email OTP Verification Modal */}
+            <Modal
+                isOpen={isOtpModalOpen}
+                onClose={() => setIsOtpModalOpen(false)}
+                title="Verify Your Email"
+            >
+                <div className="space-y-6">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        We've sent a 6-digit verification code to <strong>{user?.email}</strong>. 
+                        Please enter it below to verify your email address.
+                    </p>
+
+                    <Input
+                        label="Verification Code"
+                        type="text"
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="Enter 6-digit code"
+                        maxLength={6}
+                        className="text-center text-2xl tracking-widest"
+                    />
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="outline" onClick={() => setIsOtpModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleVerifyOTP} disabled={otpInput.length !== 6}>
+                            Verify
                         </Button>
                     </div>
                 </div>
