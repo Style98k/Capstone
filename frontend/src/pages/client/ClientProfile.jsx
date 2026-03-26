@@ -245,7 +245,7 @@ export default function ClientProfile() {
         }
 
         // Send notification to admin
-        triggerNotification('admin', 'Verification Request', `${user.name} uploaded a Valid ID for review.`, 'verification', null)
+        triggerNotification('admin', 'New Verification Request', 'A client has submitted documents for review.', 'verification')
 
         setIsIdModalOpen(false)
         setIdFile(null)
@@ -278,6 +278,7 @@ export default function ClientProfile() {
             const userIndex = users.findIndex(u => u.id === user.id)
             if (userIndex !== -1) {
                 users[userIndex].verified = 'pending'
+                users[userIndex].nbiStatus = newNbiStatus
                 localStorage.setItem('quickgig_users_v2', JSON.stringify(users))
             }
 
@@ -285,6 +286,7 @@ export default function ClientProfile() {
             const regIndex = registeredUsers.findIndex(u => u.id === user.id)
             if (regIndex !== -1) {
                 registeredUsers[regIndex].verified = 'pending'
+                registeredUsers[regIndex].nbiStatus = newNbiStatus
                 localStorage.setItem('quickgig_registered_users_v2', JSON.stringify(registeredUsers))
             }
 
@@ -294,7 +296,7 @@ export default function ClientProfile() {
         }
 
         // Send notification to admin
-        triggerNotification('admin', 'NBI Uploaded', `${user.name} submitted their NBI clearance for verification.`, 'verification')
+        triggerNotification('admin', 'New Verification Request', 'A client has submitted documents for review.', 'verification')
 
         setIsNbiModalOpen(false)
         setNbiFile(null)

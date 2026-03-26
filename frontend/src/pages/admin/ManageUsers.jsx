@@ -55,11 +55,28 @@ const getUserVerificationStatus = (userId) => {
   try {
     const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
     const nbiStatus = localStorage.getItem(`nbiStatus_${userId}`) || 'unverified'
+    const idStatus = localStorage.getItem(`idStatus_${userId}`) || 'unverified'
+    
+    // Also check the user's verified status from quickgig_users_v2
+    const users = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+    const user = users.find(u => u.id === userId)
+    const userVerified = user?.verified
+    
+    // If user has pending status, prioritize that
+    if (userVerified === 'pending' || idStatus === 'pending' || nbiStatus === 'pending') {
+      return { 
+        verificationStatus: 'pending', 
+        assessmentStatus: statuses[userId]?.assessmentStatus || 'unverified', 
+        nbiStatus, 
+        idStatus 
+      }
+    }
+    
     return statuses[userId]
-      ? { ...statuses[userId], nbiStatus }
-      : { verificationStatus: 'unverified', assessmentStatus: 'unverified', nbiStatus }
+      ? { ...statuses[userId], nbiStatus, idStatus }
+      : { verificationStatus: 'unverified', assessmentStatus: 'unverified', nbiStatus, idStatus }
   } catch (e) {
-    return { verificationStatus: 'unverified', assessmentStatus: 'unverified', nbiStatus: 'unverified' }
+    return { verificationStatus: 'unverified', assessmentStatus: 'unverified', nbiStatus: 'unverified', idStatus: 'unverified' }
   }
 }
 
@@ -95,22 +112,27 @@ export default function ManageUsers() {
 
       // Find any saved updates for this user (like profile photo)
       const savedUpdates = savedUsers.find(su => su.id === u.id)
+      
+      // Get the actual verified status from storage (could be 'pending', 'verified', or boolean)
+      const userFromStorage = savedUsers.find(su => su.id === u.id)
+      const actualVerified = userFromStorage?.verified
 
-      // Special case for Maria (demo user with pending status)
-      if (u.name === 'Maria Student') {
-        return { ...u, ...savedUpdates, verificationStatus: 'pending', verified: false }
+      // Determine verification status - prioritize pending from storage
+      let verificationStatus = storedStatus.verificationStatus
+      if (actualVerified === 'pending' || storedStatus.idStatus === 'pending' || storedStatus.nbiStatus === 'pending') {
+        verificationStatus = 'pending'
+      } else if (!verificationStatus) {
+        verificationStatus = (actualVerified === true || actualVerified === 'verified') ? 'verified' : 'unverified'
       }
-
-      // For other users, use stored status or computed default
-      const verificationStatus = storedStatus.verificationStatus || (u.verified ? 'verified' : 'unverified')
-      const assessmentStatus = storedStatus.assessmentStatus || (u.verified ? 'verified' : 'unverified')
+      
+      const assessmentStatus = storedStatus.assessmentStatus || (actualVerified === 'verified' || actualVerified === true ? 'verified' : 'unverified')
 
       return {
         ...u,
         ...savedUpdates, // Merge saved updates (profile photo, etc.)
         verificationStatus,
         assessmentStatus,
-        verified: verificationStatus === 'verified' && assessmentStatus === 'verified'
+        verified: actualVerified !== undefined ? actualVerified : (verificationStatus === 'verified' ? 'verified' : (verificationStatus === 'pending' ? 'pending' : false))
       }
     })
   })
@@ -151,12 +173,13 @@ export default function ManageUsers() {
         const newUsers = uniqueUsers.filter(u => !existingIds.has(u.id)).map(u => {
           const storedStatus = getUserVerificationStatus(u.id)
           const savedUpdates = savedUsers.find(su => su.id === u.id)
+          const verificationStatus = storedStatus.verificationStatus || 'unverified'
           return {
             ...u,
             ...savedUpdates,
-            verificationStatus: storedStatus.verificationStatus || 'unverified',
+            verificationStatus,
             assessmentStatus: storedStatus.assessmentStatus || 'unverified',
-            verified: false
+            verified: verificationStatus === 'verified' ? 'verified' : (verificationStatus === 'pending' ? 'pending' : false)
           }
         })
 
@@ -164,18 +187,31 @@ export default function ManageUsers() {
         const updatedExisting = prev.map(u => {
           const storedStatus = getUserVerificationStatus(u.id)
           const savedUpdates = savedUsers.find(su => su.id === u.id)
+          
+          // Get the actual verified status from storage
+          const userFromStorage = savedUsers.find(su => su.id === u.id)
+          const actualVerified = userFromStorage?.verified
+
+          // Determine the correct verification status
+          let verificationStatus = storedStatus.verificationStatus || u.verificationStatus
+          
+          // If the user has pending verified status in storage, update accordingly
+          if (actualVerified === 'pending' || storedStatus.idStatus === 'pending' || storedStatus.nbiStatus === 'pending') {
+            verificationStatus = 'pending'
+          }
 
           // Check if there are any updates to apply
-          const hasVerificationChange = storedStatus.verificationStatus && storedStatus.verificationStatus !== u.verificationStatus
+          const hasVerificationChange = verificationStatus !== u.verificationStatus
           const hasProfilePhotoChange = savedUpdates?.profilePhoto && savedUpdates.profilePhoto !== u.profilePhoto
+          const hasVerifiedChange = actualVerified !== undefined && actualVerified !== u.verified
 
-          if (hasVerificationChange || hasProfilePhotoChange) {
+          if (hasVerificationChange || hasProfilePhotoChange || hasVerifiedChange) {
             return {
               ...u,
               ...savedUpdates, // Merge profile updates
-              verificationStatus: storedStatus.verificationStatus || u.verificationStatus,
+              verificationStatus,
               assessmentStatus: storedStatus.assessmentStatus || u.assessmentStatus,
-              verified: storedStatus.verificationStatus === 'verified' && storedStatus.assessmentStatus === 'verified'
+              verified: actualVerified !== undefined ? actualVerified : (verificationStatus === 'verified' ? 'verified' : (verificationStatus === 'pending' ? 'pending' : false))
             }
           }
           return u
@@ -652,12 +688,12 @@ export default function ManageUsers() {
                           }
                         </td>
                         <td className="py-4 px-4 sm:px-6">
-                          {user.verificationStatus === 'pending' ? (
+                          {user.verificationStatus === 'pending' || user.verified === 'pending' ? (
                             <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium inline-flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                               Pending Review
                             </span>
-                          ) : user.verified ? (
+                          ) : (user.verified === true || user.verified === 'verified' || user.verificationStatus === 'verified') ? (
                             <span className="text-emerald-600 font-medium flex items-center gap-1">
                               <CheckCircle2 className="w-4 h-4" />
                               Verified
@@ -674,17 +710,20 @@ export default function ManageUsers() {
                         </td>
                         <td className="py-4 px-4 sm:px-6">
                           <div className="flex items-center gap-1">
-                            {user.verificationStatus === 'pending' && (
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => handleOpenVerify(user)}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Review Verification"
+                            {/* Always show Eye icon for review - admin can review any user */}
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleOpenVerify(user)}
+                              className={`p-2 rounded-lg transition-colors ${
+                                user.verificationStatus === 'pending' || user.verified === 'pending'
+                                  ? 'text-blue-600 hover:bg-blue-50'
+                                  : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                              }`}
+                              title="Review Verification"
                               >
                                 <Eye className="w-4 h-4" />
                               </motion.button>
-                            )}
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.95 }}
@@ -873,13 +912,18 @@ export default function ManageUsers() {
                     <span className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
                       {user.role || 'N/A'}
                     </span>
-                    {user.verified ? (
+                    {user.verificationStatus === 'pending' || user.verified === 'pending' ? (
+                      <span className="px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-700 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                        Pending
+                      </span>
+                    ) : (user.verified === true || user.verified === 'verified' || user.verificationStatus === 'verified') ? (
                       <span className="px-2.5 py-1 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-full flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" />
                         Verified
                       </span>
                     ) : (
-                      <span className="px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-700 rounded-full flex items-center gap-1">
+                      <span className="px-2.5 py-1 text-xs font-medium bg-gray-50 text-gray-600 rounded-full flex items-center gap-1">
                         <XCircle className="w-3 h-3" />
                         Unverified
                       </span>
@@ -888,17 +932,20 @@ export default function ManageUsers() {
 
                   {/* Actions */}
                   <div className="flex justify-center gap-2 pt-3 border-t border-gray-100">
-                    {!user.verified && (
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleVerify(user.id)}
-                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                        title="Verify user"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </motion.button>
-                    )}
+                    {/* Always show Eye icon for review */}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleOpenVerify(user)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        user.verificationStatus === 'pending' || user.verified === 'pending'
+                          ? 'text-blue-600 hover:bg-blue-50'
+                          : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                      }`}
+                      title="Review Verification"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
