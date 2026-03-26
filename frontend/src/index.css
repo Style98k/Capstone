@@ -583,3 +583,38 @@ button {
 .tooltip-trigger:hover .tooltip {
   @apply visible opacity-100;
 }
+
+/* =====================================================
+   MOBILE TABLE SCROLL
+   ===================================================== */
+.table-scroll-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+}
+
+/* Mobile: constrain width to viewport */
+@media (max-width: 768px) {
+  .table-scroll-container {
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+/* Show scroll indicators on mobile */
+.table-scroll-container {
+  background:
+    linear-gradient(to right, white 30%, transparent),
+    linear-gradient(to left, white 30%, transparent),
+    linear-gradient(to right, rgba(0,0,0,.1) 0%, transparent 20%),
+    linear-gradient(to left, rgba(0,0,0,.1) 0%, transparent 20%);
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-size: 40px 100%, 40px 100%, 20px 100%, 20px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* Ensure tables inside are scrollable */
+.table-scroll-container > table {
+  min-width: 100%;
+}

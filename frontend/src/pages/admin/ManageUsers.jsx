@@ -535,9 +535,19 @@ export default function ManageUsers() {
             transition={{ duration: 0.3 }}
             className="w-full min-w-0"
           >
-            <Card padding="p-0" delay={2} className="!overflow-visible">
-              <div className="w-full max-w-full overflow-x-auto scrollbar-hide shadow-sm rounded-lg border border-gray-100">
-                <table className="w-full min-w-[900px] text-left">
+            {/* Mobile-friendly scrollable table wrapper */}
+            <div
+              className="bg-white rounded-2xl border border-gray-100/50 shadow-sm overflow-hidden"
+              style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.02)' }}
+            >
+              <div
+                className="table-scroll-container"
+                style={{
+                  maxWidth: 'calc(100vw - 2rem)',
+                  width: '100%'
+                }}
+              >
+                <table className="w-full text-left" style={{ minWidth: '900px' }}>
                   <thead>
                     <tr className="border-b border-gray-100">
                       <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -799,7 +809,7 @@ export default function ManageUsers() {
                   </motion.button>
                 </div>
               </div>
-            </Card>
+            </div>
           </motion.div>
         )}
 
