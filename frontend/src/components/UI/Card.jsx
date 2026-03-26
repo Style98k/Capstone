@@ -53,7 +53,7 @@ const Card = forwardRef(({
       </div>
 
       {/* Content */}
-      <div className="relative">
+      <div className="relative min-w-0">
         {children}
       </div>
     </motion.div>

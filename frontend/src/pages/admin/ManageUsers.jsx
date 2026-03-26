@@ -377,7 +377,7 @@ export default function ManageUsers() {
 
   return (
     <motion.div
-      className="space-y-6"
+      className="space-y-6 min-w-0 w-full"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -533,9 +533,10 @@ export default function ManageUsers() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
+            className="w-full min-w-0"
           >
-            <Card padding="p-0" delay={2}>
-              <div className="w-full overflow-x-auto scrollbar-hide shadow-sm rounded-lg border border-gray-100">
+            <Card padding="p-0" delay={2} className="!overflow-visible">
+              <div className="w-full max-w-full overflow-x-auto scrollbar-hide shadow-sm rounded-lg border border-gray-100">
                 <table className="w-full min-w-[900px] text-left">
                   <thead>
                     <tr className="border-b border-gray-100">
