@@ -320,9 +320,12 @@ export default function ProfileManagement() {
 
         // Also save for backward compatibility
         localStorage.setItem('verificationStatus', newStatus);
+
+        // Update user's verified status to 'pending' so they appear in admin queue
+        updateUserVerifiedStatus('pending');
         
         // Send notification to admin about School ID upload
-        triggerNotification('admin', 'Document Upload', `${user.name} uploaded their School ID for verification.`, 'verification');
+        triggerNotification('admin', 'New Verification Request', 'A student has submitted documents for review.', 'verification');
         
         setIsVerifyModalOpen(false);
 
@@ -334,7 +337,7 @@ export default function ProfileManagement() {
         // Show success message
         setNotification({
             type: 'success',
-            message: 'School ID uploaded successfully! Your document is pending review.'
+            message: 'School ID uploaded successfully! Waiting for Admin review.'
         });
     }
 
@@ -349,9 +352,12 @@ export default function ProfileManagement() {
 
         // Also save for backward compatibility
         localStorage.setItem('assessmentStatus', newStatus);
+
+        // Update user's verified status to 'pending' so they appear in admin queue
+        updateUserVerifiedStatus('pending');
         
         // Send notification to admin about Assessment Form upload
-        triggerNotification('admin', 'Document Upload', `${user.name} uploaded their Assessment Form/COR for verification.`, 'verification');
+        triggerNotification('admin', 'New Verification Request', 'A student has submitted documents for review.', 'verification');
         
         setIsAssessmentModalOpen(false);
 
@@ -363,7 +369,7 @@ export default function ProfileManagement() {
         // Show success message
         setNotification({
             type: 'success',
-            message: 'Assessment Form uploaded successfully! Your document is pending review.'
+            message: 'Assessment Form uploaded successfully! Waiting for Admin review.'
         });
     }
 
@@ -383,7 +389,7 @@ export default function ProfileManagement() {
         updateUserVerifiedStatus('pending');
 
         // Send notification to admin about NBI upload
-        triggerNotification('admin', 'NBI Uploaded', `${user.name} submitted their NBI clearance for verification.`, 'verification');
+        triggerNotification('admin', 'New Verification Request', 'A student has submitted documents for review.', 'verification');
 
         setIsNbiModalOpen(false);
 
@@ -395,7 +401,7 @@ export default function ProfileManagement() {
         // Show success message
         setNotification({
             type: 'success',
-            message: 'NBI Clearance uploaded successfully! Your document is pending review.'
+            message: 'NBI Clearance uploaded successfully! Waiting for Admin review.'
         });
     }
 
@@ -570,26 +576,24 @@ export default function ProfileManagement() {
                             onChange={handleFileChange}
                         />
 
-                        <div className="mt-4 flex flex-col items-center justify-center gap-2">
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {formData.name}
-                                </h2>
-                                {isFullyVerified && (
-                                    <div className="relative group">
-                                        <div className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 dark:text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20 transition-all duration-200 cursor-default">
-                                            <BadgeCheck className="w-3.5 h-3.5" />
-                                            <span className="text-[10px] font-bold uppercase tracking-wider">Verified</span>
-                                        </div>
-                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                                            All verification requirements met
-                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                        </div>
+                        <div className="mt-4 flex flex-col items-center">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                {formData.name}
+                            </h2>
+                            <p className="text-gray-500 font-medium text-base mt-1">{formData.title}</p>
+                            {isFullyVerified && (
+                                <div className="relative group mt-3">
+                                    <div className="flex items-center gap-1 bg-blue-600 text-white px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.2)] hover:bg-blue-700 transition-all duration-200 cursor-default">
+                                        <BadgeCheck className="w-3 h-3" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Verified</span>
                                     </div>
-                                )}
-                            </div>
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                        All verification requirements met
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <p className="text-primary-600 font-medium">{formData.title}</p>
 
                         <div className="mt-6 w-full grid grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-700 pt-6">
                             <div className="text-center">
