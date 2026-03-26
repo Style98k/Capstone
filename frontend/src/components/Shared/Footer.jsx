@@ -7,9 +7,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto py-10 px-4 overflow-hidden sm:px-6 lg:px-8 space-y-6">
         <div className="flex flex-col items-center gap-2 text-center">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">Q</span>
-            </div>
+            <img src="/no%20bg.png" alt="QuickGig Logo" className="w-8 h-8 object-contain" />
             <span className="text-base font-semibold text-gray-900">QuickGig</span>
           </div>
           <p className="text-xs sm:text-sm text-gray-500 max-w-xl">
