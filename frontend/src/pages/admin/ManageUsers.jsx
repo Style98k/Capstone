@@ -535,8 +535,8 @@ export default function ManageUsers() {
             transition={{ duration: 0.3 }}
           >
             <Card padding="p-0" delay={2}>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[600px]">
+              <div className="w-full overflow-x-auto border-t border-gray-200">
+                <table className="w-full min-w-[800px] text-left">
                   <thead>
                     <tr className="border-b border-gray-100">
                       <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">

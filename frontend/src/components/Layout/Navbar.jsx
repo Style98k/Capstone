@@ -179,7 +179,7 @@ export default function Navbar({ onMenuClick }) {
           <Link to="/" className="flex items-center gap-2">
             {!logoError ? (
               <img
-                src="/logo.png"
+                src="/no bg.png"
                 alt="QuickGig"
                 className="w-[55px] h-[55px] object-contain rounded-lg"
                 onError={() => setLogoError(true)}
