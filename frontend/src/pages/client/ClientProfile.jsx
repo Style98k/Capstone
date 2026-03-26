@@ -12,7 +12,7 @@ import CommentRating from '../../components/Shared/CommentRating'
 import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Mail, Phone, Building2, Save, X, Edit3,
-    CheckCircle2, Sparkles, Briefcase, Star, Camera, ShieldCheck, Upload, Loader2
+    CheckCircle2, Sparkles, Briefcase, Star, Camera, ShieldCheck, Upload, Loader2, BadgeCheck
 } from 'lucide-react'
 
 export default function ClientProfile() {
@@ -46,6 +46,9 @@ export default function ClientProfile() {
     const [isOtpModalOpen, setIsOtpModalOpen] = useState(false)
     const [otpInput, setOtpInput] = useState('')
     const [isSendingOtp, setIsSendingOtp] = useState(false)
+
+    // Fully Verified Check: Email + Valid ID + NBI all must be 'verified'
+    const isFullyVerified = isEmailVerified && idStatus === 'verified' && nbiStatus === 'verified'
 
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -467,7 +470,21 @@ export default function ClientProfile() {
                         </div>
 
                         <div>
-                            <h1 className="text-3xl font-bold">{user.name}</h1>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-3xl font-bold">{user.name}</h1>
+                                {isFullyVerified && (
+                                    <div className="relative group">
+                                        <div className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-2.5 py-1 rounded-full border border-blue-500/20 transition-all duration-200 cursor-default">
+                                            <BadgeCheck className="w-4 h-4" />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">Verified</span>
+                                        </div>
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                            All verification requirements met
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                             <p className="text-white/80 flex items-center gap-2 mt-1">
                                 <Mail className="w-4 h-4" />
                                 {user.email}

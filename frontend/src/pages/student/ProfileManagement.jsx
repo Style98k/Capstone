@@ -7,7 +7,7 @@ import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Save, Camera, Star, Briefcase, TrendingUp,
     MapPin, Phone, Mail, Globe, Facebook, Calendar, Link as LinkIcon,
-    ShieldCheck, Upload, X, CheckCircle2, AlertCircle, Loader2
+    ShieldCheck, Upload, X, CheckCircle2, AlertCircle, Loader2, BadgeCheck
 } from 'lucide-react'
 import Card from '../../components/UI/Card'
 import Modal from '../../components/UI/Modal'
@@ -51,6 +51,9 @@ export default function ProfileManagement() {
     const [isOtpModalOpen, setIsOtpModalOpen] = useState(false)
     const [otpInput, setOtpInput] = useState('')
     const [isSendingOtp, setIsSendingOtp] = useState(false)
+
+    // Fully Verified Check: Email + School ID + Assessment Form + NBI all must be 'verified'
+    const isFullyVerified = isEmailVerified && verificationStatus === 'verified' && assessmentStatus === 'verified' && nbiStatus === 'verified'
 
     // Sync with Admin and Check Notifications
     useEffect(() => {
@@ -567,9 +570,25 @@ export default function ProfileManagement() {
                             onChange={handleFileChange}
                         />
 
-                        <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">
-                            {formData.name}
-                        </h2>
+                        <div className="mt-4 flex flex-col items-center justify-center gap-2">
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                    {formData.name}
+                                </h2>
+                                {isFullyVerified && (
+                                    <div className="relative group">
+                                        <div className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 dark:text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20 transition-all duration-200 cursor-default">
+                                            <BadgeCheck className="w-3.5 h-3.5" />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">Verified</span>
+                                        </div>
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                            All verification requirements met
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                         <p className="text-primary-600 font-medium">{formData.title}</p>
 
                         <div className="mt-6 w-full grid grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-700 pt-6">
