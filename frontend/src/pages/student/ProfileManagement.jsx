@@ -33,14 +33,9 @@ export default function ProfileManagement() {
     const [nbiStatus, setNbiStatus] = useState(() => {
         return localStorage.getItem(`nbiStatus_${user?.id}`) || 'unverified'
     })
-    const [phoneStatus, setPhoneStatus] = useState(() => {
-        return localStorage.getItem('phoneVerified') === 'true' ? 'verified' : 'unverified'
-    })
     const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false)
     const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState(false)
     const [isNbiModalOpen, setIsNbiModalOpen] = useState(false)
-    const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false)
-    const [otpCode, setOtpCode] = useState('')
     const [idFile, setIdFile] = useState(null)
     const [assessmentFile, setAssessmentFile] = useState(null)
     const [nbiFile, setNbiFile] = useState(null)
@@ -76,12 +71,6 @@ export default function ProfileManagement() {
         const storedAssessmentStatus = localStorage.getItem('assessmentStatus')
         if (storedAssessmentStatus) {
             setAssessmentStatus(storedAssessmentStatus)
-        }
-
-        // Sync phone verification status
-        const storedPhoneStatus = localStorage.getItem('phoneVerified')
-        if (storedPhoneStatus === 'true') {
-            setPhoneStatus('verified')
         }
 
         // Sync NBI status
@@ -397,17 +386,6 @@ export default function ProfileManagement() {
         });
     }
 
-    const handlePhoneVerify = () => {
-        setPhoneStatus('verified')
-        localStorage.setItem('phoneVerified', 'true')
-        setIsPhoneModalOpen(false)
-        setOtpCode('')
-        setNotification({
-            type: 'success',
-            message: 'Phone number verified successfully!'
-        })
-    }
-
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-12 relative">
             {/* Notification Toast */}
@@ -574,14 +552,6 @@ export default function ProfileManagement() {
                                 )}
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600 dark:text-gray-400">Phone</span>
-                                {phoneStatus === 'verified' ? (
-                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
-                                ) : (
-                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">Unverified</span>
-                                )}
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Assessment Form / COR</span>
                                 {assessmentStatus === 'verified' && (
                                     <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Verified</span>
@@ -660,38 +630,14 @@ export default function ProfileManagement() {
                                 disabled={!isEditing}
                                 leftIcon={Mail}
                             />
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="label">Phone Number</span>
-                                    {phoneStatus === 'verified' && (
-                                        <span className="flex items-center text-green-600 gap-1 text-sm font-medium -mt-2">
-                                            <CheckCircle2 className="w-4 h-4 ml-1" />
-                                            Verified
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex-1">
-                                        <Input
-                                            label={null}
-                                            name="phone"
-                                            value={formData.phone}
-                                            onChange={handleChange}
-                                            disabled={!isEditing}
-                                            leftIcon={() => <Phone className="w-4 h-4 -mt-2" />}
-                                            className="-mt-2"
-                                        />
-                                    </div>
-                                    {phoneStatus !== 'verified' && (
-                                        <Button
-                                            className="h-10 bg-blue-600 text-white px-5 rounded-lg font-medium hover:bg-blue-700 transition -mt-6"
-                                            onClick={() => setIsPhoneModalOpen(true)}
-                                        >
-                                            Verify
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
+                            <Input
+                                label="Phone Number"
+                                name="phone"
+                                value={formData.phone || 'N/A'}
+                                readOnly
+                                leftIcon={Phone}
+                                className="bg-gray-50 dark:bg-gray-800 cursor-default"
+                            />
                             <div className="md:col-span-2">
                                 <Input
                                     label="Location"
@@ -776,33 +722,6 @@ export default function ProfileManagement() {
 
             {/* Ratings & Reviews Section */}
             <CommentRating userId={user?.id} userRole="student" />
-
-            <Modal
-                isOpen={isPhoneModalOpen}
-                onClose={() => setIsPhoneModalOpen(false)}
-                title="Phone Verification"
-            >
-                <div className="space-y-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                        Enter the 6-digit code sent to your number.
-                    </p>
-                    <Input
-                        label="Verification Code"
-                        type="text"
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value)}
-                        placeholder="123456"
-                    />
-                    <div className="flex justify-end gap-3 pt-2">
-                        <Button variant="outline" onClick={() => setIsPhoneModalOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handlePhoneVerify} disabled={!otpCode}>
-                            Verify
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
 
             <Modal
                 isOpen={isVerifyModalOpen}

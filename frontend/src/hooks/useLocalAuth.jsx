@@ -148,7 +148,6 @@ export function AuthProvider({ children }) {
     if (userData.role === 'student') {
       localStorage.setItem('verificationStatus', 'unverified')
       localStorage.setItem('assessmentStatus', 'unverified')
-      localStorage.setItem('phoneVerified', 'false')
       // Clear any leftover uploaded documents from previous sessions
       localStorage.removeItem('studentIDImage')
       localStorage.removeItem('studentAssessmentImage')

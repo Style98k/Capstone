@@ -501,18 +501,17 @@ export default function ClientProfile() {
                         </motion.div>
 
                         <motion.div
-                            whileHover={{ scale: isEditing ? 1.02 : 1 }}
+                            whileHover={{ scale: 1 }}
                             transition={{ type: "spring", stiffness: 300 }}
                             className="md:col-span-2"
                         >
                             <Input
                                 label="Phone Number"
                                 name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                disabled={!isEditing}
+                                value={formData.phone || 'N/A'}
+                                readOnly
                                 leftIcon={Phone}
-                                className={isEditing ? 'ring-2 ring-violet-200 dark:ring-violet-800' : ''}
+                                className="bg-gray-50 dark:bg-gray-800 cursor-default"
                             />
                         </motion.div>
                     </div>

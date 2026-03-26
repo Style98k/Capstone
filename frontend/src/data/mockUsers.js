@@ -19,8 +19,7 @@ export const mockUsers = [
     role: 'student',
     status: 'active',
     verified: 'verified',
-    nbiStatus: 'verified',
-    phoneVerified: 'true'
+    nbiStatus: 'verified'
   },
 
   // 3. CLIENT (Pepito)
@@ -32,7 +31,6 @@ export const mockUsers = [
     role: 'client',
     status: 'active',
     verified: 'verified',
-    nbiStatus: 'verified',
-    phoneVerified: 'true'
+    nbiStatus: 'verified'
   }
 ]
