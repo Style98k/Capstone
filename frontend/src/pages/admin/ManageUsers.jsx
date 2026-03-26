@@ -535,8 +535,8 @@ export default function ManageUsers() {
             transition={{ duration: 0.3 }}
           >
             <Card padding="p-0" delay={2}>
-              <div className="w-full overflow-x-auto border-t border-gray-200">
-                <table className="w-full min-w-[800px] text-left">
+              <div className="w-full overflow-x-auto scrollbar-hide shadow-sm rounded-lg border border-gray-100">
+                <table className="w-full min-w-[900px] text-left">
                   <thead>
                     <tr className="border-b border-gray-100">
                       <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -553,16 +553,16 @@ export default function ManageUsers() {
                       <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Email
                       </th>
-                      <th className="hidden md:table-cell text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Role
                       </th>
                       <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="hidden lg:table-cell text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Joined date
                       </th>
-                      <th className="hidden md:table-cell text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Verified
                       </th>
                       <th className="text-left py-4 px-4 sm:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -612,7 +612,7 @@ export default function ManageUsers() {
                             {user.email}
                           </a>
                         </td>
-                        <td className="hidden md:table-cell py-4 px-4 sm:px-6">
+                        <td className="py-4 px-4 sm:px-6">
                           <span className="text-gray-600">{user.role || 'N/A'}</span>
                         </td>
                         <td className="py-4 px-4 sm:px-6">
@@ -630,7 +630,7 @@ export default function ManageUsers() {
                             </span>
                           )}
                         </td>
-                        <td className="hidden lg:table-cell py-4 px-4 sm:px-6 text-gray-500 text-sm">
+                        <td className="py-4 px-4 sm:px-6 text-gray-500 text-sm">
                           {user.createdAt
                             ? new Date(user.createdAt).toLocaleDateString('en-US', {
                               day: '2-digit',
@@ -640,7 +640,7 @@ export default function ManageUsers() {
                             : 'N/A'
                           }
                         </td>
-                        <td className="hidden md:table-cell py-4 px-4 sm:px-6">
+                        <td className="py-4 px-4 sm:px-6">
                           {user.verificationStatus === 'pending' ? (
                             <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium inline-flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
