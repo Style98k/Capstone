@@ -243,8 +243,8 @@ export default function Home() {
               Whether you want to earn around your class schedule or get trusted help fast, we make it simple to connect.
             </p>
             <p className="text-lg text-slate-700 dark:text-slate-200 leading-relaxed">
-              Every student is verified through school ID and Assesment form, and payments are handled securely with transparent ratings so both sides can
-              focus on great work, not logistics.
+              Every student is verified through school ID, Assessment form and NBI Clearance and payments are handled securely with transparent ratings so both sides can
+              focus on great work.
             </p>
           </div>
         </section>
@@ -388,7 +388,7 @@ export default function Home() {
               </div>
               <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Create Account</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Sign up as a student or client. Students quickly verify with their school ID and Assessment Form.
+                Sign up as a student or client.<br/>Students quickly verify with their school ID, Assessment Form and NBI Clearance. <br /> Cients quickly verify with their Valid ID and NBI Clearance.
               </p>
             </div>
             <div className="text-center transition-transform duration-300 hover:-translate-y-1">
@@ -398,8 +398,8 @@ export default function Home() {
               <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
                 Connect & Apply
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Students browse and apply to gigs while clients post jobs and review applicants.
+              <p className="text-sm text-slate-600 dark:text-slate-400"> 
+                Students browse and apply for gigs that match their schedule, while <br/>Clients post gigs and hire verified applicants for their specific task needs.
               </p>
             </div>
             <div className="text-center transition-transform duration-300 hover:-translate-y-1">
@@ -408,7 +408,7 @@ export default function Home() {
               </div>
               <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Complete & Earn</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Finish the gig, get rated, and receive secure payments via GCash or PayPal.
+                Finish the gig, get rated, and receive secure payments via GCash, Maya, GrabPay, ShopeePay, and other e-wallets.
               </p>
             </div>
           </div>
@@ -431,7 +431,7 @@ export default function Home() {
                 Verified Students
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                All students pass school ID verification and Asessment Form so clients can hire with confidence.
+                All students pass school ID verification, Assessment Form, and NBI Clearance so clients can hire with confidence.
               </p>
             </div>
             <div className="card text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
@@ -464,7 +464,7 @@ export default function Home() {
                 Secure Payments
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Safe, reliable payments via GCash and PayPal, with clear tracking for both sides.
+                Safe, reliable payments through various Philippine digital wallets including GCash, Maya, GrabPay, ShopeePay and other e-wallets with clear tracking for both sides.
               </p>
             </div>
           </div>
