@@ -132,12 +132,12 @@ export default function AdminDashboard() {
             {/* Welcome Banner */}
             <motion.div
                 variants={itemVariants}
-                className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 text-white"
+                className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-blue-900 to-slate-800 p-8 text-white"
             >
                 {/* Decorative elements */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
-                <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
+                <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-white/[0.03] rounded-full -translate-x-1/2 -translate-y-1/2" />
 
                 {/* Animated sparkles */}
                 <motion.div
@@ -145,14 +145,14 @@ export default function AdminDashboard() {
                     animate={{ rotate: 360, scale: [1, 1.2, 1] }}
                     transition={{ duration: 3, repeat: Infinity }}
                 >
-                    <Sparkles className="w-6 h-6 text-yellow-300/60" />
+                    <Sparkles className="w-6 h-6 text-white/20" />
                 </motion.div>
                 <motion.div
                     className="absolute bottom-8 right-32"
                     animate={{ rotate: -360, scale: [1, 1.3, 1] }}
                     transition={{ duration: 4, repeat: Infinity, delay: 1 }}
                 >
-                    <Sparkles className="w-4 h-4 text-pink-300/60" />
+                    <Sparkles className="w-4 h-4 text-slate-400/30" />
                 </motion.div>
 
                 <div className="relative">
@@ -165,7 +165,7 @@ export default function AdminDashboard() {
                         </motion.div>
                         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
                     </div>
-                    <p className="text-white/80 text-lg max-w-xl">
+                    <p className="text-white/60 text-lg max-w-xl">
                         Overview of platform activity and statistics
                     </p>
 
