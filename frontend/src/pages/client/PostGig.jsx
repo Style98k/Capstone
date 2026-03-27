@@ -24,6 +24,51 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 
+// Leaflet + react-leaflet imports
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+
+// Fix default marker icon paths for bundled React builds
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+})
+
+// Child component that listens for map clicks and updates the pin + reverse-geocodes
+function LocationMarker({ position, setPosition, setFetchedAddress }) {
+  useMapEvents({
+    click(e) {
+      const { lat, lng } = e.latlng
+      setPosition([lat, lng])
+      // Reverse-geocode with Nominatim
+      fetch(
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=' +
+          lat +
+          '&lon=' +
+          lng
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.display_name) {
+            setFetchedAddress(data.display_name)
+          } else {
+            setFetchedAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+          }
+        })
+        .catch(() => {
+          setFetchedAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+        })
+    },
+  })
+  return position ? <Marker position={position} /> : null
+}
+
 export default function PostGig() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -41,6 +86,8 @@ export default function PostGig() {
   const [gigImage, setGigImage] = useState(null)
   const [locationMode, setLocationMode] = useState('local') // 'local' | 'online' | 'remote'
   const [showMapPicker, setShowMapPicker] = useState(false)
+  const [position, setPosition] = useState([14.5995, 120.9842]) // Default: Manila, Philippines
+  const [fetchedAddress, setFetchedAddress] = useState('')
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -410,7 +457,7 @@ export default function PostGig() {
             <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Browse location (preview)</h2>
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Pin a location on the map</h2>
               </div>
               <button
                 type="button"
@@ -422,12 +469,36 @@ export default function PostGig() {
             </div>
             <div className="p-5 space-y-4">
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                This is a UI preview for a future map picker. Here you can later integrate Google Maps or OpenStreetMap
-                to let clients pan, zoom, and drop a pin for the exact location.
+                Click anywhere on the map to drop a pin. The address will be fetched automatically.
               </p>
-              <div className="h-64 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-xs sm:text-sm">
-                Map preview area
+
+              {/* Interactive OpenStreetMap */}
+              <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                <MapContainer
+                  center={position}
+                  zoom={13}
+                  style={{ height: '400px', width: '100%' }}
+                >
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  <LocationMarker
+                    position={position}
+                    setPosition={setPosition}
+                    setFetchedAddress={setFetchedAddress}
+                  />
+                </MapContainer>
               </div>
+
+              {/* Fetched address display */}
+              {fetchedAddress && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-950/40 px-4 py-3 text-xs sm:text-sm text-emerald-800 dark:text-emerald-200">
+                  <span className="font-semibold">📍 Detected address: </span>
+                  {fetchedAddress}
+                </div>
+              )}
+
               <div className="flex justify-end gap-3 pt-2">
                 <Button
                   variant="outline"
@@ -440,7 +511,11 @@ export default function PostGig() {
                 <Button
                   size="sm"
                   className="rounded-full"
-                  onClick={() => setShowMapPicker(false)}
+                  disabled={!fetchedAddress}
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, location: fetchedAddress }))
+                    setShowMapPicker(false)
+                  }}
                 >
                   Use this location
                 </Button>
