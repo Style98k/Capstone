@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { calculateFee } from '../../utils/feeCalculator'
 import { saveRating } from '../../utils/ratingUtils'
-import { CheckCircle, Loader, Info, Wallet, ArrowRight, ArrowLeft, Star, Send, Smartphone, CreditCard, ShoppingBag, Globe, MoreHorizontal } from 'lucide-react'
+import { CheckCircle, Loader, Info, Wallet, ArrowRight, ArrowLeft, Star, Send, Smartphone, CreditCard, MoreHorizontal } from 'lucide-react'
+import { SiPaypal, SiGrab, SiShopee } from 'react-icons/si'
 import Modal from '../UI/Modal'
 
 // E-Wallet options with brand colors
@@ -30,7 +31,7 @@ const EWALLET_OPTIONS = [
   },
   {
     name: 'GrabPay',
-    icon: Wallet,
+    icon: SiGrab,
     borderColor: 'border-emerald-500',
     bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
     hoverBorder: 'hover:border-emerald-500',
@@ -41,7 +42,7 @@ const EWALLET_OPTIONS = [
   },
   {
     name: 'ShopeePay',
-    icon: ShoppingBag,
+    icon: SiShopee,
     borderColor: 'border-orange-500',
     bgColor: 'bg-orange-50 dark:bg-orange-900/20',
     hoverBorder: 'hover:border-orange-500',
@@ -52,14 +53,14 @@ const EWALLET_OPTIONS = [
   },
   {
     name: 'PayPal',
-    icon: Globe,
-    borderColor: 'border-indigo-500',
-    bgColor: 'bg-indigo-50 dark:bg-indigo-900/20',
-    hoverBorder: 'hover:border-indigo-500',
-    hoverBg: 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20',
-    iconColor: 'text-indigo-600 dark:text-indigo-400',
-    textColor: 'text-indigo-700 dark:text-indigo-300',
-    accentGradient: 'from-indigo-500 to-indigo-600',
+    icon: SiPaypal,
+    borderColor: 'border-[#003087]',
+    bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+    hoverBorder: 'hover:border-[#003087]',
+    hoverBg: 'hover:bg-blue-50 dark:hover:bg-blue-900/20',
+    iconColor: 'text-[#003087] dark:text-[#009cde]',
+    textColor: 'text-[#003087] dark:text-[#009cde]',
+    accentGradient: 'from-[#003087] to-[#009cde]',
   },
   {
     name: 'Others',
