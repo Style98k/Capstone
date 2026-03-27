@@ -1,46 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
 import Card from '../../UI/Card'
 import Input from '../../UI/Input'
-import { Upload, X, Globe, Phone, Facebook, Twitter, Instagram } from 'lucide-react'
+import { Globe, Phone, Facebook, Twitter, Instagram } from 'lucide-react'
 
 export default function GeneralTab({ settings, handleChange }) {
-    const fileInputRef = useRef(null)
-    const [logoPreview, setLogoPreview] = useState(settings.siteLogo || null)
-
-    // Sync logoPreview when settings.siteLogo changes (e.g., from localStorage)
-    useEffect(() => {
-        setLogoPreview(settings.siteLogo || null)
-    }, [settings.siteLogo])
-
-    const handleLogoUpload = (e) => {
-        const file = e.target.files[0]
-        if (file) {
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                setLogoPreview(reader.result)
-                handleChange({
-                    target: {
-                        name: 'siteLogo',
-                        value: reader.result,
-                        type: 'text'
-                    }
-                })
-            }
-            reader.readAsDataURL(file)
-        }
-    }
-
-    const removeLogo = () => {
-        setLogoPreview(null)
-        handleChange({
-            target: {
-                name: 'siteLogo',
-                value: '',
-                type: 'text'
-            }
-        })
-    }
-
     return (
         <Card className="!shadow-sm !border-gray-200" hover={false}>
             <div className="mb-4 sm:mb-6">
@@ -49,46 +11,6 @@ export default function GeneralTab({ settings, handleChange }) {
             </div>
 
             <div className="space-y-4 sm:space-y-6 max-w-2xl">
-                {/* Logo Upload */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Site Logo</label>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                        {logoPreview ? (
-                            <div className="relative group">
-                                <img
-                                    src={logoPreview}
-                                    alt="Site Logo"
-                                    className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-lg border border-gray-200 bg-white p-2"
-                                />
-                                <button
-                                    onClick={removeLogo}
-                                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                    <X className="w-3 h-3" />
-                                </button>
-                            </div>
-                        ) : (
-                            <div
-                                onClick={() => fileInputRef.current?.click()}
-                                className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-colors"
-                            >
-                                <Upload className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
-                            </div>
-                        )}
-                        <div className="text-sm text-gray-500">
-                            <p>Upload your site logo</p>
-                            <p className="text-xs">PNG, JPG up to 2MB</p>
-                        </div>
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleLogoUpload}
-                            className="hidden"
-                        />
-                    </div>
-                </div>
-
                 <Input
                     label="Site Name"
                     name="siteName"

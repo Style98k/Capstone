@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { mockUsers } from '../../data/mockUsers'
 import { triggerNotification } from '../../utils/notificationManager'
 import Card from '../../components/UI/Card'
@@ -13,11 +14,8 @@ import {
   LayoutGrid,
   List,
   Table2,
-  Edit3,
-  Trash2,
   CheckCircle2,
   XCircle,
-  Shield,
   Eye
 } from 'lucide-react'
 import Modal from '../../components/UI/Modal'
@@ -139,7 +137,11 @@ export default function ManageUsers() {
 
   const [filter, setFilter] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
-  const [verificationTab, setVerificationTab] = useState('all') // 'all', 'pending', 'verified'
+  const [searchParams] = useSearchParams()
+  const [verificationTab, setVerificationTab] = useState(() => {
+    const tabParam = searchParams.get('tab')
+    return ['all', 'pending', 'verified'].includes(tabParam) ? tabParam : 'all'
+  }) // 'all', 'pending', 'verified'
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState('table')
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -709,46 +711,15 @@ export default function ManageUsers() {
                           )}
                         </td>
                         <td className="py-4 px-4 sm:px-6">
-                          <div className="flex items-center gap-1">
-                            {/* Always show Eye icon for review - admin can review any user */}
+                          <div className="flex items-center justify-center">
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={() => handleOpenVerify(user)}
-                              className={`p-2 rounded-lg transition-colors ${
-                                user.verificationStatus === 'pending' || user.verified === 'pending'
-                                  ? 'text-blue-600 hover:bg-blue-50'
-                                  : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
-                              }`}
+                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
                               title="Review Verification"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                              title="Edit user"
                             >
-                              <Edit3 className="w-4 h-4" />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleSuspend(user.id)}
-                              className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                              title={user.suspended ? "Unsuspend user" : "Suspend user"}
-                            >
-                              <Shield className="w-4 h-4" />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDelete(user.id)}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete user"
-                            >
-                              <Trash2 className="w-4 h-4" />
+                              <Eye className="w-4 h-4" />
                             </motion.button>
                           </div>
                         </td>
@@ -931,46 +902,15 @@ export default function ManageUsers() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex justify-center gap-2 pt-3 border-t border-gray-100">
-                    {/* Always show Eye icon for review */}
+                  <div className="flex justify-center pt-3 border-t border-gray-100">
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleOpenVerify(user)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        user.verificationStatus === 'pending' || user.verified === 'pending'
-                          ? 'text-blue-600 hover:bg-blue-50'
-                          : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
-                      }`}
+                      className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
                       title="Review Verification"
                     >
                       <Eye className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                      title="Edit user"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleSuspend(user.id)}
-                      className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                      title={user.suspended ? "Unsuspend user" : "Suspend user"}
-                    >
-                      <Shield className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleDelete(user.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete user"
-                    >
-                      <Trash2 className="w-4 h-4" />
                     </motion.button>
                   </div>
                 </motion.div>
@@ -1139,36 +1079,15 @@ export default function ManageUsers() {
                     </div>
 
                     {/* Right side - Actions */}
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      {!user.verified && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => handleVerify(user.id)}
-                          className="px-3 py-1.5 text-sm font-medium text-emerald-600 bg-emerald-50 
-                            hover:bg-emerald-100 rounded-lg transition-colors flex items-center gap-1"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          Verify
-                        </motion.button>
-                      )}
+                    <div className="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
+                        whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleSuspend(user.id)}
-                        className="px-3 py-1.5 text-sm font-medium text-amber-600 bg-amber-50 
-                          hover:bg-amber-100 rounded-lg transition-colors"
+                        onClick={() => handleOpenVerify(user)}
+                        className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                        title="Review Verification"
                       >
-                        {user.suspended ? 'Unsuspend' : 'Suspend'}
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDelete(user.id)}
-                        className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 
-                          hover:bg-red-100 rounded-lg transition-colors"
-                      >
-                        Delete
+                        <Eye className="w-4 h-4" />
                       </motion.button>
                     </div>
                   </motion.div>

@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings as SettingsIcon, List, Shield, Monitor, RefreshCw, Save, CheckCircle } from 'lucide-react'
+import { Settings as SettingsIcon, Monitor, RefreshCw, Save, CheckCircle } from 'lucide-react'
 
 import GeneralTab from '../../components/admin/settings/GeneralTab'
-import CategoriesTab from '../../components/admin/settings/CategoriesTab'
-import PermissionsTab from '../../components/admin/settings/PermissionsTab'
 import PlatformTab from '../../components/admin/settings/PlatformTab'
 import UpdatesTab from '../../components/admin/settings/UpdatesTab'
 import Button from '../../components/UI/Button'
@@ -20,12 +18,6 @@ const DEFAULT_SETTINGS = {
   facebookUrl: '',
   twitterUrl: '',
   instagramUrl: '',
-  categories: [
-    { id: '1', name: 'Software Development', count: 12 },
-    { id: '2', name: 'Design & Creative', count: 8 },
-    { id: '3', name: 'Digital Marketing', count: 5 },
-    { id: '4', name: 'Writing & Translation', count: 3 },
-  ],
   studentsCanApply: true,
   adminModeration: true,
   enableReporting: true,
@@ -61,14 +53,6 @@ export default function Settings() {
     setHasChanges(true)
   }
 
-  const updateCategories = (newCategories) => {
-    setSettings(prev => ({
-      ...prev,
-      categories: newCategories
-    }))
-    setHasChanges(true)
-  }
-
   // Save settings to localStorage
   const handleSaveAll = () => {
     setIsSaving(true)
@@ -85,8 +69,6 @@ export default function Settings() {
 
   const tabs = [
     { id: 'general', label: 'General', icon: SettingsIcon },
-    { id: 'categories', label: 'Categories', icon: List },
-    { id: 'permissions', label: 'Permissions', icon: Shield },
     { id: 'platform', label: 'Platform', icon: Monitor },
     { id: 'updates', label: 'Updates', icon: RefreshCw },
   ]
@@ -95,10 +77,6 @@ export default function Settings() {
     switch (activeTab) {
       case 'general':
         return <GeneralTab settings={settings} handleChange={updateSetting} />
-      case 'categories':
-        return <CategoriesTab categories={settings.categories} onUpdate={updateCategories} />
-      case 'permissions':
-        return <PermissionsTab settings={settings} handleChange={updateSetting} />
       case 'platform':
         return <PlatformTab settings={settings} handleChange={updateSetting} />
       case 'updates':

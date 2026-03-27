@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { mockUsers } from '../../data/mockUsers'
 import { mockTransactions } from '../../data/mockTransactions'
 import { getGigs, getApplications } from '../../utils/localStorage'
@@ -46,6 +47,7 @@ const getAllUsers = () => {
 }
 
 export default function AdminDashboard() {
+    const navigate = useNavigate()
     const [allUsers, setAllUsers] = useState(getAllUsers())
     const [gigs, setGigs] = useState(getGigs())
     const [applications, setApplications] = useState(getApplications())
@@ -82,7 +84,16 @@ export default function AdminDashboard() {
         .filter(g => g.status === 'completed' && g.platformFee)
         .reduce((acc, gig) => acc + (gig.platformFee || 0), 0)
 
-    const pendingVerifications = allUsers.filter(u => !u.verified && u.role !== 'admin').length
+    const pendingVerifications = allUsers.filter(u => {
+        if (u.role === 'admin') return false
+        // Check the user's verified field for 'pending'
+        if (u.verified === 'pending') return true
+        // Also check per-user NBI and ID statuses from localStorage
+        const nbiStatus = localStorage.getItem(`nbiStatus_${u.id}`) || 'unverified'
+        const idStatus = localStorage.getItem(`idStatus_${u.id}`) || 'unverified'
+        if (nbiStatus === 'pending' || idStatus === 'pending') return true
+        return false
+    }).length
 
     // Calculate percentages for progress bars
     const studentPercentage = totalUsers > 0 ? (students / totalUsers) * 100 : 0
@@ -282,6 +293,7 @@ export default function AdminDashboard() {
                             className="group p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-100/50
                 hover:shadow-lg hover:shadow-amber-100/50 transition-all duration-300 cursor-pointer"
                             whileHover={{ scale: 1.02, x: 4 }}
+                            onClick={() => navigate('/admin/users?tab=pending')}
                         >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
