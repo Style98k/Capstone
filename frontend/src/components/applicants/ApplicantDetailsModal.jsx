@@ -1,38 +1,121 @@
-import { X, Star, MapPin, Mail, Phone, Award, CheckCircle, Clock, Briefcase, Shield, Download, FileText, Image as ImageIcon } from 'lucide-react'
+import { useMemo } from 'react'
+import { Star, MapPin, Mail, Phone, CheckCircle, Shield, Download, FileText, Image as ImageIcon, MessageSquare, Paperclip, BadgeCheck, Calendar } from 'lucide-react'
 import Modal from '../UI/Modal'
 import Button from '../UI/Button'
+import { mockUsers } from '../../data/mockUsers'
+
+/**
+ * Fetches fresh verification status for a user from localStorage.
+ * Mirrors the admin's getUserVerificationStatus logic so badge colors
+ * always reflect the latest admin approvals.
+ */
+function getFreshVerificationStatus(userId) {
+    try {
+        const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
+        const nbiStatus = localStorage.getItem(`nbiStatus_${userId}`) || 'unverified'
+        const idStatus = localStorage.getItem(`idStatus_${userId}`) || 'unverified'
+
+        const users = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+        const user = users.find(u => u.id === userId)
+        const userVerified = user?.verified
+
+        if (statuses[userId]) {
+            return {
+                verificationStatus: statuses[userId].verificationStatus || 'unverified',
+                assessmentStatus: statuses[userId].assessmentStatus || 'unverified',
+                nbiStatus,
+                idStatus,
+                verified: userVerified
+            }
+        }
+
+        // Fallback: derive from the user object in storage
+        const isVerified = userVerified === 'verified' || userVerified === true
+        return {
+            verificationStatus: isVerified ? 'verified' : 'unverified',
+            assessmentStatus: isVerified ? 'verified' : 'unverified',
+            nbiStatus,
+            idStatus,
+            verified: userVerified
+        }
+    } catch {
+        return {
+            verificationStatus: 'unverified',
+            assessmentStatus: 'unverified',
+            nbiStatus: 'unverified',
+            idStatus: 'unverified',
+            verified: false
+        }
+    }
+}
+
+/**
+ * Fetches the full, freshest user object by merging mockUsers,
+ * quickgig_users_v2, and quickgig_registered_users_v2.
+ */
+function getFreshUserData(userId) {
+    try {
+        const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+        const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+        const allUsers = [...mockUsers, ...registeredUsers, ...additionalUsers]
+        // Later entries win so localStorage edits override mocks
+        const seenIds = new Map()
+        for (const u of allUsers) {
+            if (u.id) seenIds.set(u.id, { ...seenIds.get(u.id), ...u })
+        }
+        return seenIds.get(userId) || null
+    } catch {
+        return null
+    }
+}
 
 export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHire, onReject, isLoading, status }) {
-    if (!applicant) return null
+    // ── Dynamic data: always fetch fresh on every render ──
+    const freshData = useMemo(() => {
+        if (!applicant) return null
+        const userId = applicant.userId
+        const freshUser = getFreshUserData(userId)
+        const vStatus = getFreshVerificationStatus(userId)
+        return { freshUser, vStatus }
+    }, [applicant, isOpen])
 
-    const verificationBadges = [
-        { label: 'Email', status: 'verified', icon: '✓' },
-        { label: 'School ID', status: applicant.schoolIdVerified || 'unverified', icon: '📋' },
-        { label: 'Assessment', status: applicant.assessmentVerified || 'unverified', icon: '📄' }
+    if (!applicant || !freshData) return null
+
+    const { freshUser, vStatus } = freshData
+
+    // Merge fresh user data with application data
+    const name = freshUser?.name || applicant.name || 'Unknown'
+    const title = freshUser?.title || applicant.title || 'Student Freelancer'
+    const email = freshUser?.email || applicant.email || ''
+    const phone = freshUser?.phone || applicant.phone || ''
+    const location = freshUser?.location || applicant.location || 'Philippines'
+    const rating = freshUser?.rating || applicant.rating || 'New'
+    const totalRatings = freshUser?.totalRatings || applicant.totalRatings || 0
+    const profilePhoto = freshUser?.profilePhoto || null
+
+    // Determine "fully verified" for the blue badge
+    const isFullyVerified =
+        vStatus.verificationStatus === 'verified' &&
+        vStatus.assessmentStatus === 'verified' &&
+        vStatus.nbiStatus === 'verified'
+
+    // ── Verification Checklist ──
+    const verificationItems = [
+        { label: 'Email', status: vStatus.verified === 'verified' || vStatus.verified === true ? 'verified' : 'unverified' },
+        { label: 'School ID', status: vStatus.idStatus || vStatus.verificationStatus || 'unverified' },
+        { label: 'Assessment', status: vStatus.assessmentStatus || 'unverified' },
+        { label: 'NBI', status: vStatus.nbiStatus || 'unverified' }
     ]
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'verified':
-                return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-            case 'pending':
-                return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-            default:
-                return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-        }
-    }
-
-    const getFileIcon = (fileName) => {
-        const extension = fileName.split('.').pop().toLowerCase()
-        if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
-            return <ImageIcon className="w-5 h-5 text-blue-500" />
-        } else if (['pdf'].includes(extension)) {
-            return <FileText className="w-5 h-5 text-red-500" />
-        } else if (['doc', 'docx'].includes(extension)) {
-            return <FileText className="w-5 h-5 text-blue-600" />
-        }
-        return <FileText className="w-5 h-5 text-gray-500" />
-    }
+    // ── Attachments ──
+    const imageAttachments = (applicant.attachments || []).filter(f => {
+        const ext = f.name?.split('.').pop()?.toLowerCase()
+        return ['jpg', 'jpeg', 'png', 'gif'].includes(ext)
+    })
+    const fileAttachments = (applicant.attachments || []).filter(f => {
+        const ext = f.name?.split('.').pop()?.toLowerCase()
+        return !['jpg', 'jpeg', 'png', 'gif'].includes(ext)
+    })
 
     const handleDownloadFile = (file) => {
         if (file.data) {
@@ -45,266 +128,268 @@ export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHi
         }
     }
 
-    const imageAttachments = applicant.attachments && applicant.attachments.filter(f => {
-        const ext = f.name.split('.').pop().toLowerCase()
-        return ['jpg', 'jpeg', 'png', 'gif'].includes(ext)
-    }) || []
-
-    const otherAttachments = applicant.attachments && applicant.attachments.filter(f => {
-        const ext = f.name.split('.').pop().toLowerCase()
-        return !['jpg', 'jpeg', 'png', 'gif'].includes(ext)
-    }) || []
+    const getFileIcon = (fileName) => {
+        const extension = fileName?.split('.').pop()?.toLowerCase()
+        if (['pdf'].includes(extension)) return <FileText className="w-4 h-4 text-red-500" />
+        if (['doc', 'docx'].includes(extension)) return <FileText className="w-4 h-4 text-blue-600" />
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) return <ImageIcon className="w-4 h-4 text-emerald-500" />
+        return <FileText className="w-4 h-4 text-slate-400" />
+    }
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Applicant Details" size="lg">
-            <div className="space-y-6 max-h-[80vh] overflow-y-auto">
-                {/* Header with Avatar and Basic Info */}
-                <div className="flex gap-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+        <Modal isOpen={isOpen} onClose={onClose} title="" size="lg">
+            <div className="space-y-6">
+
+                {/* ═══════════════════════════════════════════════
+                    HEADER — Avatar, Name, Title, Verified Badge
+                ═══════════════════════════════════════════════ */}
+                <div className="flex items-start gap-5">
+                    {/* Avatar */}
                     <div className="flex-shrink-0">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-                            {applicant.name?.charAt(0).toUpperCase()}
-                        </div>
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {applicant.name}
-                        </h3>
-                        <p className="text-primary-600 font-medium mt-1">{applicant.title || 'Student Freelancer'}</p>
-
-                        <div className="flex flex-wrap gap-3 mt-4">
-                            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                                <MapPin className="w-4 h-4" />
-                                {applicant.location || 'Manila, Philippines'}
+                        {profilePhoto ? (
+                            <img
+                                src={profilePhoto}
+                                alt={name}
+                                className="w-20 h-20 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-700"
+                            />
+                        ) : (
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold ring-2 ring-slate-100 dark:ring-slate-700">
+                                {name.charAt(0).toUpperCase()}
                             </div>
-                            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                {applicant.rating || 'New'} ({applicant.totalRatings || 0} jobs)
-                            </div>
-                        </div>
+                        )}
                     </div>
-                </div>
 
-                {/* Contact Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <Mail className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                        <div className="min-w-0">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                {applicant.email}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <Phone className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                        <div className="min-w-0">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Phone</p>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                {applicant.phone || 'Not provided'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Verification Status */}
-                <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-blue-600" />
-                        Verification Status
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {verificationBadges.map((badge) => (
-                            <div
-                                key={badge.label}
-                                className={`p-3 rounded-lg text-center ${getStatusColor(badge.status)}`}
-                            >
-                                <p className="text-xs font-semibold uppercase tracking-wide">{badge.label}</p>
-                                <p className="text-sm font-bold capitalize mt-1">{badge.status}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Bio/Experience */}
-                {applicant.experience && (
-                    <div className="space-y-2">
-                        <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                            <Briefcase className="w-5 h-5 text-primary-600" />
-                            About
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                            {applicant.experience}
-                        </p>
-                    </div>
-                )}
-
-                {/* Job Category */}
-                {applicant.skills && applicant.skills.length > 0 && (
-                    <div className="space-y-3">
-                        <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                            <Award className="w-5 h-5 text-primary-600" />
-                            Job Category
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                            {applicant.skills.map((skill, idx) => (
-                                <span
-                                    key={idx}
-                                    className="px-3 py-1.5 bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 rounded-full text-sm font-medium"
-                                >
-                                    {skill}
+                    {/* Name + Title + Meta Row */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
+                                {name}
+                            </h3>
+                            {isFullyVerified && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                                    <BadgeCheck className="w-3.5 h-3.5" />
+                                    Verified
                                 </span>
-                            ))}
+                            )}
+                        </div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{title}</p>
+
+                        {/* Rating + Location row */}
+                        <div className="flex items-center gap-4 mt-3 flex-wrap">
+                            <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+                                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                <span className="font-semibold text-slate-800 dark:text-white">
+                                    {rating !== 'New' ? rating : '—'}
+                                </span>
+                                <span className="text-slate-400 dark:text-slate-500">
+                                    ({totalRatings} {totalRatings === 1 ? 'job' : 'jobs'})
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+                                <MapPin className="w-4 h-4 text-slate-400" />
+                                {location}
+                            </div>
                         </div>
                     </div>
-                )}
+                </div>
 
-                {/* Availability */}
-                {applicant.availability && (
-                    <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                        <div>
-                            <p className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide font-semibold">Availability</p>
-                            <p className="text-sm text-blue-900 dark:text-blue-300 font-medium">
-                                {applicant.availability}
+                {/* ═══════════════════════════════════════════════
+                    CONTACT ROW — Email & Phone, minimal icons
+                ═══════════════════════════════════════════════ */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 py-4 border-t border-b border-slate-100 dark:border-slate-700/50">
+                    <div className="flex items-center gap-2.5">
+                        <Mail className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <div className="min-w-0">
+                            <p className="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-medium">Email</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-200 truncate">{email || '—'}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                        <Phone className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <div className="min-w-0">
+                            <p className="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-medium">Phone</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-200">{phone || 'Not provided'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ═══════════════════════════════════════════════
+                    VERIFICATION CHECKLIST — Pill Badges Row
+                ═══════════════════════════════════════════════ */}
+                <div>
+                    <div className="flex items-center gap-2 mb-3">
+                        <Shield className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                            Verification Status
+                        </h4>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {verificationItems.map((item) => {
+                            const isVerified = item.status === 'verified'
+                            return (
+                                <span
+                                    key={item.label}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${isVerified
+                                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                        : 'bg-slate-50 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
+                                        }`}
+                                >
+                                    <CheckCircle className={`w-3.5 h-3.5 ${isVerified ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`} />
+                                    {item.label}
+                                </span>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* ═══════════════════════════════════════════════
+                    PROPOSAL — Message from Applicant
+                ═══════════════════════════════════════════════ */}
+                {applicant.proposal && (
+                    <div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <MessageSquare className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                                Application Proposal
+                            </h4>
+                        </div>
+                        <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/30">
+                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                                {applicant.proposal}
                             </p>
                         </div>
                     </div>
                 )}
 
-                {/* Proposal/Cover Letter */}
-                {applicant.proposal && (
-                    <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <h4 className="font-semibold text-gray-900 dark:text-white">Proposal</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                            {applicant.proposal}
-                        </p>
-                    </div>
-                )}
-
-                {/* Image Attachments Section */}
-                {imageAttachments.length > 0 && (
-                    <div className="space-y-3">
-                        <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                            <ImageIcon className="w-5 h-5 text-primary-600" />
-                            Image Gallery
-                        </h4>
-                        <div className="grid grid-cols-2 gap-3">
-                            {imageAttachments.map((file, idx) => (
-                                <div
-                                    key={idx}
-                                    className="relative rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 aspect-square group cursor-pointer border border-gray-200 dark:border-gray-700"
-                                    onClick={() => handleDownloadFile(file)}
-                                >
-                                    {file.data ? (
-                                        <>
-                                            <img
-                                                src={file.data}
-                                                alt={file.name}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    console.error('Image failed to load:', file.name)
-                                                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ccc" width="100" height="100"/%3E%3Ctext x="50" y="50" text-anchor="middle" dy=".3em" fill="white"%3ENo Image%3C/text%3E%3C/svg%3E'
-                                                }}
-                                            />
-                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                                <Download className="w-6 h-6 text-white" />
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gray-300 dark:bg-gray-600">
-                                            <span className="text-gray-600 dark:text-gray-300 text-xs text-center p-2">No image data</span>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                {/* ═══════════════════════════════════════════════
+                    ATTACHMENTS — Clickable File Links
+                ═══════════════════════════════════════════════ */}
+                {(imageAttachments.length > 0 || fileAttachments.length > 0) && (
+                    <div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <Paperclip className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                                Attachments
+                            </h4>
                         </div>
-                    </div>
-                )}
 
-                {/* Other Attachments Section */}
-                {otherAttachments.length > 0 && (
-                    <div className="space-y-3">
-                        <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                            <Download className="w-5 h-5 text-primary-600" />
-                            Attachments ({otherAttachments.length})
-                        </h4>
-                        <div className="grid grid-cols-1 gap-2">
-                            {otherAttachments.map((file, idx) => (
-                                <div
-                                    key={idx}
-                                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
-                                >
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        {getFileIcon(file.name)}
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                                {file.name}
-                                            </p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                {file.size} KB
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button
+                        {/* Image thumbnails */}
+                        {imageAttachments.length > 0 && (
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                {imageAttachments.map((file, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="relative rounded-lg overflow-hidden aspect-video bg-slate-100 dark:bg-slate-800 cursor-pointer group border border-slate-100 dark:border-slate-700"
                                         onClick={() => handleDownloadFile(file)}
-                                        className="ml-2 p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors flex-shrink-0"
-                                        title="Download file"
                                     >
-                                        <Download className="w-4 h-4 text-primary-600 hover:text-primary-700" />
+                                        {file.data ? (
+                                            <>
+                                                <img
+                                                    src={file.data}
+                                                    alt={file.name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23e2e8f0" width="100" height="100"/%3E%3Ctext x="50" y="50" text-anchor="middle" dy=".3em" fill="%2394a3b8"%3ENo Image%3C/text%3E%3C/svg%3E'
+                                                    }}
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                                                    <Download className="w-5 h-5 text-white" />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <span className="text-slate-400 text-xs">No preview</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* File links */}
+                        {fileAttachments.length > 0 && (
+                            <div className="space-y-1.5">
+                                {fileAttachments.map((file, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => handleDownloadFile(file)}
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group text-left"
+                                    >
+                                        {getFileIcon(file.name)}
+                                        <span className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate flex-1">
+                                            {file.name}
+                                        </span>
+                                        {file.size && (
+                                            <span className="text-[11px] text-slate-400 dark:text-slate-500 flex-shrink-0">
+                                                {file.size} KB
+                                            </span>
+                                        )}
+                                        <Download className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
                                     </button>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
-                {/* No attachments message */}
-                {(!applicant.attachments || applicant.attachments.length === 0) && (
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            No attachments submitted
-                        </p>
-                    </div>
-                )}
-
-                {/* Application Date */}
-                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Applied on</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                        {applicant.appliedAt ? new Date(applicant.appliedAt).toLocaleDateString() : 'N/A'}
-                    </span>
+                {/* ═══════════════════════════════════════════════
+                    APPLIED DATE — Subtle row
+                ═══════════════════════════════════════════════ */}
+                <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Applied {applicant.appliedAt ? new Date(applicant.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</span>
+                    {applicant.appliedFor && (
+                        <>
+                            <span className="mx-1">•</span>
+                            <span className="text-slate-500 dark:text-slate-400 font-medium">{applicant.appliedFor}</span>
+                        </>
+                    )}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                {/* ═══════════════════════════════════════════════
+                    ACTION FOOTER — Reject (Ghost) / Hire (Solid)
+                ═══════════════════════════════════════════════ */}
+                <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-700/50">
                     {status === 'pending' ? (
                         <>
-                            <Button
-                                variant="outline"
+                            <button
                                 onClick={onReject}
                                 disabled={isLoading}
-                                className="flex-1 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-900/20"
+                                className="flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold
+                                    border border-red-200 text-red-600
+                                    hover:bg-red-50 hover:border-red-300
+                                    dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20
+                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                    transition-all duration-150"
                             >
                                 Reject
-                            </Button>
-                            <Button
+                            </button>
+                            <button
                                 onClick={onHire}
                                 disabled={isLoading}
-                                className="flex-1 bg-green-600 hover:bg-green-700"
+                                className="flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold
+                                    bg-emerald-600 text-white
+                                    hover:bg-emerald-700 active:bg-emerald-800
+                                    dark:bg-emerald-600 dark:hover:bg-emerald-700
+                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                    shadow-sm hover:shadow transition-all duration-150"
                             >
-                                {isLoading ? 'Processing...' : 'Hire'}
-                            </Button>
+                                {isLoading ? 'Processing…' : 'Hire'}
+                            </button>
                         </>
                     ) : (
-                        <div className={`flex-1 text-center py-3 rounded-lg font-semibold ${status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                            status === 'hired' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
-                                status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
-                                    'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                        <div className={`flex-1 text-center py-3 rounded-lg text-sm font-semibold ${status === 'completed'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                            : status === 'hired'
+                                ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+                                : status === 'rejected'
+                                    ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                                    : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
                             }`}>
-                            {status === 'completed' ? '✓ Gig Completed' :
-                                status === 'hired' ? '✓ Hired for this Gig' :
-                                    status === 'rejected' ? '✗ Application Rejected' :
-                                        status?.charAt(0).toUpperCase() + status?.slice(1)}
+                            {status === 'completed' ? '✓ Gig Completed'
+                                : status === 'hired' ? '✓ Hired for this Gig'
+                                    : status === 'rejected' ? '✗ Application Rejected'
+                                        : status?.charAt(0).toUpperCase() + status?.slice(1)}
                         </div>
                     )}
                 </div>
