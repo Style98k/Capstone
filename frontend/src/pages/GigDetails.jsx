@@ -38,12 +38,33 @@ export default function GigDetails() {
     const client = allUsers.find(u => u.id === gig.ownerId)
     if (!client) return null
     const ratingData = getUserRating(gig.ownerId)
+
+    // Dynamic verification — read real status from localStorage
+    const emailVerified = localStorage.getItem(`emailVerified_${gig.ownerId}`) === 'true'
+    const idStatus = localStorage.getItem(`idStatus_${gig.ownerId}`) || 'unverified'
+    const nbiStatus = localStorage.getItem(`nbiStatus_${gig.ownerId}`) || 'unverified'
+
+    // Also check per-user verification statuses object
+    let assessmentStatus = 'unverified'
+    try {
+      const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
+      if (statuses[gig.ownerId]) {
+        assessmentStatus = statuses[gig.ownerId].assessmentStatus || 'unverified'
+      }
+    } catch { /* ignore */ }
+
+    const isFullyVerified = emailVerified && idStatus === 'verified' && nbiStatus === 'verified'
+
     return {
       id: client.id,
       name: client.name || 'Unknown Client',
       email: client.email,
       phone: client.phoneNumber || client.phone || null,
       verified: client.verified === true || client.verified === 'verified',
+      isFullyVerified,
+      emailVerified,
+      idStatus,
+      nbiStatus,
       rating: ratingData.average || 0,
       reviewCount: ratingData.count || 0,
     }
@@ -144,7 +165,7 @@ export default function GigDetails() {
               >
                 <User className="w-4 h-4" />
                 <span>{clientInfo?.name || gig.company || 'Client'}</span>
-                {clientInfo?.verified && (
+                {clientInfo?.isFullyVerified && (
                   <BadgeCheck className="w-4 h-4 text-blue-500" />
                 )}
               </button>
@@ -325,7 +346,7 @@ export default function GigDetails() {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="font-semibold text-slate-900 text-sm">{clientInfo?.name || gig.company || 'Client'}</span>
-                    {clientInfo?.verified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
+                    {clientInfo?.isFullyVerified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
                   </div>
                   <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                     {clientInfo?.rating > 0 ? (
@@ -503,9 +524,9 @@ export default function GigDetails() {
             </div>
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-bold text-slate-900">{clientInfo?.name || 'Client'}</h3>
-              {clientInfo?.verified && <BadgeCheck className="w-5 h-5 text-blue-500" />}
+              {clientInfo?.isFullyVerified && <BadgeCheck className="w-5 h-5 text-blue-500" />}
             </div>
-            <p className="text-sm text-slate-500 mt-1">{clientInfo?.verified ? 'Verified Client' : 'Client'}</p>
+            <p className="text-sm text-slate-500 mt-1">{clientInfo?.isFullyVerified ? 'Verified Client' : 'Unverified Client'}</p>
           </div>
 
           {/* Contact */}
@@ -543,24 +564,57 @@ export default function GigDetails() {
           {/* Verification */}
           <div className="py-5 border-b border-slate-200">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Verification Status</p>
-            <div className="flex items-center gap-2">
-              {clientInfo?.verified ? (
-                <>
-                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-sm text-slate-900">Verified Client</span>
-                </>
-              ) : (
-                <>
-                  <div className="w-5 h-5 bg-slate-100 rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-slate-400 rounded-full" />
-                  </div>
-                  <span className="text-sm text-slate-500">Not yet verified</span>
-                </>
-              )}
+            <div className="space-y-2.5">
+              {/* Email */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">Email</span>
+                {clientInfo?.emailVerified ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-semibold">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    Verified
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 rounded-full text-xs font-semibold">
+                    Unverified
+                  </span>
+                )}
+              </div>
+              {/* Valid ID */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">Valid ID</span>
+                {clientInfo?.idStatus === 'verified' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-semibold">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    Verified
+                  </span>
+                ) : clientInfo?.idStatus === 'pending' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full text-xs font-semibold">
+                    Pending
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 rounded-full text-xs font-semibold">
+                    Unverified
+                  </span>
+                )}
+              </div>
+              {/* NBI */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">NBI Clearance</span>
+                {clientInfo?.nbiStatus === 'verified' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-semibold">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    Verified
+                  </span>
+                ) : clientInfo?.nbiStatus === 'pending' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full text-xs font-semibold">
+                    Pending
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 rounded-full text-xs font-semibold">
+                    Unverified
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

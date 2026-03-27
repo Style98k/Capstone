@@ -14,6 +14,7 @@ function getFreshVerificationStatus(userId) {
         const statuses = JSON.parse(localStorage.getItem('quickgig_user_verification_statuses_v2') || '{}')
         const nbiStatus = localStorage.getItem(`nbiStatus_${userId}`) || 'unverified'
         const idStatus = localStorage.getItem(`idStatus_${userId}`) || 'unverified'
+        const emailVerified = localStorage.getItem(`emailVerified_${userId}`) === 'true'
 
         const users = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
         const user = users.find(u => u.id === userId)
@@ -25,6 +26,7 @@ function getFreshVerificationStatus(userId) {
                 assessmentStatus: statuses[userId].assessmentStatus || 'unverified',
                 nbiStatus,
                 idStatus,
+                emailVerified,
                 verified: userVerified
             }
         }
@@ -36,6 +38,7 @@ function getFreshVerificationStatus(userId) {
             assessmentStatus: isVerified ? 'verified' : 'unverified',
             nbiStatus,
             idStatus,
+            emailVerified,
             verified: userVerified
         }
     } catch {
@@ -44,6 +47,7 @@ function getFreshVerificationStatus(userId) {
             assessmentStatus: 'unverified',
             nbiStatus: 'unverified',
             idStatus: 'unverified',
+            emailVerified: false,
             verified: false
         }
     }
@@ -93,16 +97,17 @@ export default function ApplicantDetailsModal({ isOpen, onClose, applicant, onHi
     const totalRatings = freshUser?.totalRatings || applicant.totalRatings || 0
     const profilePhoto = freshUser?.profilePhoto || null
 
-    // Determine "fully verified" for the blue badge
+    // Determine "fully verified" for the blue badge — ALL 4 must be verified
     const isFullyVerified =
-        vStatus.verificationStatus === 'verified' &&
+        vStatus.emailVerified === true &&
+        vStatus.idStatus === 'verified' &&
         vStatus.assessmentStatus === 'verified' &&
         vStatus.nbiStatus === 'verified'
 
     // ── Verification Checklist ──
     const verificationItems = [
-        { label: 'Email', status: vStatus.verified === 'verified' || vStatus.verified === true ? 'verified' : 'unverified' },
-        { label: 'School ID', status: vStatus.idStatus || vStatus.verificationStatus || 'unverified' },
+        { label: 'Email', status: vStatus.emailVerified ? 'verified' : 'unverified' },
+        { label: 'School ID', status: vStatus.idStatus || 'unverified' },
         { label: 'Assessment', status: vStatus.assessmentStatus || 'unverified' },
         { label: 'NBI', status: vStatus.nbiStatus || 'unverified' }
     ]
