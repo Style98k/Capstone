@@ -3,11 +3,12 @@ export const mockGigs = []
 export const categories = [
   'Tutoring',
   'Household',
-  'Administrative',
+  'Data Entry & Encoding',
   'Delivery',
   'Event Help',
   'Tech Support',
-  'Other',
+  'Creative & Design',
+  'Photography',
 ]
 
 export const locations = ['Local', 'Online', 'Remote']

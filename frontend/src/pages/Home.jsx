@@ -261,11 +261,11 @@ export default function Home() {
             {[
               { label: 'Tutoring', color: 'from-sky-400 to-indigo-500' },
               { label: 'Household', color: 'from-emerald-400 to-teal-500' },
-              { label: 'Administrative', color: 'from-violet-400 to-fuchsia-500' },
+              { label: 'Data Entry & Encoding', color: 'from-violet-400 to-fuchsia-500' },
               { label: 'Delivery', color: 'from-amber-400 to-orange-500' },
               { label: 'Event Help', color: 'from-pink-400 to-rose-500' },
               { label: 'Tech Support', color: 'from-cyan-400 to-sky-500' },
-              { label: 'Data Entry', color: 'from-indigo-400 to-purple-500' },
+              { label: 'Creative & Design', color: 'from-indigo-400 to-purple-500' },
               { label: 'Photography', color: 'from-rose-400 to-amber-500' },
             ].map((category) => (
               <Link
