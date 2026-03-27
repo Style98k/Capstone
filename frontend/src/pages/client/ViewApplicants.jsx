@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Eye, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react'
+import { Eye, CheckCircle, XCircle, Clock, TrendingUp, MessageCircle } from 'lucide-react'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
 import Button from '../../components/UI/Button'
@@ -160,6 +160,29 @@ export default function ViewApplicants() {
     const handleViewDetails = (applicant) => {
         setSelectedApplicant(applicant)
         setIsDetailsModalOpen(true)
+    }
+
+    const handleMessage = (applicant) => {
+        // Check if current user has facebookUrl
+        if (!user?.facebookUrl) {
+            alert('Please set up your Messenger Link in your Profile first.')
+            return
+        }
+
+        // Fetch target user's details from localStorage
+        const targetUser = allUsers.find(u => u.id === applicant.userId)
+        if (!targetUser?.facebookUrl) {
+            alert('This user has not linked their Messenger account yet.')
+            return
+        }
+
+        // Ensure the URL starts with http or https
+        let fbUrl = targetUser.facebookUrl
+        if (!fbUrl.startsWith('http://') && !fbUrl.startsWith('https://')) {
+            fbUrl = 'https://' + fbUrl
+        }
+
+        window.open(fbUrl, '_blank')
     }
 
     const handleHireApplicant = async () => {
@@ -367,6 +390,15 @@ export default function ViewApplicants() {
                                         )}
                                     </div>
                                     <div className="flex gap-2">
+                                        {(applicant.status === 'hired' || applicant.status === 'completed') && (
+                                            <button
+                                                onClick={() => handleMessage(applicant)}
+                                                className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center gap-2 rounded-lg transition-colors"
+                                            >
+                                                <MessageCircle className="w-4 h-4" />
+                                                Message Student
+                                            </button>
+                                        )}
                                         <Button
                                             size="sm"
                                             variant="outline"

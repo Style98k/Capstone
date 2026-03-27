@@ -21,7 +21,8 @@ import {
   XCircle,
   Star,
   Send,
-  Loader
+  Loader,
+  MessageCircle
 } from 'lucide-react'
 
 export default function MyApplications() {
@@ -116,6 +117,50 @@ export default function MyApplications() {
     } catch {
       return gig.ownerName || 'Client'
     }
+  }
+
+  // Get all users for messaging
+  const getAllUsers = () => {
+    try {
+      const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+      const additionalUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+      const seenIds = new Set()
+      const users = []
+      for (const u of [...registeredUsers, ...additionalUsers]) {
+        if (!seenIds.has(u.id)) {
+          users.push(u)
+          seenIds.add(u.id)
+        }
+      }
+      return users
+    } catch {
+      return []
+    }
+  }
+
+  // Handle Facebook message
+  const handleMessage = (gig) => {
+    // Check if current user has facebookUrl
+    if (!user?.facebookUrl) {
+      alert('Please set up your Messenger Link in your Profile first.')
+      return
+    }
+
+    // Fetch client's details from localStorage
+    const allUsers = getAllUsers()
+    const targetUser = allUsers.find(u => u.id === gig.ownerId)
+    if (!targetUser?.facebookUrl) {
+      alert('This user has not linked their Messenger account yet.')
+      return
+    }
+
+    // Ensure the URL starts with http or https
+    let fbUrl = targetUser.facebookUrl
+    if (!fbUrl.startsWith('http://') && !fbUrl.startsWith('https://')) {
+      fbUrl = 'https://' + fbUrl
+    }
+
+    window.open(fbUrl, '_blank')
   }
 
   const myApplications = allApplications
@@ -321,13 +366,14 @@ export default function MyApplications() {
                           View gig
                           <ArrowUpRight className="w-4 h-4" />
                         </Link>
-                        {app.status === 'hired' && (
-                          <Link
-                            to="/student/messages"
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 text-white px-4 py-2 text-sm font-semibold shadow-md shadow-primary-600/20 hover:bg-primary-700 transition-colors"
+                        {(app.status === 'hired' || app.status === 'completed') && (
+                          <button
+                            onClick={() => handleMessage(gig)}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 text-sm transition-colors"
                           >
-                            Message client
-                          </Link>
+                            <MessageCircle className="w-4 h-4" />
+                            Message Client
+                          </button>
                         )}
                         {app.status === 'completed' && !ratedGigs[gig.id] && (
                           <button

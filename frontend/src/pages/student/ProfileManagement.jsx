@@ -7,7 +7,7 @@ import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Save, Camera, Star, Briefcase, TrendingUp,
     MapPin, Phone, Mail, Globe, Facebook, Calendar, Link as LinkIcon,
-    ShieldCheck, Upload, X, CheckCircle2, AlertCircle, Loader2, BadgeCheck
+    ShieldCheck, Upload, X, CheckCircle2, AlertCircle, Loader2, BadgeCheck, MessageCircle
 } from 'lucide-react'
 import Card from '../../components/UI/Card'
 import Modal from '../../components/UI/Modal'
@@ -128,7 +128,7 @@ export default function ProfileManagement() {
         skills: user?.skills?.join(', ') || '',
         experience: user?.experience || '',
         availability: user?.availability || '',
-        facebook: user?.facebook || '',
+        facebookUrl: user?.facebookUrl || user?.facebook || '',
         otherSocial: user?.otherSocial || '',
         photo: null
     })
@@ -817,13 +817,13 @@ export default function ProfileManagement() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input
-                                label="Facebook Profile URL"
-                                name="facebook"
-                                value={formData.facebook}
+                                label="Messenger Link"
+                                name="facebookUrl"
+                                value={formData.facebookUrl}
                                 onChange={handleChange}
                                 disabled={!isEditing}
-                                placeholder="https://facebook.com/username"
-                                leftIcon={Facebook}
+                                placeholder="e.g., https://m.me/username"
+                                leftIcon={MessageCircle}
                             />
                             <Input
                                 label="Other Social Link"

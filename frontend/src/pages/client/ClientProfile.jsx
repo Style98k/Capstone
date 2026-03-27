@@ -12,7 +12,7 @@ import CommentRating from '../../components/Shared/CommentRating'
 import { triggerNotification } from '../../utils/notificationManager'
 import {
     User, Mail, Phone, Building2, Save, X, Edit3,
-    CheckCircle2, Sparkles, Briefcase, Star, Camera, ShieldCheck, Upload, Loader2, BadgeCheck
+    CheckCircle2, Sparkles, Briefcase, Star, Camera, ShieldCheck, Upload, Loader2, BadgeCheck, Globe, Facebook, MessageCircle
 } from 'lucide-react'
 
 export default function ClientProfile() {
@@ -54,6 +54,7 @@ export default function ClientProfile() {
         name: user?.name || '',
         email: user?.email || '',
         phone: user?.phone || '',
+        facebookUrl: user?.facebookUrl || '',
     })
 
     // Fetch real stats from localStorage
@@ -123,6 +124,7 @@ export default function ClientProfile() {
             name: user?.name || '',
             email: user?.email || '',
             phone: user?.phone || '',
+            facebookUrl: user?.facebookUrl || '',
         })
         setIsEditing(false)
     }
@@ -625,6 +627,39 @@ export default function ClientProfile() {
                             />
                         </motion.div>
                     </div>
+                </Card>
+            </motion.div>
+
+            {/* Social Profiles */}
+            <motion.div variants={itemVariants}>
+                <Card className="overflow-hidden">
+                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+                        <motion.div
+                            className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg"
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                        >
+                            <Globe className="w-5 h-5 text-white" />
+                        </motion.div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                            Social Profiles
+                        </h2>
+                    </div>
+
+                    <motion.div
+                        whileHover={{ scale: isEditing ? 1.02 : 1 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                    >
+                        <Input
+                            label="Messenger Link"
+                            name="facebookUrl"
+                            value={formData.facebookUrl}
+                            onChange={handleChange}
+                            disabled={!isEditing}
+                            placeholder="e.g., https://m.me/username"
+                            leftIcon={MessageCircle}
+                            className={isEditing ? 'ring-2 ring-violet-200 dark:ring-violet-800' : ''}
+                        />
+                    </motion.div>
                 </Card>
             </motion.div>
 
