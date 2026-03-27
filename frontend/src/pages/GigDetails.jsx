@@ -2,12 +2,13 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useLocalAuth'
 import { getGigs, getApplications, saveApplication, initializeLocalStorage } from '../utils/localStorage'
 import { triggerNotification } from '../utils/notificationManager'
+import { getUserRating } from '../utils/ratingUtils'
+import { mockUsers } from '../data/mockUsers'
 import Card from '../components/UI/Card'
 import Button from '../components/UI/Button'
 import Modal from '../components/UI/Modal'
-import Textarea from '../components/UI/Textarea'
 import GigCommentRating from '../components/Shared/GigCommentRating'
-import { MapPin, Clock, Coins, User, FileText, Sparkles, AlertTriangle } from 'lucide-react'
+import { MapPin, Clock, Coins, User, FileText, AlertTriangle, Upload, BadgeCheck, Star, ExternalLink } from 'lucide-react'
 import { useState, useRef, useMemo } from 'react'
 
 export default function GigDetails() {
@@ -15,6 +16,7 @@ export default function GigDetails() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [showApplyModal, setShowApplyModal] = useState(false)
+  const [showClientProfileModal, setShowClientProfileModal] = useState(false)
   const [proposal, setProposal] = useState('')
   const [attachments, setAttachments] = useState([])
   const [isManagingAttachments, setIsManagingAttachments] = useState(false)
@@ -35,6 +37,33 @@ export default function GigDetails() {
   const hasApplied = user && applications.some(
     app => app.gigId === id && app.userId === user.id
   )
+
+  // Get client info for the gig owner
+  const clientInfo = useMemo(() => {
+    if (!gig?.ownerId) return null
+
+    // Check localStorage users first
+    const storedUsers = JSON.parse(localStorage.getItem('quickgig_users_v2') || '[]')
+    const registeredUsers = JSON.parse(localStorage.getItem('quickgig_registered_users_v2') || '[]')
+    const allUsers = [...mockUsers, ...storedUsers, ...registeredUsers]
+
+    // Find client by ownerId
+    const client = allUsers.find(u => u.id === gig.ownerId)
+    if (!client) return null
+
+    // Get client rating
+    const ratingData = getUserRating(gig.ownerId)
+
+    return {
+      id: client.id,
+      name: client.name || 'Unknown Client',
+      email: client.email,
+      phone: client.phoneNumber || client.phone || null,
+      verified: client.verified === true || client.verified === 'verified',
+      rating: ratingData.average || 0,
+      reviewCount: ratingData.count || 0
+    }
+  }, [gig])
 
   if (!gig) {
     return (
@@ -197,51 +226,87 @@ export default function GigDetails() {
         </div>
       </Card>
 
-      {/* Apply Modal */}
+      {/* Apply Modal - Minimalist SaaS Design */}
       <Modal
         isOpen={showApplyModal}
         onClose={() => setShowApplyModal(false)}
         title="Apply for Gig"
         size="lg"
       >
-        <div className="space-y-6">
-          {/* Header with gig info */}
-          <div className="flex items-start justify-between gap-4 rounded-2xl border border-gray-100 dark:border-gray-700 bg-gradient-to-r from-primary-50/70 via-white to-white dark:from-primary-900/20 dark:via-gray-900/40 px-4 py-3 sm:px-5 sm:py-4 shadow-sm hover:shadow-md transition-shadow">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-300 mb-1">
-                Application
-              </p>
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {gig.title}
-              </h3>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                <User className="w-4 h-4" />
-                <span>{gig.company || 'Client'}</span>
-              </p>
-            </div>
-            <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300 shadow-inner border border-primary-100/60 dark:border-primary-800/60">
-              <Sparkles className="w-6 h-6" />
+        <div className="space-y-5 bg-white">
+          {/* Client Spotlight Header */}
+          <div className="border border-slate-200 rounded-lg p-4">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-3">
+              Client
+            </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-slate-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-900">
+                      {clientInfo?.name || gig.company || 'Client'}
+                    </span>
+                    {clientInfo?.verified && (
+                      <BadgeCheck className="w-4 h-4 text-blue-500" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    {clientInfo?.rating > 0 ? (
+                      <span className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                        {clientInfo.rating} ({clientInfo.reviewCount} reviews)
+                      </span>
+                    ) : (
+                      <span>No ratings yet</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowClientProfileModal(true)
+                }}
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+              >
+                <span>View Profile</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
-          {/* Info strip / upload area */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full flex items-start gap-3 rounded-xl border border-primary-100 dark:border-primary-900/40 bg-primary-50/70 dark:bg-primary-900/20 px-4 py-3 text-left hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/40 transition-colors"
-          >
-            <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-gray-900 shadow-sm">
-              <FileText className="w-5 h-5 text-primary-600 dark:text-primary-300" />
-            </div>
-            <div className="text-sm">
-              <p className="font-medium text-gray-900 dark:text-white">
-                Attach your resume, portfolio, or any supporting files
+          {/* Job Title */}
+          <div className="border-b border-slate-200 pb-4">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+              Applying For
+            </p>
+            <h3 className="text-lg font-semibold text-slate-900">
+              {gig.title}
+            </h3>
+          </div>
+
+          {/* Attachment Upload Area - Minimalist Design */}
+          <div>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+              Attachments (Optional)
+            </p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full border-dashed border-2 border-slate-200 rounded-lg p-6 text-center hover:border-slate-300 hover:bg-slate-50 transition-colors"
+            >
+              <Upload className="w-6 h-6 text-slate-400 mx-auto mb-2" />
+              <p className="text-sm font-medium text-slate-700">
+                Click to upload files
               </p>
-              <p className="text-gray-600 dark:text-gray-400 text-xs mt-0.5">
-                Optional, but highly recommended – upload PDFs, images, or documents to showcase your work.
+              <p className="text-xs text-slate-500 mt-1">
+                PDF, DOC, images, or portfolio links
               </p>
-            </div>
-          </button>
+            </button>
+          </div>
 
           <input
             type="file"
@@ -255,21 +320,19 @@ export default function GigDetails() {
               const files = Array.from(e.target.files || [])
               if (files.length === 0) return
 
-              // Convert files to base64 and store with metadata
               files.forEach(file => {
                 const reader = new FileReader()
                 reader.onload = (event) => {
                   setAttachments(prev => {
-                    // Check if already added
                     const key = `${file.name}-${file.size}`
                     if (prev.some(f => `${f.name}-${f.size}` === key)) {
                       return prev
                     }
                     return [...prev, {
                       name: file.name,
-                      size: Math.round(file.size / 1024), // KB
+                      size: Math.round(file.size / 1024),
                       type: file.type,
-                      data: event.target.result // base64 data
+                      data: event.target.result
                     }]
                   })
                 }
@@ -278,16 +341,17 @@ export default function GigDetails() {
 
               setIsManagingAttachments(false)
               setAttachmentsToRemove([])
-
-              // reset input so selecting the same file again still triggers onChange
               e.target.value = ''
             }}
           />
 
+          {/* Selected Files List */}
           {attachments.length > 0 && (
-            <div className="rounded-xl border border-dashed border-primary-200 dark:border-primary-800 bg-white/60 dark:bg-gray-900/40 px-4 py-3 text-xs text-gray-600 dark:text-gray-300 flex flex-col gap-2 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-medium text-gray-900 dark:text-white">Selected files ({attachments.length}):</p>
+            <div className="border border-slate-200 rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-slate-700">
+                  {attachments.length} file{attachments.length > 1 ? 's' : ''} selected
+                </p>
                 {!isManagingAttachments ? (
                   <button
                     type="button"
@@ -295,12 +359,12 @@ export default function GigDetails() {
                       setIsManagingAttachments(true)
                       setAttachmentsToRemove([])
                     }}
-                    className="text-[11px] font-medium text-primary-600 dark:text-primary-300 hover:underline"
+                    className="text-xs font-medium text-slate-500 hover:text-slate-700"
                   >
                     Manage
                   </button>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => {
@@ -312,9 +376,9 @@ export default function GigDetails() {
                         setAttachmentsToRemove([])
                         setIsManagingAttachments(false)
                       }}
-                      className="text-[11px] font-medium text-red-600 dark:text-red-400 hover:underline"
+                      className="text-xs font-medium text-red-600 hover:text-red-700"
                     >
-                      Remove selected
+                      Remove
                     </button>
                     <button
                       type="button"
@@ -322,27 +386,27 @@ export default function GigDetails() {
                         setIsManagingAttachments(false)
                         setAttachmentsToRemove([])
                       }}
-                      className="text-[11px] text-gray-500 hover:underline"
+                      className="text-xs text-slate-500 hover:text-slate-700"
                     >
                       Done
                     </button>
                   </div>
                 )}
               </div>
-              <ul className="space-y-0.5 mt-1">
+              <ul className="space-y-1">
                 {attachments.map((file, idx) => {
                   const checked = attachmentsToRemove.includes(idx)
                   return (
                     <li
                       key={idx}
-                      className="flex items-center gap-2 truncate rounded-md px-2 py-1 hover:bg-primary-50/80 dark:hover:bg-primary-900/40 transition-colors"
+                      className="flex items-center gap-2 text-sm text-slate-600 py-1 px-2 rounded hover:bg-slate-50"
                     >
                       {isManagingAttachments && (
                         <input
                           type="checkbox"
                           name={`remove-attachment-${idx}`}
                           id={`remove-attachment-${idx}`}
-                          className="h-3 w-3 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                           checked={checked}
                           onChange={(e) => {
                             const isChecked = e.target.checked
@@ -355,8 +419,8 @@ export default function GigDetails() {
                           }}
                         />
                       )}
-                      <FileText className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
-                      <span className="truncate text-[11px] sm:text-xs text-gray-800 dark:text-gray-100">{file.name}</span>
+                      <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                      <span className="truncate">{file.name}</span>
                     </li>
                   )
                 })}
@@ -364,37 +428,171 @@ export default function GigDetails() {
             </div>
           )}
 
-          {/* Proposal field */}
-          <div className="mt-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 px-4 py-3 sm:px-5 sm:py-4 shadow-sm hover:shadow-md focus-within:border-primary-300 focus-within:ring-1 focus-within:ring-primary-200 dark:focus-within:border-primary-500 dark:focus-within:ring-primary-800 transition-all">
-            <Textarea
-              label="Your Proposal"
-              name="proposal"
+          {/* Proposal Textarea - Clean Design */}
+          <div>
+            <label htmlFor="gig-proposal" className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+              Your Proposal
+            </label>
+            <textarea
               id="gig-proposal"
+              name="proposal"
               value={proposal}
               onChange={(e) => setProposal(e.target.value)}
-              placeholder="Tell the client why you're a great fit, your experience, and when you can start..."
-              rows={7}
+              placeholder="Tell the client why you're a great fit, your relevant experience, and when you can start..."
+              rows={6}
               required
-              className="mt-1 border-0 outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0 shadow-none"
+              className="w-full border border-slate-200 rounded-lg px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all resize-none"
             />
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 sm:gap-4 pt-2">
-            <Button
-              variant="outline"
+          {/* Applying As Badge - Auto-filled from logged-in user */}
+          <div className="border-t border-slate-200 pt-4">
+            <p className="text-xs text-slate-500">
+              Applying as: <span className="font-medium text-slate-700">{user?.name}</span> ({user?.email})
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+            <button
+              type="button"
               onClick={() => setShowApplyModal(false)}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto px-6 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
+              type="button"
               onClick={handleApply}
-              className="w-full sm:flex-1 shadow-md shadow-primary-500/30 hover:shadow-lg hover:shadow-primary-500/40"
+              disabled={!proposal.trim()}
+              className="w-full sm:flex-1 px-6 py-2.5 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
             >
               Submit Application
-            </Button>
+            </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Client Profile Modal - Minimalist Design */}
+      <Modal
+        isOpen={showClientProfileModal}
+        onClose={() => setShowClientProfileModal(false)}
+        title="Client Profile"
+        size="md"
+      >
+        <div className="bg-white">
+          {/* 1. Identity Header - Centered */}
+          <div className="flex flex-col items-center text-center pb-6 border-b border-slate-200">
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+              <User className="w-8 h-8 text-slate-500" />
+            </div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-bold text-slate-900">
+                {clientInfo?.name || 'Client'}
+              </h3>
+              {clientInfo?.verified && (
+                <BadgeCheck className="w-5 h-5 text-blue-500" />
+              )}
+            </div>
+            <p className="text-sm text-slate-500 mt-1">
+              {clientInfo?.verified ? 'Verified Client' : 'Client'}
+            </p>
+          </div>
+
+          {/* 2. Contact Information Section */}
+          <div className="py-5 border-b border-slate-200">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">
+              Contact Information
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">Email</span>
+                <span className="text-sm text-slate-900">{clientInfo?.email || '—'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">Phone</span>
+                <span className="text-sm text-slate-900">{clientInfo?.phone || '—'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Client Rating Section */}
+          <div className="py-5 border-b border-slate-200">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">
+              Client Rating
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`w-5 h-5 ${
+                      star <= Math.round(clientInfo?.rating || 0)
+                        ? 'text-amber-400 fill-amber-400'
+                        : 'text-slate-200'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-sm text-slate-900 font-medium">
+                {clientInfo?.rating || '0.0'}
+              </span>
+              <span className="text-sm text-slate-500">
+                ({clientInfo?.reviewCount || 0} reviews)
+              </span>
+            </div>
+          </div>
+
+          {/* 4. Verification Details Section */}
+          <div className="py-5 border-b border-slate-200">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">
+              Verification Status
+            </p>
+            <div className="flex items-center gap-2">
+              {clientInfo?.verified ? (
+                <>
+                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="text-sm text-slate-900">Verified Client</span>
+                    
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-5 h-5 bg-slate-100 rounded-full flex items-center justify-center">
+                    <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                  </div>
+                  <span className="text-sm text-slate-500">Not yet verified</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* 5. Platform Activity Section */}
+          <div className="py-5">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">
+              Platform Activity
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-500">Gigs Posted</span>
+              <span className="text-sm text-slate-900 font-medium">
+                {gigs.filter(g => g.ownerId === clientInfo?.id).length} active gig{gigs.filter(g => g.ownerId === clientInfo?.id).length !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
+
+          {/* Close Button */}
+          <button
+            type="button"
+            onClick={() => setShowClientProfileModal(false)}
+            className="w-full mt-2 px-6 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            Close
+          </button>
         </div>
       </Modal>
 
