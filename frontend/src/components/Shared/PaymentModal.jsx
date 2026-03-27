@@ -1,10 +1,78 @@
 import { useState, useEffect } from 'react'
 import { calculateFee } from '../../utils/feeCalculator'
 import { saveRating } from '../../utils/ratingUtils'
-import { CheckCircle, Loader, CreditCard, Info, Wallet, ArrowRight, Star, Send } from 'lucide-react'
+import { CheckCircle, Loader, Info, Wallet, ArrowRight, ArrowLeft, Star, Send, Smartphone, CreditCard, ShoppingBag, Globe, MoreHorizontal } from 'lucide-react'
 import Modal from '../UI/Modal'
-import Button from '../UI/Button'
-import Card from '../UI/Card'
+
+// E-Wallet options with brand colors
+const EWALLET_OPTIONS = [
+  {
+    name: 'GCash',
+    icon: Smartphone,
+    borderColor: 'border-blue-500',
+    bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+    hoverBorder: 'hover:border-blue-500',
+    hoverBg: 'hover:bg-blue-50 dark:hover:bg-blue-900/20',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    textColor: 'text-blue-700 dark:text-blue-300',
+    accentGradient: 'from-blue-500 to-blue-600',
+  },
+  {
+    name: 'Maya',
+    icon: CreditCard,
+    borderColor: 'border-green-500',
+    bgColor: 'bg-green-50 dark:bg-green-900/20',
+    hoverBorder: 'hover:border-green-500',
+    hoverBg: 'hover:bg-green-50 dark:hover:bg-green-900/20',
+    iconColor: 'text-green-600 dark:text-green-400',
+    textColor: 'text-green-700 dark:text-green-300',
+    accentGradient: 'from-green-500 to-green-600',
+  },
+  {
+    name: 'GrabPay',
+    icon: Wallet,
+    borderColor: 'border-emerald-500',
+    bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
+    hoverBorder: 'hover:border-emerald-500',
+    hoverBg: 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    textColor: 'text-emerald-700 dark:text-emerald-300',
+    accentGradient: 'from-emerald-500 to-emerald-600',
+  },
+  {
+    name: 'ShopeePay',
+    icon: ShoppingBag,
+    borderColor: 'border-orange-500',
+    bgColor: 'bg-orange-50 dark:bg-orange-900/20',
+    hoverBorder: 'hover:border-orange-500',
+    hoverBg: 'hover:bg-orange-50 dark:hover:bg-orange-900/20',
+    iconColor: 'text-orange-600 dark:text-orange-400',
+    textColor: 'text-orange-700 dark:text-orange-300',
+    accentGradient: 'from-orange-500 to-orange-600',
+  },
+  {
+    name: 'PayPal',
+    icon: Globe,
+    borderColor: 'border-indigo-500',
+    bgColor: 'bg-indigo-50 dark:bg-indigo-900/20',
+    hoverBorder: 'hover:border-indigo-500',
+    hoverBg: 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20',
+    iconColor: 'text-indigo-600 dark:text-indigo-400',
+    textColor: 'text-indigo-700 dark:text-indigo-300',
+    accentGradient: 'from-indigo-500 to-indigo-600',
+  },
+  {
+    name: 'Others',
+    icon: MoreHorizontal,
+    borderColor: 'border-gray-500',
+    bgColor: 'bg-gray-50 dark:bg-gray-800/50',
+    hoverBorder: 'hover:border-gray-500',
+    hoverBg: 'hover:bg-gray-50 dark:hover:bg-gray-800/50',
+    iconColor: 'text-gray-600 dark:text-gray-400',
+    textColor: 'text-gray-700 dark:text-gray-300',
+    accentGradient: 'from-gray-500 to-gray-600',
+  },
+]
 
 export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studentName, studentId, gigId, currentUser, onSuccess }) {
   const [processing, setProcessing] = useState(false)
@@ -12,8 +80,11 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
   const [fee, setFee] = useState(0)
   const [total, setTotal] = useState(0)
 
-  // Rating step state
+  // Multi-step state: 1 = E-Wallet Selection, 2 = Payment Summary, 3 = Rating
   const [step, setStep] = useState(1)
+  const [selectedMethod, setSelectedMethod] = useState(null)
+
+  // Rating step state
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState('')
   const [hoveredStar, setHoveredStar] = useState(0)
@@ -27,6 +98,11 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
     }
   }, [amount])
 
+  const handleSelectMethod = (methodName) => {
+    setSelectedMethod(methodName)
+    setStep(2)
+  }
+
   const handleMockPayment = async () => {
     setProcessing(true)
 
@@ -39,7 +115,7 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
       setTimeout(() => {
         if (onSuccess) {
           onSuccess({
-            paymentMethod: 'GCash',
+            paymentMethod: selectedMethod || 'GCash',
             amount,
             fee,
             total
@@ -47,7 +123,7 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
         }
         // Transition to rating step instead of closing
         setSuccess(false)
-        setStep(2)
+        setStep(3)
       }, 1500)
     }, 1500)
   }
@@ -81,6 +157,7 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
     setProcessing(false)
     setSuccess(false)
     setStep(1)
+    setSelectedMethod(null)
     setRating(5)
     setComment('')
     setHoveredStar(0)
@@ -89,23 +166,97 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
 
   // Determine Tier Badge based on amount
   const getTierInfo = () => {
-    if (amount < 1000) return { label: 'Small Gig', color: 'bg-blue-100 text-blue-700' }
-    if (amount < 5000) return { label: 'Standard Gig', color: 'bg-indigo-100 text-indigo-700' }
-    return { label: 'Premium Gig', color: 'bg-purple-100 text-purple-700' }
+    if (amount < 1000) return { label: 'Small Gig', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' }
+    if (amount < 5000) return { label: 'Standard Gig', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' }
+    return { label: 'Premium Gig', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' }
   }
 
   const tier = getTierInfo()
 
+  // Get the selected method config for display
+  const selectedMethodConfig = EWALLET_OPTIONS.find(opt => opt.name === selectedMethod)
+
+  // Determine modal title
+  const getModalTitle = () => {
+    if (step === 1) return 'Select Payment Method'
+    if (step === 2) return 'Payment Summary'
+    if (step === 3) return 'Rate Your Experience'
+    return 'Payment'
+  }
+
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={step === 2 ? "Rate Your Experience" : "Payment Summary"}>
+    <Modal isOpen={isOpen} onClose={handleClose} title={getModalTitle()}>
       <div className="space-y-6">
-        {/* Step 1: Payment (not processing, not success, step 1) */}
-        {step === 1 && !success && !processing && (
+
+        {/* ─── Step 1: E-Wallet Selection ─── */}
+        {step === 1 && !processing && !success && (
+          <>
+            {/* Header */}
+            <div className="text-center mb-2">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Wallet className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                Choose Your E-Wallet
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Select a payment method to continue
+              </p>
+            </div>
+
+            {/* E-Wallet Grid (2 columns) */}
+            <div className="grid grid-cols-2 gap-3">
+              {EWALLET_OPTIONS.map((option) => {
+                const IconComponent = option.icon
+                return (
+                  <button
+                    key={option.name}
+                    onClick={() => handleSelectMethod(option.name)}
+                    className={`
+                      group relative flex flex-col items-center gap-3 p-5 rounded-xl
+                      border-2 border-gray-200 dark:border-gray-700
+                      bg-white dark:bg-gray-800
+                      ${option.hoverBorder} ${option.hoverBg}
+                      transition-all duration-200 ease-in-out
+                      hover:-translate-y-0.5 hover:shadow-lg
+                      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+                    `}
+                  >
+                    <div className={`
+                      w-12 h-12 rounded-xl flex items-center justify-center
+                      bg-gray-100 dark:bg-gray-700
+                      group-hover:bg-gradient-to-br group-hover:${option.accentGradient}
+                      transition-all duration-200
+                    `}>
+                      <IconComponent className={`w-6 h-6 ${option.iconColor} group-hover:text-white transition-colors duration-200`} />
+                    </div>
+                    <span className={`text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:${option.textColor} transition-colors duration-200`}>
+                      {option.name}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Cancel */}
+            <div className="pt-2">
+              <button
+                onClick={handleClose}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ─── Step 2: Payment Summary ─── */}
+        {step === 2 && !success && !processing && (
           <>
             {/* Header Section */}
             <div className="text-center mb-6">
-              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Wallet className="w-10 h-10 text-emerald-600" />
+              <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Wallet className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                 Payment Summary
@@ -144,6 +295,20 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
                 <span className="font-semibold text-emerald-600">+₱{fee?.toLocaleString()}</span>
               </div>
 
+              {/* Selected Payment Method Row */}
+              <div className="flex justify-between items-center">
+                <span className="text-gray-900 dark:text-white font-medium">Payment Method</span>
+                <div className="flex items-center gap-2">
+                  {selectedMethodConfig && (
+                    <selectedMethodConfig.icon className={`w-4 h-4 ${selectedMethodConfig.iconColor}`} />
+                  )}
+                  <span className={`font-semibold ${selectedMethodConfig?.textColor || 'text-gray-700 dark:text-gray-300'}`}>
+                    {selectedMethod}
+                  </span>
+                  <span className="text-xs text-gray-400">(Mock Integration)</span>
+                </div>
+              </div>
+
               <div className="border-t border-dashed border-gray-300 dark:border-gray-600 my-2"></div>
 
               <div className="flex justify-between items-center">
@@ -161,10 +326,18 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
             </div>
 
             {/* Footer Buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="grid grid-cols-[auto_1fr_1fr] gap-3 pt-2">
+              {/* Change Method Button */}
+              <button
+                onClick={() => setStep(1)}
+                className="px-3 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 text-sm"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Change
+              </button>
               <button
                 onClick={handleClose}
-                className="px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
+                className="px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 Cancel
               </button>
@@ -179,11 +352,11 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
           </>
         )}
 
-        {/* Processing State */}
+        {/* ─── Processing State ─── */}
         {processing && (
           <div className="text-center space-y-6 py-8">
             <div className="relative w-20 h-20 mx-auto">
-              <div className="absolute inset-0 rounded-full border-4 border-emerald-100"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-emerald-100 dark:border-emerald-900/30"></div>
               <div className="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
               <div className="absolute inset-0 flex items-center justify-center">
                 <Loader className="w-8 h-8 text-emerald-600 animate-pulse" />
@@ -191,7 +364,7 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                Processing Payment...
+                Processing via {selectedMethod}...
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
                 Securely transferring ₱{total?.toLocaleString()} to {studentName}
@@ -200,30 +373,30 @@ export default function PaymentModal({ isOpen, onClose, amount, gigTitle, studen
           </div>
         )}
 
-        {/* Success State (brief display before rating step) */}
+        {/* ─── Success State (brief display before rating step) ─── */}
         {success && (
           <div className="text-center space-y-6 py-8">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto animate-bounce-slow">
-              <CheckCircle className="w-10 h-10 text-green-600" />
+            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto animate-bounce-slow">
+              <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Payment Successful!
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                You have successfully paid <span className="font-bold text-gray-900 dark:text-white">₱{total?.toLocaleString()}</span>
+                You have successfully paid <span className="font-bold text-gray-900 dark:text-white">₱{total?.toLocaleString()}</span> via {selectedMethod}
               </p>
             </div>
           </div>
         )}
 
-        {/* Step 2: Rate Student */}
-        {step === 2 && !processing && !success && (
+        {/* ─── Step 3: Rate Student ─── */}
+        {step === 3 && !processing && !success && (
           <div className="space-y-6">
             {/* Success confirmation */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                 Payment Complete!
