@@ -187,7 +187,6 @@ export default function PostGig() {
                   {[
                     { id: 'local', label: 'Local / On-site' },
                     { id: 'online', label: 'Online' },
-                    { id: 'remote', label: 'Remote / Hybrid' },
                   ].map((mode) => {
                     const isActive = locationMode === mode.id
                     return (
