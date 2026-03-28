@@ -64,7 +64,7 @@ export default function Register() {
 
     // Legal consent validation
     if (!agreedToTerms) {
-      setError('You must agree to the Terms of Service and Privacy Policy to continue.')
+      setError('Please read and agree to the Terms and Privacy laws to proceed.')
       return
     }
 
@@ -267,17 +267,17 @@ export default function Register() {
                   id="agreedToTerms"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                  className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
                 />
-                <label htmlFor="agreedToTerms" className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                  I agree to the Terms of Service, Statement of Data Privacy (RA 10173), and acknowledge the Cybercrime Prevention Act of 2012 (RA 10175).
+                <label htmlFor="agreedToTerms" className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  I agree to the Terms of Service, Statement of Data Privacy (RA 10173), and acknowledge compliance with the Cybercrime Prevention Act of (RA 10175) and the Digital Service Tax Act (RA 12023).
                 </label>
               </div>
 
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-sky-500 to-teal-400 hover:from-sky-600 hover:to-teal-500 border-0"
-                disabled={loading}
+                disabled={loading || !agreedToTerms}
               >
                 {loading ? 'Creating account...' : 'Create account'}
               </Button>
