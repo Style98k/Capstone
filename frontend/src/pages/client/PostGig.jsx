@@ -116,6 +116,7 @@ export default function PostGig() {
       title: formData.title,
       category: formData.category,
       location: formData.location,
+      locationType: locationMode,
       duration: formData.duration,
       pay: parseFloat(formData.pay),
       shortDesc: formData.fullDesc.substring(0, 100) + '...',

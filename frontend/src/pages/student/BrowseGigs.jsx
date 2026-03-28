@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useAuth } from '../../hooks/useLocalAuth'
 import { getGigs, initializeLocalStorage } from '../../utils/localStorage'
+import { categories } from '../../data/mockGigs'
 import Card from '../../components/UI/Card'
 import Input from '../../components/UI/Input'
 import Select from '../../components/UI/Select'
@@ -10,52 +11,78 @@ import { Link } from 'react-router-dom'
 
 export default function BrowseGigs() {
     const { user } = useAuth()
+
+    // Task 1: Filter & sort state variables with specified defaults
     const [searchTerm, setSearchTerm] = useState('')
-    const [categoryFilter, setCategoryFilter] = useState('')
-    const [locationFilter, setLocationFilter] = useState('')
-    const [sortBy, setSortBy] = useState('newest')
+    const [selectedCategory, setSelectedCategory] = useState('All Categories')
+    const [selectedLocation, setSelectedLocation] = useState('All Locations')
+    const [sortBy, setSortBy] = useState('Newest')
 
     // Initialize localStorage and get all gigs
     const allGigs = useMemo(() => {
         initializeLocalStorage()
-        const gigs = getGigs()
-        // Only show gigs that are not hired/closed
-        return gigs.filter(gig => gig.status !== 'closed' && gig.status !== 'hired')
+        return getGigs()
     }, [])
 
-    // Get unique categories and locations
-    const categories = useMemo(() => {
-        const cats = [...new Set(allGigs.map(g => g.category))].filter(Boolean)
-        return cats.sort()
-    }, [allGigs])
 
-    const locations = useMemo(() => {
-        const locs = [...new Set(allGigs.map(g => g.location))].filter(Boolean)
-        return locs.sort()
-    }, [allGigs])
 
-    // Filter and sort gigs
+    // Task 2 & 3: Filter and sort gigs
     const filteredGigs = useMemo(() => {
+        const lowerSearch = searchTerm.toLowerCase()
+
         let filtered = allGigs.filter(gig => {
-            const matchesSearch = gig.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                gig.description.toLowerCase().includes(searchTerm.toLowerCase())
-            const matchesCategory = !categoryFilter || gig.category === categoryFilter
-            const matchesLocation = !locationFilter || gig.location === locationFilter
+            // Status: Only show open gigs
+            if (gig.status !== 'open') return false
+
+            // Search: Check if title, description, or location includes the searchTerm
+            const matchesSearch = !searchTerm ||
+                (gig.title || '').toLowerCase().includes(lowerSearch) ||
+                (gig.description || '').toLowerCase().includes(lowerSearch) ||
+                (gig.location || '').toLowerCase().includes(lowerSearch)
+
+            // Category: If not 'All Categories', match gig.category exactly
+            const matchesCategory = selectedCategory === 'All Categories' ||
+                gig.category === selectedCategory
+
+            // Location: If 'Online', show only online gigs (check locationType field, fallback to location string)
+            const matchesLocation = selectedLocation === 'All Locations' ||
+                (selectedLocation === 'Online' && (
+                    gig.locationType === 'online' ||
+                    gig.locationType === 'remote' ||
+                    (gig.location || '').toLowerCase().includes('online')
+                ))
 
             return matchesSearch && matchesCategory && matchesLocation
         })
 
-        // Sort
-        if (sortBy === 'newest') {
-            filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        } else if (sortBy === 'highest-pay') {
-            filtered.sort((a, b) => b.pay - a.pay)
-        } else if (sortBy === 'lowest-pay') {
-            filtered.sort((a, b) => a.pay - b.pay)
+        // Task 3: Apply sorting
+        switch (sortBy) {
+            case 'Newest':
+                filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                break
+            case 'Oldest':
+                filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                break
+            case 'Highest Pay':
+                filtered.sort((a, b) => (b.pay || 0) - (a.pay || 0))
+                break
+            case 'Lowest Pay':
+                filtered.sort((a, b) => (a.pay || 0) - (b.pay || 0))
+                break
+            default:
+                break
         }
 
         return filtered
-    }, [allGigs, searchTerm, categoryFilter, locationFilter, sortBy])
+    }, [allGigs, searchTerm, selectedCategory, selectedLocation, sortBy])
+
+    // Reset all filters to defaults
+    const clearFilters = () => {
+        setSearchTerm('')
+        setSelectedCategory('All Categories')
+        setSelectedLocation('All Locations')
+        setSortBy('Newest')
+    }
 
     return (
         <div className="space-y-6">
@@ -87,20 +114,20 @@ export default function BrowseGigs() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Select
                             label="Category"
-                            value={categoryFilter}
-                            onChange={(e) => setCategoryFilter(e.target.value)}
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
                             options={[
-                                { value: '', label: 'All Categories' },
+                                { value: 'All Categories', label: 'All Categories' },
                                 ...categories.map(cat => ({ value: cat, label: cat }))
                             ]}
                         />
                         <Select
                             label="Location"
-                            value={locationFilter}
-                            onChange={(e) => setLocationFilter(e.target.value)}
+                            value={selectedLocation}
+                            onChange={(e) => setSelectedLocation(e.target.value)}
                             options={[
-                                { value: '', label: 'All Locations' },
-                                ...locations.map(loc => ({ value: loc, label: loc }))
+                                { value: 'All Locations', label: 'All Locations' },
+                                { value: 'Online', label: 'Online' },
                             ]}
                         />
                         <Select
@@ -108,9 +135,10 @@ export default function BrowseGigs() {
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
                             options={[
-                                { value: 'newest', label: 'Newest' },
-                                { value: 'highest-pay', label: 'Highest Pay' },
-                                { value: 'lowest-pay', label: 'Lowest Pay' },
+                                { value: 'Newest', label: 'Newest' },
+                                { value: 'Oldest', label: 'Oldest' },
+                                { value: 'Highest Pay', label: 'Highest Pay' },
+                                { value: 'Lowest Pay', label: 'Lowest Pay' },
                             ]}
                         />
                     </div>
@@ -183,11 +211,7 @@ export default function BrowseGigs() {
                             </p>
                             <Button
                                 variant="outline"
-                                onClick={() => {
-                                    setSearchTerm('')
-                                    setCategoryFilter('')
-                                    setLocationFilter('')
-                                }}
+                                onClick={clearFilters}
                             >
                                 Clear Filters
                             </Button>
