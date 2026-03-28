@@ -650,7 +650,7 @@ export default function ClientProfile() {
                         transition={{ type: "spring", stiffness: 300 }}
                     >
                         <Input
-                            label="Messenger Link"
+                            label="Facebook/Messenger Link"
                             name="facebookUrl"
                             value={formData.facebookUrl}
                             onChange={handleChange}
